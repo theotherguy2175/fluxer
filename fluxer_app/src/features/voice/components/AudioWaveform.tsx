@@ -60,6 +60,7 @@ interface AudioWaveformProps {
 	minSelectionSeconds: number;
 	maxSelectionSeconds: number;
 	playheadSeconds?: number | null;
+	dimOutsideSelection?: boolean;
 	onSelectionChange: (next: {startSeconds: number; endSeconds: number}) => void;
 	'data-flx'?: string;
 }
@@ -97,6 +98,7 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
 	minSelectionSeconds,
 	maxSelectionSeconds,
 	playheadSeconds,
+	dimOutsideSelection = false,
 	onSelectionChange,
 	'data-flx': dataFlx,
 }) => {
@@ -130,14 +132,17 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
 		const amplitudeHeightPx = Math.max(1, mid - verticalPaddingPx);
 		const barWidth = Math.max(1, Math.floor(dpr));
 		const computed = getComputedStyle(canvas);
-		const peakStrokeStyle =
+		const mutedStyle =
 			computed.getPropertyValue('--text-tertiary').trim() ||
 			computed.getPropertyValue('--text-secondary').trim() ||
 			'#b5bac1';
-		ctx.fillStyle = peakStrokeStyle;
+		const brightStyle = computed.getPropertyValue('--text-primary').trim() || '#f2f3f5';
 		const binCount = peaks.maxs.length;
 		const step = widthPx / Math.max(1, binCount);
 		const normalizer = computePeakNormalizer(peaks);
+		const safeDur = durationSeconds > 0 ? durationSeconds : 1;
+		const startBin = dimOutsideSelection ? (startSeconds / safeDur) * binCount : 0;
+		const endBin = dimOutsideSelection ? (endSeconds / safeDur) * binCount : binCount;
 		for (let i = 0; i < binCount; i++) {
 			const x = Math.floor(i * step);
 			const minVal = clamp((peaks.mins[i] ?? 0) / normalizer, -1, 1);
@@ -146,9 +151,17 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
 			const high = Math.max(minVal, maxVal);
 			const top = clamp(mid - high * amplitudeHeightPx, verticalPaddingPx, heightPx - verticalPaddingPx);
 			const bottom = clamp(mid - low * amplitudeHeightPx, verticalPaddingPx, heightPx - verticalPaddingPx);
+			if (dimOutsideSelection) {
+				const inside = i + 0.5 >= startBin && i + 0.5 <= endBin;
+				ctx.fillStyle = inside ? brightStyle : mutedStyle;
+				ctx.globalAlpha = inside ? 1 : 0.6;
+			} else {
+				ctx.fillStyle = mutedStyle;
+			}
 			ctx.fillRect(x, top, barWidth, Math.max(1, bottom - top));
 		}
-	}, [peaks]);
+		ctx.globalAlpha = 1;
+	}, [peaks, dimOutsideSelection, durationSeconds, startSeconds, endSeconds]);
 
 	useEffect(() => {
 		renderCanvas();
@@ -252,15 +265,35 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
 			data-flx={dataFlx}
 		>
 			<canvas ref={canvasRef} className={styles.canvas} aria-hidden data-flx="voice.audio-waveform.canvas" />
+			{dimOutsideSelection && (
+				<>
+					<div
+						className={styles.scrim}
+						style={{left: 0, width: `${startPct}%`}}
+						aria-hidden
+						data-flx="voice.audio-waveform.scrim-before"
+					/>
+					<div
+						className={styles.scrim}
+						style={{left: `${endPct}%`, right: 0}}
+						aria-hidden
+						data-flx="voice.audio-waveform.scrim-after"
+					/>
+				</>
+			)}
 			<div
-				className={clsx(styles.selection, draggingRegion && styles.selectionDragging)}
+				className={clsx(
+					styles.selection,
+					draggingRegion && styles.selectionDragging,
+					dimOutsideSelection && styles.selectionBare,
+				)}
 				style={selectionStyle}
 				onPointerDown={handleRegionPointerDown}
 				role="presentation"
 				data-flx="voice.audio-waveform.selection.region-pointer-down"
 			/>
 			<div
-				className={clsx(styles.handle, styles.handleStart)}
+				className={clsx(styles.handle, styles.handleStart, dimOutsideSelection && styles.handleThin)}
 				style={{left: `${startPct}%`}}
 				onPointerDown={handleStartPointerDown}
 				role="slider"
@@ -272,7 +305,7 @@ export const AudioWaveform: React.FC<AudioWaveformProps> = ({
 				data-flx="voice.audio-waveform.handle.start-pointer-down"
 			/>
 			<div
-				className={clsx(styles.handle, styles.handleEnd)}
+				className={clsx(styles.handle, styles.handleEnd, dimOutsideSelection && styles.handleThin)}
 				style={{left: `${endPct}%`}}
 				onPointerDown={handleEndPointerDown}
 				role="slider"

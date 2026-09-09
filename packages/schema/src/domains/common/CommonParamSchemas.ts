@@ -128,6 +128,13 @@ export const GuildIdStickerIdParam = GuildIdParam.extend(StickerIdParam.shape);
 
 export type GuildIdStickerIdParam = z.infer<typeof GuildIdStickerIdParam>;
 
+export const GuildIdSoundIdParam = z.object({
+	guild_id: SnowflakeType.describe('The ID of the guild'),
+	sound_id: SnowflakeType.describe('The ID of the soundboard sound'),
+});
+
+export type GuildIdSoundIdParam = z.infer<typeof GuildIdSoundIdParam>;
+
 export const GiftCodeParam = z.object({
 	code: createStringType(1, 32).describe('The gift code'),
 });

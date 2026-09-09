@@ -105,6 +105,17 @@ export class TestMediaService extends IMediaService {
 			if (buffer.length === 0) {
 				return null;
 			}
+			const audioFormat = this.detectAudioFormat(buffer);
+			if (audioFormat) {
+				return {
+					format: audioFormat,
+					content_type: this.contentTypeForFormat(audioFormat),
+					content_hash: crypto.createHash('md5').update(buffer).digest('hex'),
+					size: buffer.length,
+					duration: 1,
+					nsfw: false,
+				};
+			}
 			const format = this.detectImageFormat(buffer);
 			if (!format) {
 				return null;
@@ -122,6 +133,22 @@ export class TestMediaService extends IMediaService {
 		} catch (_error) {
 			return null;
 		}
+	}
+
+	private detectAudioFormat(buffer: Buffer): string | null {
+		if (buffer.length < 12) {
+			return null;
+		}
+		if (buffer.toString('ascii', 0, 4) === 'RIFF' && buffer.toString('ascii', 8, 12) === 'WAVE') {
+			return 'wav';
+		}
+		if (buffer.toString('ascii', 0, 4) === 'OggS') {
+			return 'ogg';
+		}
+		if (buffer.toString('ascii', 0, 3) === 'ID3' || (buffer[0] === 0xff && (buffer[1] & 0xe0) === 0xe0)) {
+			return 'mp3';
+		}
+		return null;
 	}
 
 	private detectImageFormat(buffer: Buffer): string | null {
@@ -207,6 +234,9 @@ export class TestMediaService extends IMediaService {
 	private contentTypeForFormat(format: string): string {
 		if (format === 'jpeg') return 'image/jpeg';
 		if (format === 'svg') return 'image/svg+xml';
+		if (format === 'wav') return 'audio/wav';
+		if (format === 'ogg') return 'audio/ogg';
+		if (format === 'mp3') return 'audio/mpeg';
 		return `image/${format}`;
 	}
 }

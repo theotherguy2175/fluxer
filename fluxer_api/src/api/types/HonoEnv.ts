@@ -26,6 +26,8 @@ import type {GatewayRequestService} from '@app/api/gateway/GatewayRequestService
 import type {GifService} from '@app/api/gif/GifService';
 import type {IGuildDiscoveryService} from '@app/api/guild/services/GuildDiscoveryService';
 import type {GuildService} from '@app/api/guild/services/GuildService';
+import type {GuildSoundboardPlayService} from '@app/api/guild/soundboard/GuildSoundboardPlayService';
+import type {GuildSoundboardService} from '@app/api/guild/soundboard/GuildSoundboardService';
 import type {EmbedService} from '@app/api/infrastructure/EmbedService';
 import type {EntityAssetService} from '@app/api/infrastructure/EntityAssetService';
 import type {ErrorI18nService} from '@app/api/infrastructure/ErrorI18nService';
@@ -139,6 +141,8 @@ export interface HonoEnv {
 		entityAssetService: EntityAssetService;
 		entranceSoundService: EntranceSoundService;
 		entranceSoundPlayService: EntranceSoundPlayService;
+		guildSoundboardService: GuildSoundboardService;
+		guildSoundboardPlayService: GuildSoundboardPlayService;
 		favoriteMemeService: FavoriteMemeService;
 		favoriteMemeRequestService: FavoriteMemeRequestService;
 		gatewayService: IGatewayService;

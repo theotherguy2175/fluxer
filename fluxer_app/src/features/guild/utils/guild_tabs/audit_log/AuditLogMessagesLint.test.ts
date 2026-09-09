@@ -7,6 +7,7 @@ import * as InviteWebhookMessages from '@app/features/guild/utils/guild_tabs/aud
 import * as MemberMessages from '@app/features/guild/utils/guild_tabs/audit_log/AuditLogMemberMessages';
 import * as RoleMessages from '@app/features/guild/utils/guild_tabs/audit_log/AuditLogRoleMessages';
 import * as SharedMessages from '@app/features/guild/utils/guild_tabs/audit_log/AuditLogSharedMessages';
+import * as SoundboardMessages from '@app/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages';
 import {toText} from '@app/features/guild/utils/guild_tabs/audit_log/AuditLogTestUtils';
 import {type MessageDescriptor, setupI18n} from '@lingui/core';
 import {describe, expect, it, vi} from 'vitest';
@@ -33,6 +34,7 @@ const MESSAGE_MODULES: Record<string, Record<string, unknown>> = {
 	AuditLogMemberMessages: MemberMessages,
 	AuditLogRoleMessages: RoleMessages,
 	AuditLogSharedMessages: SharedMessages,
+	AuditLogSoundboardMessages: SoundboardMessages,
 };
 
 const ARGUMENT_PATTERN = /\{\s*(\w+)\s*[,}]/g;

@@ -111,7 +111,7 @@ describe('presentRoleCreate', () => {
 		expect(createdRole({})).toEqual({
 			summary: 'Hampus created the role @New role',
 			rows: [
-				'+ Granted Create invite links, Add reactions, Stream video, View channel, Send messages, Embed links, Attach files, and 8 more permissions',
+				'+ Granted Create invite links, Add reactions, Stream video, View channel, Send messages, Embed links, Attach files, and 9 more permissions',
 			],
 			blocks: [],
 			expandable: true,
@@ -602,7 +602,7 @@ describe('presentRoleDelete', () => {
 
 	it('caps a long permission list', () => {
 		expect(deletedRole({permissions: DEFAULT_PERMISSIONS.toString()}).rows).toEqual([
-			'- The role granted Create invite links, Add reactions, Stream video, View channel, Send messages, Embed links, Attach files, and 8 more permissions',
+			'- The role granted Create invite links, Add reactions, Stream video, View channel, Send messages, Embed links, Attach files, and 9 more permissions',
 		]);
 	});
 

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import * as VoiceStateCommands from '@app/features/devtools/commands/VoiceStateCommands';
+import * as GuildSoundboardCommands from '@app/features/expressions/commands/GuildSoundboardCommands';
 import {MORE_OPTIONS_DESCRIPTOR, TURN_OFF_CAMERA_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import Keybind from '@app/features/input/state/InputKeybind';
 import {formatKeyCombo} from '@app/features/input/utils/KeybindUtils';
@@ -8,6 +9,7 @@ import {SoundType} from '@app/features/notification/utils/SoundUtils';
 import Permission from '@app/features/permissions/state/Permission';
 import NativePermission from '@app/features/permissions/system/state/NativePermission';
 import {Logger} from '@app/features/platform/utils/AppLogger';
+import {ComponentBus} from '@app/features/platform/utils/ComponentBus';
 import {MenuGroup} from '@app/features/ui/action_menu/MenuGroup';
 import {MenuItem} from '@app/features/ui/action_menu/MenuItem';
 import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
@@ -33,6 +35,7 @@ import {
 	openScreenSharePickerModal,
 	preloadScreenSharePickerSources,
 } from '@app/features/voice/components/modals/ScreenSharePickerModal';
+import {SoundboardMenu} from '@app/features/voice/components/SoundboardMenu';
 import {getStreamKey} from '@app/features/voice/components/StreamKeys';
 import {StreamSettingsMenuContent} from '@app/features/voice/components/StreamSettingsMenuContent';
 import styles from '@app/features/voice/components/VoiceControlBar.module.css';
@@ -95,6 +98,7 @@ import {
 	MicrophoneIcon,
 	MicrophoneSlashIcon,
 	MonitorPlayIcon,
+	MusicNotesIcon,
 	PhoneXIcon,
 	SpeakerHighIcon,
 	SpeakerSlashIcon,
@@ -147,6 +151,11 @@ const AUDIO_SETTINGS_DESCRIPTOR = msg({
 const STOP_WATCHING_STREAM_DESCRIPTOR = msg({
 	message: 'Stop watching stream',
 	comment: 'Tooltip / button label in the voice control bar that stops watching a remote screen share.',
+});
+const SOUNDBOARD_DESCRIPTOR = msg({
+	message: 'Soundboard',
+	comment: 'Voice control button label that opens the guild soundboard popover.',
+	context: 'voice-control-button',
 });
 const logger = new Logger('VoiceControlBar');
 
@@ -552,6 +561,56 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 		},
 		[isMobile, openAnchoredMenu],
 	);
+	const soundboardMediaGuildId = MediaEngine.guildId;
+	const soundboardMediaChannelId = MediaEngine.channelId;
+	const canUseSoundboard =
+		soundboardMediaChannelId != null &&
+		soundboardMediaGuildId != null &&
+		GuildSoundboardCommands.isSoundboardEnabled(soundboardMediaGuildId) &&
+		Permission.can(Permissions.USE_SOUNDBOARD, {channelId: soundboardMediaChannelId});
+	const soundboardGuildId = canUseSoundboard ? soundboardMediaGuildId : null;
+	const soundboardChannelId = canUseSoundboard ? soundboardMediaChannelId : null;
+	const soundboardButtonRef = useRef<HTMLButtonElement | null>(null);
+	const soundboardMenuOpenRef = useRef(false);
+	const renderSoundboardMenu = useCallback(
+		(guildId: string, channelId: string) =>
+			({onClose}: {onClose: () => void}) => {
+				soundboardMenuOpenRef.current = true;
+				return (
+					<SoundboardMenu
+						guildId={guildId}
+						channelId={channelId}
+						onClose={() => {
+							soundboardMenuOpenRef.current = false;
+							onClose();
+						}}
+						data-flx="voice.voice-control-bar.render-soundboard-menu.soundboard-menu"
+					/>
+				);
+			},
+		[],
+	);
+	const handleSoundboardClick = useCallback(
+		(event: React.MouseEvent<HTMLButtonElement>) => {
+			if (!soundboardGuildId || !soundboardChannelId) return;
+			openAnchoredMenu(event, renderSoundboardMenu(soundboardGuildId, soundboardChannelId));
+		},
+		[openAnchoredMenu, renderSoundboardMenu, soundboardGuildId, soundboardChannelId],
+	);
+	useEffect(() => {
+		return ComponentBus.subscribe('SOUNDBOARD_TOGGLE', () => {
+			if (soundboardMenuOpenRef.current) {
+				ContextMenuCommands.close();
+				soundboardMenuOpenRef.current = false;
+				return;
+			}
+			const button = soundboardButtonRef.current;
+			if (!soundboardGuildId || !soundboardChannelId || !button) return;
+			ContextMenuCommands.openForElement(button, renderSoundboardMenu(soundboardGuildId, soundboardChannelId), {
+				config: {align: 'bottom-left'},
+			});
+		});
+	}, [renderSoundboardMenu, soundboardGuildId, soundboardChannelId]);
 	const isCameraLimitReached = useMemo(() => {
 		if (isCameraEnabled) return false;
 		const voiceStates = MediaEngine.getAllVoiceStatesInChannel(MediaEngine.guildId ?? '', MediaEngine.channelId ?? '');
@@ -897,6 +956,30 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 					</FocusRing>
 				</Tooltip>
 			</div>
+			{soundboardGuildId && soundboardChannelId && (
+				<Tooltip
+					text={i18n._(SOUNDBOARD_DESCRIPTOR)}
+					data-flx="voice.voice-control-bar.voice-control-bar-inner.tooltip--soundboard"
+				>
+					<FocusRing offset={-2} data-flx="voice.voice-control-bar.voice-control-bar-inner.focus-ring--soundboard">
+						<button
+							ref={soundboardButtonRef}
+							type="button"
+							className={clsx(styles.button, styles.buttonMoreOptions)}
+							onClick={handleSoundboardClick}
+							aria-label={i18n._(SOUNDBOARD_DESCRIPTOR)}
+							aria-haspopup="menu"
+							data-flx="voice.voice-control-bar.voice-control-bar-inner.button.soundboard-click"
+						>
+							<MusicNotesIcon
+								weight="bold"
+								className={styles.icon}
+								data-flx="voice.voice-control-bar.voice-control-bar-inner.icon--soundboard"
+							/>
+						</button>
+					</FocusRing>
+				</Tooltip>
+			)}
 			<Tooltip
 				text={i18n._(MORE_OPTIONS_DESCRIPTOR)}
 				data-flx="voice.voice-control-bar.voice-control-bar-inner.tooltip--7"

@@ -13,6 +13,7 @@ export enum AuditLogTargetType {
 	WEBHOOK = 'webhook',
 	EMOJI = 'emoji',
 	STICKER = 'sticker',
+	SOUNDBOARD_SOUND = 'soundboard_sound',
 	MESSAGE = 'message',
 }
 

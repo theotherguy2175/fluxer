@@ -92,6 +92,8 @@ import {
 	getGuildAuditLogService,
 	getGuildDiscoveryService,
 	getGuildRepository,
+	getGuildSoundboardPlayService,
+	getGuildSoundboardService,
 	getInstanceConfigRepository,
 	getInviteRepository,
 	getKVAccountDeletionQueue,
@@ -557,6 +559,14 @@ class RequestServices implements RequestScopedServices {
 
 	get entranceSoundPlayService() {
 		return getEntranceSoundPlayService();
+	}
+
+	get guildSoundboardService() {
+		return getGuildSoundboardService();
+	}
+
+	get guildSoundboardPlayService() {
+		return getGuildSoundboardPlayService();
 	}
 
 	get errorI18nService() {

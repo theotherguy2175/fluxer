@@ -803,6 +803,24 @@ export const renderEntrySummary = (args: {
 					{actor} unpinned a message{channelNode ? <> in {channelNode}</> : null}.
 				</Trans>,
 			);
+		case AuditLogActionType.SOUNDBOARD_SOUND_CREATE:
+			return withBecause(
+				<Trans>
+					{actor} added the soundboard sound {namedTarget}.
+				</Trans>,
+			);
+		case AuditLogActionType.SOUNDBOARD_SOUND_UPDATE:
+			return withBecause(
+				<Trans>
+					{actor} updated the soundboard sound {namedTarget}.
+				</Trans>,
+			);
+		case AuditLogActionType.SOUNDBOARD_SOUND_DELETE:
+			return withBecause(
+				<Trans>
+					{actor} deleted the soundboard sound {namedTarget}.
+				</Trans>,
+			);
 		default:
 			return withBecause(
 				<Trans>

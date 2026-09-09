@@ -29,6 +29,9 @@ import {GuildAuditLogService} from '@app/api/guild/GuildAuditLogService';
 import {GuildDiscoveryRepository} from '@app/api/guild/repositories/GuildDiscoveryRepository';
 import {GuildRepository} from '@app/api/guild/repositories/GuildRepository';
 import {GuildDiscoveryService} from '@app/api/guild/services/GuildDiscoveryService';
+import {GuildSoundboardPlayService} from '@app/api/guild/soundboard/GuildSoundboardPlayService';
+import {GuildSoundboardRepository} from '@app/api/guild/soundboard/GuildSoundboardRepository';
+import {GuildSoundboardService} from '@app/api/guild/soundboard/GuildSoundboardService';
 import {AssetDeletionQueue} from '@app/api/infrastructure/AssetDeletionQueue';
 import {AvatarService} from '@app/api/infrastructure/AvatarService';
 import {CachePurgeQueue, type IPurgeQueue, NoopPurgeQueue} from '@app/api/infrastructure/CachePurgeQueue';
@@ -469,6 +472,23 @@ export const getEntranceSoundService = singleton(
 );
 export const getEntranceSoundPlayService = singleton(
 	() => new EntranceSoundPlayService(getEntranceSoundService(), getGatewayService(), getChannelRepository()),
+);
+const getGuildSoundboardRepository = singleton(() => new GuildSoundboardRepository());
+export const getGuildSoundboardService = singleton(
+	() =>
+		new GuildSoundboardService(
+			getGuildSoundboardRepository(),
+			getStorageService(),
+			getMediaService(),
+			getGatewayService(),
+			getGuildRepository(),
+			getUserCacheService(),
+			getLimitConfigService(),
+			getGuildAuditLogService(),
+		),
+);
+export const getGuildSoundboardPlayService = singleton(
+	() => new GuildSoundboardPlayService(getGuildSoundboardService(), getGatewayService(), getChannelRepository()),
 );
 export const getGatewayRequestService = singleton(() => new GatewayRequestService(getBotAuthService()));
 export const getGuildDiscoveryService = singleton(

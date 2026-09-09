@@ -105,6 +105,11 @@ const USE_VOICE_ACTIVITY_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
 	comment:
 		'Permission description in the role/permission editor for the Use Voice Activity permission. Explains the inverse: without it, the user must use push-to-talk in voice channels.',
 });
+const USE_SOUNDBOARD_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
+	message: 'Play sounds from this community’s soundboard while connected to a voice channel.',
+	comment:
+		'Permission description in the role/permission editor for the Use Soundboard permission. Covers triggering soundboard sounds in voice; it does not cover adding or managing the sounds themselves.',
+});
 const MOVE_MEMBERS_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
 	message: 'Drag members between voice channels they can access, and disconnect them from voice.',
 	comment:
@@ -476,6 +481,10 @@ const PRIORITY_SPEAKER_DESCRIPTOR = msg({
 	message: 'Priority speaker',
 	comment: 'Permission name: allows a voice participant to be heard over others.',
 });
+const USE_SOUNDBOARD_DESCRIPTOR = msg({
+	message: 'Use soundboard',
+	comment: 'Permission name: allows playing soundboard sounds in voice channels.',
+});
 const MUTE_MEMBERS_DESCRIPTOR = msg({
 	message: 'Mute members',
 	comment: 'Permission name: allows moderators to mute other voice participants.',
@@ -558,6 +567,7 @@ const PERMISSION_TITLE_DESCRIPTORS = new Map<bigint, MessageDescriptor>([
 	[Permissions.STREAM, STREAM_VIDEO_DESCRIPTOR],
 	[Permissions.USE_VAD, USE_VOICE_ACTIVITY_DESCRIPTOR],
 	[Permissions.PRIORITY_SPEAKER, PRIORITY_SPEAKER_DESCRIPTOR],
+	[Permissions.USE_SOUNDBOARD, USE_SOUNDBOARD_DESCRIPTOR],
 	[Permissions.MUTE_MEMBERS, MUTE_MEMBERS_DESCRIPTOR],
 	[Permissions.DEAFEN_MEMBERS, DEAFEN_MEMBERS_DESCRIPTOR],
 	[Permissions.MOVE_MEMBERS, MOVE_MEMBERS_DESCRIPTOR],
@@ -596,6 +606,7 @@ const PERMISSION_DESCRIPTION_DESCRIPTORS = new Map<bigint, MessageDescriptor>([
 	[Permissions.SPEAK, SPEAK_GUILD_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.STREAM, STREAM_VIDEO_GUILD_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.USE_VAD, USE_VOICE_ACTIVITY_PERMISSION_DESCRIPTION_DESCRIPTOR],
+	[Permissions.USE_SOUNDBOARD, USE_SOUNDBOARD_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.PRIORITY_SPEAKER, PRIORITY_SPEAKER_GUILD_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.MUTE_MEMBERS, MUTE_MEMBERS_GUILD_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.DEAFEN_MEMBERS, DEAFEN_MEMBERS_GUILD_PERMISSION_DESCRIPTION_DESCRIPTOR],

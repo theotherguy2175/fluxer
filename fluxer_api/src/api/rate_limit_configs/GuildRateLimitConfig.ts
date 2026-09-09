@@ -140,6 +140,18 @@ export const GuildRateLimitConfigs = {
 		bucket: 'guild:emoji:source::user_id',
 		config: {limit: 60, windowMs: ms('10 seconds')},
 	} as RouteRateLimitConfig,
+	GUILD_SOUNDBOARD_SOUNDS_LIST: {
+		bucket: 'guild:soundboard_sounds:list::guild_id',
+		config: {limit: 60, windowMs: ms('10 seconds')},
+	} as RouteRateLimitConfig,
+	GUILD_SOUNDBOARD_SOUND_CREATE: {
+		bucket: 'guild:soundboard_sound:create::guild_id',
+		config: {limit: 5, windowMs: ms('5 minutes')},
+	} as RouteRateLimitConfig,
+	GUILD_SOUNDBOARD_SOUND_MUTATE: {
+		bucket: 'guild:soundboard_sound:mutate::guild_id',
+		config: {limit: 20, windowMs: ms('1 minute')},
+	} as RouteRateLimitConfig,
 	GUILD_STICKERS_LIST: {
 		bucket: 'guild:sticker:list::guild_id',
 		config: {limit: 60, windowMs: ms('10 seconds')},

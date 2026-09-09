@@ -144,6 +144,18 @@ const STICKER_DELETED_DESCRIPTOR = msg({
 	message: 'Sticker deleted',
 	comment: 'Audit log entry label. A custom sticker was removed from the community.',
 });
+const SOUNDBOARD_SOUND_CREATED_DESCRIPTOR = msg({
+	message: 'Soundboard sound created',
+	comment: 'Audit log entry label. A soundboard sound was added to the community.',
+});
+const SOUNDBOARD_SOUND_UPDATED_DESCRIPTOR = msg({
+	message: 'Soundboard sound updated',
+	comment: 'Audit log entry label. A soundboard sound was renamed or edited.',
+});
+const SOUNDBOARD_SOUND_DELETED_DESCRIPTOR = msg({
+	message: 'Soundboard sound deleted',
+	comment: 'Audit log entry label. A soundboard sound was removed from the community.',
+});
 const MESSAGE_DELETED_DESCRIPTOR = msg({
 	message: 'Message deleted',
 	comment: 'Audit log entry label. A single message was deleted by a moderator.',
@@ -192,6 +204,10 @@ const STICKER_DESCRIPTOR = msg({
 	message: 'Sticker',
 	comment: 'Audit log target-type filter label. Filters entries that target a custom sticker.',
 });
+const SOUNDBOARD_SOUND_DESCRIPTOR = msg({
+	message: 'Soundboard sound',
+	comment: 'Audit log target-type filter label. Filters entries that target a soundboard sound.',
+});
 const INVITE_DESCRIPTOR = msg({
 	message: 'Invite',
 	context: 'invite-noun',
@@ -214,6 +230,7 @@ export const AUDIT_LOG_TARGET_TYPES = {
 	CHANNEL: 'channel',
 	EMOJI: 'emoji',
 	STICKER: 'sticker',
+	SOUNDBOARD_SOUND: 'soundboard_sound',
 	INVITE: 'invite',
 	WEBHOOK: 'webhook',
 	MESSAGE: 'message',
@@ -552,6 +569,21 @@ export const LEGACY_AUDIT_LOG_ACTIONS: ReadonlyArray<AuditLogActionDefinition> =
 		targetType: AUDIT_LOG_TARGET_TYPES.STICKER,
 	},
 	{
+		value: AuditLogActionType.SOUNDBOARD_SOUND_CREATE,
+		label: SOUNDBOARD_SOUND_CREATED_DESCRIPTOR,
+		targetType: AUDIT_LOG_TARGET_TYPES.SOUNDBOARD_SOUND,
+	},
+	{
+		value: AuditLogActionType.SOUNDBOARD_SOUND_UPDATE,
+		label: SOUNDBOARD_SOUND_UPDATED_DESCRIPTOR,
+		targetType: AUDIT_LOG_TARGET_TYPES.SOUNDBOARD_SOUND,
+	},
+	{
+		value: AuditLogActionType.SOUNDBOARD_SOUND_DELETE,
+		label: SOUNDBOARD_SOUND_DELETED_DESCRIPTOR,
+		targetType: AUDIT_LOG_TARGET_TYPES.SOUNDBOARD_SOUND,
+	},
+	{
 		value: AuditLogActionType.MESSAGE_DELETE,
 		label: MESSAGE_DELETED_DESCRIPTOR,
 		targetType: AUDIT_LOG_TARGET_TYPES.CHANNEL,
@@ -611,6 +643,7 @@ export const AUDIT_LOG_TARGET_LABELS: Record<AuditLogTargetType, MessageDescript
 	[AUDIT_LOG_TARGET_TYPES.CHANNEL]: CHANNEL_DESCRIPTOR,
 	[AUDIT_LOG_TARGET_TYPES.EMOJI]: EMOJI_DESCRIPTOR,
 	[AUDIT_LOG_TARGET_TYPES.STICKER]: STICKER_DESCRIPTOR,
+	[AUDIT_LOG_TARGET_TYPES.SOUNDBOARD_SOUND]: SOUNDBOARD_SOUND_DESCRIPTOR,
 	[AUDIT_LOG_TARGET_TYPES.INVITE]: INVITE_DESCRIPTOR,
 	[AUDIT_LOG_TARGET_TYPES.WEBHOOK]: WEBHOOK_DESCRIPTOR,
 	[AUDIT_LOG_TARGET_TYPES.MESSAGE]: MESSAGE_DESCRIPTOR,
