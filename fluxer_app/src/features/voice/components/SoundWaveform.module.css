@@ -1,0 +1,62 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+
+.container {
+	display: flex;
+	align-items: center;
+	gap: 0.875rem;
+	border-radius: 0.5rem;
+	background-color: var(--background-tertiary);
+	padding: 0.875rem 1rem;
+}
+
+.playButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 2rem;
+	width: 2rem;
+	flex: none;
+	border: none;
+	border-radius: 999rem;
+	background-color: var(--background-secondary);
+	color: var(--text-primary);
+	cursor: pointer;
+}
+
+.playButton:hover:not(:disabled) {
+	background-color: var(--background-modifier-hover);
+}
+
+.playButton:disabled {
+	opacity: 0.5;
+	cursor: default;
+}
+
+.bars {
+	display: flex;
+	align-items: center;
+	gap: 0.125rem;
+	flex: 1;
+	min-width: 0;
+	height: 3rem;
+}
+
+.bar {
+	flex: 1;
+	min-width: 0;
+	border-radius: 999rem;
+	background-color: var(--text-primary-muted);
+	opacity: 0.55;
+}
+
+.barProgressed {
+	background-color: var(--brand-primary);
+	opacity: 1;
+}
+
+.spinnerWrap {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+}

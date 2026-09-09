@@ -266,6 +266,9 @@ const targetTypeMap: Partial<Record<AuditLogActionType, AuditLogTargetType>> = {
 	[AuditLogActionType.STICKER_CREATE]: AuditLogTargetType.STICKER,
 	[AuditLogActionType.STICKER_UPDATE]: AuditLogTargetType.STICKER,
 	[AuditLogActionType.STICKER_DELETE]: AuditLogTargetType.STICKER,
+	[AuditLogActionType.SOUNDBOARD_SOUND_CREATE]: AuditLogTargetType.SOUNDBOARD_SOUND,
+	[AuditLogActionType.SOUNDBOARD_SOUND_UPDATE]: AuditLogTargetType.SOUNDBOARD_SOUND,
+	[AuditLogActionType.SOUNDBOARD_SOUND_DELETE]: AuditLogTargetType.SOUNDBOARD_SOUND,
 	[AuditLogActionType.MESSAGE_DELETE]: AuditLogTargetType.MESSAGE,
 	[AuditLogActionType.MESSAGE_BULK_DELETE]: AuditLogTargetType.MESSAGE,
 	[AuditLogActionType.MESSAGE_PIN]: AuditLogTargetType.MESSAGE,
@@ -305,6 +308,7 @@ const NotRenderedChangeKeys: Partial<Record<AuditLogTargetType, Record<string, t
 	},
 	[AuditLogTargetType.EMOJI]: {emoji_id: true, creator_id: true},
 	[AuditLogTargetType.STICKER]: {sticker_id: true, creator_id: true},
+	[AuditLogTargetType.SOUNDBOARD_SOUND]: {sound_id: true, emoji_id: true, creator_id: true},
 	[AuditLogTargetType.ROLE]: {role_id: true},
 };
 

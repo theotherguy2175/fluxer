@@ -32,6 +32,20 @@
 	cursor: grabbing;
 }
 
+.selectionBare {
+	background: transparent;
+	border-left: none;
+	border-right: none;
+}
+
+.scrim {
+	position: absolute;
+	top: 0;
+	bottom: 0;
+	background: color-mix(in srgb, var(--background-primary) 55%, transparent);
+	pointer-events: none;
+}
+
 .handle {
 	position: absolute;
 	top: -0.125rem;
@@ -59,6 +73,34 @@
 	background: var(--background-tertiary);
 	opacity: 0.85;
 	border-radius: 0.0625rem;
+}
+
+.handleThin {
+	width: 1rem;
+	background: transparent;
+	border-radius: 0;
+}
+
+.handleThin::before {
+	content: '';
+	position: absolute;
+	top: 0.125rem;
+	bottom: 0.125rem;
+	left: 50%;
+	width: 0.1875rem;
+	margin-left: -0.09375rem;
+	background: var(--white, #fff);
+	border-radius: 0.09375rem;
+	box-shadow: 0 0 0 0.0625rem color-mix(in srgb, var(--background-primary) 60%, transparent);
+}
+
+.handleThin::after {
+	width: 0.375rem;
+	height: 1.125rem;
+	background: var(--white, #fff);
+	opacity: 1;
+	border-radius: 0.1875rem;
+	box-shadow: 0 0.0625rem 0.25rem rgba(0, 0, 0, 0.4);
 }
 
 .handleStart {

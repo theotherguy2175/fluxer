@@ -44,6 +44,10 @@
 	box-shadow: 0 0.5rem 1rem rgb(0 0 0 / 0.14);
 }
 
+.contextMenu:has([data-soundboard-popover]) {
+	max-width: min(30rem, var(--context-menu-viewport-max-width));
+}
+
 .menuScroller {
 	--scroller-thumb-inline-end: 0px;
 	max-height: inherit;

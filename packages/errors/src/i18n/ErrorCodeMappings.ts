@@ -544,4 +544,13 @@ export const ErrorCodeToI18nKey = {
 	[ValidationErrorCodes.ENTRANCE_SOUND_NAME_LENGTH_INVALID]: 'entrance_sounds.name_length_invalid',
 	[ValidationErrorCodes.ENTRANCE_SOUND_NOT_FOUND]: 'entrance_sounds.not_found',
 	[ValidationErrorCodes.ENTRANCE_SOUND_INVALID_SCOPE]: 'entrance_sounds.invalid_scope',
+	[ValidationErrorCodes.SOUNDBOARD_SOUND_INVALID_FORMAT]: 'soundboard_sounds.invalid_format',
+	[ValidationErrorCodes.SOUNDBOARD_SOUND_DURATION_EXCEEDS_LIMIT]: 'soundboard_sounds.duration_exceeds_limit',
+	[ValidationErrorCodes.SOUNDBOARD_SOUND_SIZE_EXCEEDS_LIMIT]: 'soundboard_sounds.size_exceeds_limit',
+	[ValidationErrorCodes.SOUNDBOARD_SOUND_QUOTA_REACHED]: 'soundboard_sounds.quota_reached',
+	[ValidationErrorCodes.SOUNDBOARD_SOUND_NAME_LENGTH_INVALID]: 'soundboard_sounds.name_length_invalid',
+	[ValidationErrorCodes.SOUNDBOARD_SOUND_NOT_FOUND]: 'soundboard_sounds.not_found',
+	[ValidationErrorCodes.SOUNDBOARD_SOUND_INVALID_EMOJI]: 'soundboard_sounds.invalid_emoji',
+	[ValidationErrorCodes.SOUNDBOARD_SETTING_EXCEEDS_INSTANCE_LIMIT]: 'soundboard_sounds.setting_exceeds_instance_limit',
+	[ValidationErrorCodes.SOUNDBOARD_MAX_SOUNDS_BELOW_INSTALLED]: 'soundboard_sounds.max_sounds_below_installed',
 } as const satisfies Record<AllErrorCodes, ErrorI18nKey>;

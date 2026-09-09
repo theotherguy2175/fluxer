@@ -1,0 +1,232 @@
+/* SPDX-License-Identifier: AGPL-3.0-or-later */
+
+.container {
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+}
+
+.spinnerContainer {
+	display: flex;
+	justify-content: center;
+	padding: 2rem 0;
+}
+
+.limitsSection {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+	border-radius: 0.375rem;
+	border: 0.0625rem solid var(--background-header-secondary);
+	background-color: var(--background-secondary);
+	padding: 1rem;
+}
+
+.limitsHeader {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.limitsTitle {
+	margin: 0;
+	font-size: 0.75rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	color: var(--text-primary-muted);
+}
+
+.limitsHint {
+	margin: 0;
+	font-size: 0.8125rem;
+	color: var(--text-primary-muted);
+}
+
+.limitHint {
+	font-size: 0.75rem;
+	font-weight: 400;
+	color: var(--text-primary-muted);
+}
+
+.limitsGrid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0.75rem;
+}
+
+.limitsActions {
+	display: flex;
+	justify-content: flex-end;
+}
+
+@media (max-width: 30rem) {
+	.limitsGrid {
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+.notice {
+	border-radius: 0.375rem;
+	border: 0.0625rem solid var(--background-header-secondary);
+	background-color: var(--background-tertiary);
+	padding: 1.5rem;
+}
+
+.noticeText {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 0.5rem;
+	text-align: center;
+	color: var(--text-primary-muted);
+}
+
+.soundList {
+	display: flex;
+	flex-direction: column;
+	gap: 0.25rem;
+}
+
+.headerRow,
+.soundRow {
+	display: grid;
+	grid-template-columns: 2.5rem minmax(0, 1fr) minmax(0, 1fr) 3rem 4rem;
+	align-items: center;
+	gap: 0.75rem;
+	padding: 0.5rem 0.75rem;
+}
+
+.headerRow {
+	font-size: 0.6875rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	color: var(--text-primary-muted);
+}
+
+.soundRow {
+	border-radius: 0.375rem;
+	background-color: var(--background-secondary);
+}
+
+.emojiCell {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 2rem;
+	width: 2rem;
+	flex: none;
+}
+
+.emojiFallbackIcon {
+	color: var(--text-primary-muted);
+}
+
+.soundName {
+	display: flex;
+	align-items: center;
+	gap: 0.375rem;
+	min-width: 0;
+	font-weight: 500;
+	font-size: 0.875rem;
+}
+
+.soundNameText {
+	min-width: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.namePreviewButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 1.5rem;
+	width: 1.5rem;
+	flex: none;
+	padding: 0;
+	border: none;
+	border-radius: 0.25rem;
+	background-color: transparent;
+	color: var(--text-primary-muted);
+	cursor: pointer;
+	transition:
+		color 0.1s ease,
+		background-color 0.1s ease;
+}
+
+.namePreviewButton:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-primary);
+}
+
+.soundUser {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-width: 0;
+}
+
+.userAvatar {
+	height: 1.25rem;
+	width: 1.25rem;
+	flex: none;
+	border-radius: 999rem;
+}
+
+.userName {
+	min-width: 0;
+	font-size: 0.8125rem;
+	color: var(--text-primary-muted);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.soundDuration {
+	flex: none;
+	text-align: right;
+	color: var(--text-primary-muted);
+	font-size: 0.75rem;
+	font-variant-numeric: tabular-nums;
+}
+
+.colEmoji,
+.colName,
+.colUser,
+.colDuration {
+	min-width: 0;
+}
+
+.colActions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	min-width: 0;
+}
+
+.rowButton {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 2rem;
+	width: 2rem;
+	flex: none;
+	border: none;
+	border-radius: 0.375rem;
+	background-color: transparent;
+	color: var(--text-primary-muted);
+	cursor: pointer;
+}
+
+.rowButton:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-primary);
+}
+
+.rowButtonDanger:hover {
+	background-color: color-mix(in srgb, var(--status-danger) 14%, transparent);
+	color: var(--status-danger);
+}

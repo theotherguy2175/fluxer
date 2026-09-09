@@ -62,7 +62,8 @@ core_event_map() ->
         <<"SAVED_MESSAGE_CREATE">> => saved_message_create,
         <<"SAVED_MESSAGE_DELETE">> => saved_message_delete,
         <<"SESSIONS_REPLACE">> => sessions_replace,
-        <<"TYPING_START">> => typing_start
+        <<"TYPING_START">> => typing_start,
+        <<"SOUNDBOARD_SOUND_PLAY">> => soundboard_sound_play
     }.
 
 -spec channel_event_map() -> #{binary() => atom()}.
@@ -96,7 +97,8 @@ guild_event_map() ->
         <<"GUILD_ROLE_UPDATE">> => guild_role_update,
         <<"GUILD_ROLE_UPDATE_BULK">> => guild_role_update_bulk,
         <<"GUILD_STICKERS_UPDATE">> => guild_stickers_update,
-        <<"GUILD_UPDATE">> => guild_update
+        <<"GUILD_UPDATE">> => guild_update,
+        <<"SOUNDBOARD_SOUNDS_UPDATE">> => soundboard_sounds_update
     }.
 
 -spec message_event_map() -> #{binary() => atom()}.

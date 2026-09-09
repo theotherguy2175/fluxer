@@ -3,10 +3,9 @@
 import {execFile} from 'node:child_process';
 import fs from 'node:fs/promises';
 import {promisify} from 'node:util';
-import type {EntranceSoundExtension} from '@fluxer/constants/src/EntranceSoundConstants';
 import {temporaryFile} from 'tempy';
-import {Logger} from '../../Logger';
-import {isJsonRecord, parseJsonWithGuard} from '../../utils/JsonBoundaryUtils';
+import {Logger} from '../Logger';
+import {isJsonRecord, parseJsonWithGuard} from './JsonBoundaryUtils';
 
 const execFilePromise = promisify(execFile);
 const FFPROBE_TIMEOUT_MS = 5_000;
@@ -52,20 +51,18 @@ function isFfprobeOutput(value: unknown): value is FfprobeOutput {
 	);
 }
 
-export async function resolveEntranceSoundDurationMs(params: {
+export async function resolveAudioDurationMs(params: {
 	bytes: Buffer;
-	extension: EntranceSoundExtension;
+	extension: string;
 	metadataDurationSeconds: number | null;
 }): Promise<number | null> {
-	const preciseDurationSeconds = await probeEntranceSoundDurationSeconds(params.bytes, params.extension).catch(
-		(error) => {
-			Logger.warn(
-				{error, extension: params.extension, sizeBytes: params.bytes.length},
-				'Failed to probe precise entrance sound duration; falling back to media metadata duration',
-			);
-			return null;
-		},
-	);
+	const preciseDurationSeconds = await probeAudioDurationSeconds(params.bytes, params.extension).catch((error) => {
+		Logger.warn(
+			{error, extension: params.extension, sizeBytes: params.bytes.length},
+			'Failed to probe precise audio duration; falling back to media metadata duration',
+		);
+		return null;
+	});
 	const durationSeconds = preciseDurationSeconds ?? normalizeDurationSeconds(params.metadataDurationSeconds);
 	if (durationSeconds == null) {
 		return null;
@@ -73,10 +70,7 @@ export async function resolveEntranceSoundDurationMs(params: {
 	return Math.round(durationSeconds * 1000);
 }
 
-async function probeEntranceSoundDurationSeconds(
-	bytes: Buffer,
-	extension: EntranceSoundExtension,
-): Promise<number | null> {
+async function probeAudioDurationSeconds(bytes: Buffer, extension: string): Promise<number | null> {
 	const inputPath = temporaryFile({extension});
 	try {
 		await fs.writeFile(inputPath, bytes);

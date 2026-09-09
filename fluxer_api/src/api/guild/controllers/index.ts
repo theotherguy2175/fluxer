@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import type {HonoApp} from '../../types/HonoEnv';
+import {GuildSoundboardController} from '../soundboard/GuildSoundboardController';
+import {GuildSoundboardPlayController} from '../soundboard/GuildSoundboardPlayController';
 import {GuildAuditLogController} from './GuildAuditLogController';
 import {GuildBaseController} from './GuildBaseController';
 import {GuildChannelController} from './GuildChannelController';
@@ -19,6 +21,8 @@ export function registerGuildControllers(app: HonoApp) {
 	GuildChannelController(app);
 	GuildEmojiController(app);
 	GuildStickerController(app);
+	GuildSoundboardController(app);
+	GuildSoundboardPlayController(app);
 	GuildAuditLogController(app);
 	GuildDiscoveryController(app);
 }

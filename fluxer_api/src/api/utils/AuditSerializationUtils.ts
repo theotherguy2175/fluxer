@@ -3,6 +3,7 @@
 import type {Channel} from '../models/Channel';
 import type {Guild} from '../models/Guild';
 import type {GuildEmoji} from '../models/GuildEmoji';
+import type {GuildSoundboardSound} from '../models/GuildSoundboardSound';
 import type {GuildSticker} from '../models/GuildSticker';
 import {toIdString, toSortedIdArray} from './IdUtils';
 
@@ -79,5 +80,16 @@ export function serializeStickerForAudit(sticker: GuildSticker): Record<string, 
 		description: sticker.description,
 		animated: sticker.animated,
 		creator_id: sticker.creatorId.toString(),
+	};
+}
+
+export function serializeSoundboardSoundForAudit(sound: GuildSoundboardSound): Record<string, unknown> {
+	return {
+		sound_id: sound.soundId.toString(),
+		name: sound.name,
+		emoji_id: sound.emojiId ? sound.emojiId.toString() : null,
+		emoji_name: sound.emojiName,
+		volume: sound.volume,
+		creator_id: sound.creatorId.toString(),
 	};
 }

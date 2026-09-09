@@ -33,6 +33,7 @@ import {handleGuildStickersUpdate} from '@app/features/guild/events/GuildSticker
 import {handleGuildSync} from '@app/features/guild/events/GuildSync';
 import {handleGuildUpdate} from '@app/features/guild/events/GuildUpdate';
 import {handlePassiveUpdates} from '@app/features/guild/events/PassiveUpdates';
+import {handleSoundboardSoundsUpdate} from '@app/features/guild/events/SoundboardSoundsUpdate';
 import {handleInviteCreate} from '@app/features/invite/events/InviteCreate';
 import {handleInviteDelete} from '@app/features/invite/events/InviteDelete';
 import {handleMessageAck} from '@app/features/messaging/events/MessageAck';
@@ -66,6 +67,7 @@ import {handleCallCreate} from '@app/features/voice/events/CallCreate';
 import {handleCallDelete} from '@app/features/voice/events/CallDelete';
 import {handleCallUpdate} from '@app/features/voice/events/CallUpdate';
 import {handleEntranceSoundPlay} from '@app/features/voice/events/EntranceSoundPlay';
+import {handleSoundboardSoundPlay} from '@app/features/voice/events/SoundboardSoundPlay';
 import {handleVoiceServerUpdate} from '@app/features/voice/events/VoiceServerUpdate';
 import {handleVoiceStateAck} from '@app/features/voice/events/VoiceStateAck';
 import {handleVoiceStateUpdate} from '@app/features/voice/events/VoiceStateUpdate';
@@ -106,6 +108,7 @@ export function createHandlerRegistry(): GatewayHandlerRegistry {
 	registry.set('GUILD_BAN_REMOVE', handleGuildBanRemove as GatewayEventHandler);
 	registry.set('GUILD_EMOJIS_UPDATE', handleGuildEmojisUpdate as GatewayEventHandler);
 	registry.set('GUILD_STICKERS_UPDATE', handleGuildStickersUpdate as GatewayEventHandler);
+	registry.set('SOUNDBOARD_SOUNDS_UPDATE', handleSoundboardSoundsUpdate as GatewayEventHandler);
 	registry.set('GUILD_SYNC', handleGuildSync as GatewayEventHandler);
 	registry.set('GUILD_MEMBER_ADD', handleGuildMemberAdd as GatewayEventHandler);
 	registry.set('GUILD_MEMBER_UPDATE', handleGuildMemberUpdate as GatewayEventHandler);
@@ -150,6 +153,7 @@ export function createHandlerRegistry(): GatewayHandlerRegistry {
 	registry.set('CALL_UPDATE', handleCallUpdate as GatewayEventHandler);
 	registry.set('CALL_DELETE', handleCallDelete as GatewayEventHandler);
 	registry.set('ENTRANCE_SOUND_PLAY', handleEntranceSoundPlay as GatewayEventHandler);
+	registry.set('SOUNDBOARD_SOUND_PLAY', handleSoundboardSoundPlay as GatewayEventHandler);
 	registry.set('INVITE_CREATE', handleInviteCreate as GatewayEventHandler);
 	registry.set('INVITE_DELETE', handleInviteDelete as GatewayEventHandler);
 	registry.set('RELATIONSHIP_ADD', handleRelationshipAdd as GatewayEventHandler);

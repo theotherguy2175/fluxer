@@ -22,7 +22,7 @@ import type {IMediaService} from '../../infrastructure/IMediaService';
 import type {IStorageService} from '../../infrastructure/IStorageService';
 import {Logger} from '../../Logger';
 import {EntranceSound, EntranceSoundSelection} from '../../models/EntranceSound';
-import {resolveEntranceSoundDurationMs} from './EntranceSoundDurationProbe';
+import {resolveAudioDurationMs} from '../../utils/AudioDurationProbe';
 import type {EntranceSoundRepository} from './EntranceSoundRepository';
 
 interface UploadEntranceSoundParams {
@@ -129,7 +129,7 @@ export class EntranceSoundService {
 			});
 		}
 		const metadataDurationSeconds = typeof metadata.duration === 'number' ? metadata.duration : null;
-		const durationMs = await resolveEntranceSoundDurationMs({
+		const durationMs = await resolveAudioDurationMs({
 			bytes,
 			extension,
 			metadataDurationSeconds,

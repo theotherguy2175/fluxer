@@ -66,6 +66,7 @@ import {
 	PlugIcon,
 	PlusIcon,
 	SmileyIcon,
+	SpeakerHighIcon,
 	StampIcon,
 	TagIcon,
 	UserGearIcon,
@@ -164,6 +165,9 @@ const actionIconMap: Partial<Record<AuditLogActionType, IconComponent>> = {
 	[AuditLogActionType.STICKER_CREATE]: StampIcon,
 	[AuditLogActionType.STICKER_UPDATE]: StampIcon,
 	[AuditLogActionType.STICKER_DELETE]: StampIcon,
+	[AuditLogActionType.SOUNDBOARD_SOUND_CREATE]: SpeakerHighIcon,
+	[AuditLogActionType.SOUNDBOARD_SOUND_UPDATE]: SpeakerHighIcon,
+	[AuditLogActionType.SOUNDBOARD_SOUND_DELETE]: SpeakerHighIcon,
 	[AuditLogActionType.MESSAGE_DELETE]: PencilSimpleIcon,
 	[AuditLogActionType.MESSAGE_BULK_DELETE]: PencilSimpleIcon,
 	[AuditLogActionType.MESSAGE_PIN]: PencilSimpleIcon,
@@ -180,6 +184,7 @@ const targetIconMap: Record<AuditLogTargetType, IconComponent> = {
 	[AUDIT_LOG_TARGET_TYPES.WEBHOOK]: PlugIcon,
 	[AUDIT_LOG_TARGET_TYPES.EMOJI]: SmileyIcon,
 	[AUDIT_LOG_TARGET_TYPES.STICKER]: StampIcon,
+	[AUDIT_LOG_TARGET_TYPES.SOUNDBOARD_SOUND]: SpeakerHighIcon,
 	[AUDIT_LOG_TARGET_TYPES.MESSAGE]: PencilSimpleIcon,
 };
 const getActionIcon = (actionType: AuditLogActionType): IconComponent => {

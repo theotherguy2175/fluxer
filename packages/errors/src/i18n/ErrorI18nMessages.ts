@@ -574,6 +574,17 @@ export const ERROR_I18N_MESSAGES = {
 	'entrance_sounds.name_length_invalid': 'Entrance sound names must be between 1 and {max, number} characters.',
 	'entrance_sounds.not_found': 'Entrance sound not found.',
 	'entrance_sounds.invalid_scope': 'Invalid entrance sound scope.',
+	'soundboard_sounds.invalid_format': 'Soundboard sounds must be MP3, OGG, M4A, or WAV audio.',
+	'soundboard_sounds.duration_exceeds_limit': 'Soundboard sounds can be at most {max_ms, number}ms long.',
+	'soundboard_sounds.size_exceeds_limit': 'Soundboard sounds can be at most {max_bytes, number} bytes.',
+	'soundboard_sounds.quota_reached': 'This server has reached the limit of {max, number} soundboard sounds.',
+	'soundboard_sounds.name_length_invalid': 'Soundboard sound names must be between 1 and {max, number} characters.',
+	'soundboard_sounds.not_found': 'Soundboard sound not found.',
+	'soundboard_sounds.invalid_emoji': 'Choose a custom emoji from this community or a single standard emoji.',
+	'soundboard_sounds.setting_exceeds_instance_limit':
+		'This instance limits this to {max}. Ask an instance admin to raise the limit.',
+	'soundboard_sounds.max_sounds_below_installed':
+		'This community already has {installed} sounds. Delete some before lowering the limit to {max}.',
 } as const;
 
 export type ErrorI18nCatalog = typeof ERROR_I18N_MESSAGES;

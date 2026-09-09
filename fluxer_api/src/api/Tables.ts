@@ -171,6 +171,8 @@ import {
 	GUILD_MEMBER_COLUMNS,
 	GUILD_MEMBERSHIP_METADATA_COLUMNS,
 	GUILD_ROLE_COLUMNS,
+	GUILD_SOUNDBOARD_SETTINGS_COLUMNS,
+	GUILD_SOUNDBOARD_SOUND_COLUMNS,
 	GUILD_STICKER_BY_STICKER_ID_COLUMNS,
 	GUILD_STICKER_COLUMNS,
 	type GuildAuditLogRow,
@@ -183,6 +185,8 @@ import {
 	type GuildMembershipMetadataRow,
 	type GuildRoleRow,
 	type GuildRow,
+	type GuildSoundboardSettingsRow,
+	type GuildSoundboardSoundRow,
 	type GuildStickerRow,
 } from './database/types/GuildTypes';
 import {INSTANCE_CONFIGURATION_COLUMNS, type InstanceConfigurationRow} from './database/types/InstanceConfigTypes';
@@ -542,6 +546,16 @@ export const GuildStickersByStickerId = defineTable<GuildStickerRow, 'sticker_id
 	name: 'guild_stickers_by_sticker_id',
 	columns: GUILD_STICKER_BY_STICKER_ID_COLUMNS,
 	primaryKey: ['sticker_id'],
+});
+export const GuildSoundboardSounds = defineTable<GuildSoundboardSoundRow, 'guild_id' | 'sound_id'>({
+	name: 'guild_soundboard_sounds',
+	columns: GUILD_SOUNDBOARD_SOUND_COLUMNS,
+	primaryKey: ['guild_id', 'sound_id'],
+});
+export const GuildSoundboardSettings = defineTable<GuildSoundboardSettingsRow, 'guild_id'>({
+	name: 'guild_soundboard_settings',
+	columns: GUILD_SOUNDBOARD_SETTINGS_COLUMNS,
+	primaryKey: ['guild_id'],
 });
 export const GuildRoles = defineTable<GuildRoleRow, 'guild_id' | 'role_id'>({
 	name: 'guild_roles',

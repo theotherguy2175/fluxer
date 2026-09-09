@@ -3,6 +3,7 @@
 import Accessibility from '@app/features/accessibility/state/Accessibility';
 import {LongPressable} from '@app/features/app/components/LongPressable';
 import Channels from '@app/features/channel/state/Channels';
+import {SoundboardEmoji} from '@app/features/expressions/components/SoundboardEmoji';
 import {WATCH_STREAM_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {isKeyboardActivationKey} from '@app/features/input/utils/KeyboardUtils';
 import Permission from '@app/features/permissions/state/Permission';
@@ -129,6 +130,7 @@ import {
 	getScreenShareWatchFailureForPublicationOperation,
 	ScreenShareWatchFailures,
 } from '@app/features/voice/state/ScreenShareWatchFailures';
+import SoundboardActivity from '@app/features/voice/state/SoundboardActivity';
 import StreamAudioPrefs from '@app/features/voice/state/StreamAudioPrefs';
 import VoiceCallLayout from '@app/features/voice/state/VoiceCallLayout';
 import VoiceSettings from '@app/features/voice/state/VoiceSettings';
@@ -850,6 +852,7 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 	const hasVisibleMediaTile =
 		!isFocusedPlaceholderTile && isTrackReference(trackRef) && hasVideo && !shouldHideOwnScreenShareVideo;
 	const isAvatarOnlyTile = !hasVisibleMediaTile && !isScreenShare;
+	const soundboardActivity = !isScreenShare && !isFocusedPlaceholderTile ? SoundboardActivity.getForUser(userId) : null;
 	const shouldShowTileSpeakingIndicator =
 		!isFocusedPlaceholderTile && isActuallySpeaking && !isScreenShare && !isAvatarOnlyTile;
 	const isActiveLocalScreenShareConnection =
@@ -1015,6 +1018,25 @@ const VoiceParticipantTileInner = observer(function VoiceParticipantTileInner({
 					tabIndex={isInsideTilePopout ? undefined : 0}
 				>
 					{mediaNode}
+					{soundboardActivity && (
+						<div
+							className={styles.soundboardActivityOverlay}
+							data-flx="voice.voice-participant-tile.voice-participant-tile-inner.soundboard-activity-overlay"
+						>
+							<div
+								key={soundboardActivity.nonce}
+								className={styles.soundboardActivityBadge}
+								data-flx="voice.voice-participant-tile.voice-participant-tile-inner.soundboard-activity-badge"
+							>
+								<SoundboardEmoji
+									emojiId={soundboardActivity.emojiId}
+									emojiName={soundboardActivity.emojiName}
+									emojiAnimated={soundboardActivity.emojiAnimated}
+									size={40}
+								/>
+							</div>
+						</div>
+					)}
 					{isScreenShareBuffering &&
 						!isFocusedPlaceholderTile &&
 						screenShareBufferingPresentation === 'last-frame' &&
