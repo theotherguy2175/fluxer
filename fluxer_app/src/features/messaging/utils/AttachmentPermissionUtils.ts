@@ -10,3 +10,7 @@ export function canAttachFilesInChannel(channel: Channel): boolean {
 		!DeveloperOptions.forceNoAttachFiles && (channel.isPrivate() || Permission.can(Permissions.ATTACH_FILES, channel))
 	);
 }
+
+export function canSendPollsInChannel(channel: Channel): boolean {
+	return channel.isPrivate() || Permission.can(Permissions.SEND_POLLS, channel);
+}

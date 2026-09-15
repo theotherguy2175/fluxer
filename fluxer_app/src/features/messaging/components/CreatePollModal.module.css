@@ -1,0 +1,133 @@
+.layout {
+	display: flex;
+	flex-direction: column;
+	gap: 1.25rem;
+}
+
+.section {
+	display: flex;
+	flex-direction: column;
+	gap: 0.5rem;
+}
+
+.sectionLabel {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	font-size: 0.75rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.02em;
+	color: var(--text-primary-muted);
+}
+
+.counter {
+	font-weight: 500;
+	text-transform: none;
+	letter-spacing: 0;
+	font-variant-numeric: tabular-nums;
+}
+
+.counterOver {
+	color: var(--status-danger);
+}
+
+.required {
+	color: var(--status-danger);
+}
+
+.answerRow {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+}
+
+.answerInput {
+	flex: 1;
+	min-width: 0;
+}
+
+.emojiButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 2.5rem;
+	height: 2.5rem;
+	border-radius: 0.5rem;
+	border: 1px solid var(--background-modifier-accent);
+	background: var(--background-secondary-alt);
+	color: var(--text-primary-muted);
+	cursor: pointer;
+}
+
+.emojiButton:hover {
+	border-color: var(--interactive-muted);
+	color: var(--text-primary);
+}
+
+.iconButton {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: 0 0 auto;
+	width: 2.5rem;
+	height: 2.5rem;
+	border-radius: 0.5rem;
+	border: 0;
+	background: transparent;
+	color: var(--text-primary-muted);
+	cursor: pointer;
+}
+
+.iconButton:hover:not(:disabled) {
+	background: var(--background-modifier-hover);
+	color: var(--text-primary);
+}
+
+.iconButton:disabled {
+	opacity: 0.4;
+	cursor: default;
+}
+
+.addAnswer {
+	align-self: flex-start;
+}
+
+.durations {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.5rem;
+}
+
+.durationPill {
+	padding: 0.375rem 0.75rem;
+	border-radius: 999px;
+	border: 1px solid var(--background-modifier-accent);
+	background: var(--background-secondary-alt);
+	color: var(--text-primary);
+	font-size: 0.8125rem;
+	cursor: pointer;
+}
+
+.durationPill:hover {
+	border-color: var(--interactive-muted);
+}
+
+.durationPillActive {
+	border-color: var(--brand-primary);
+	background: var(--brand-primary);
+	color: #fff;
+}
+
+.customDuration {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	max-width: 16rem;
+}
+
+.error {
+	font-size: 0.8125rem;
+	color: var(--status-danger);
+}

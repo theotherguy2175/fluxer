@@ -13,7 +13,7 @@ import {MenuItemSubmenu} from '@app/features/ui/action_menu/MenuItemSubmenu';
 import {KeybindHint} from '@app/features/ui/keybind_hint/KeybindHint';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
-import {GiftIcon, MicrophoneIcon, PaperclipIcon, UploadSimpleIcon} from '@phosphor-icons/react';
+import {ChartBarIcon, GiftIcon, MicrophoneIcon, PaperclipIcon, UploadSimpleIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 
 const YOU_DO_NOT_HAVE_PERMISSION_TO_UPLOAD_FILES_DESCRIPTOR = msg({
@@ -31,6 +31,15 @@ const UPLOAD_YOUR_MESSAGE_AS_A_FILE_DESCRIPTOR = msg({
 const SEND_GIFT_DESCRIPTOR = msg({
 	message: 'Send gift',
 	comment: 'Plus menu item that opens the gift purchase flow.',
+});
+const CREATE_POLL_DESCRIPTOR = msg({
+	message: 'Create poll',
+	comment: 'Short label in the channel and chat textarea plus menu. Opens the poll composer. Keep it concise.',
+});
+const YOU_DO_NOT_HAVE_PERMISSION_TO_SEND_POLLS_DESCRIPTOR = msg({
+	message: "You can't create polls in this channel.",
+	comment:
+		'Hint on the disabled Create poll entry of the textarea plus menu when the member lacks the Send Polls permission.',
 });
 const SEND_VOICE_MESSAGE_DESCRIPTOR = msg({
 	message: 'Send voice message',
@@ -70,6 +79,8 @@ interface TextareaPlusMenuProps {
 	textareaValue?: string;
 	onUploadAsFile?: () => void;
 	onSendVoiceMessage?: () => void;
+	onCreatePoll?: () => void;
+	canSendPolls?: boolean;
 }
 
 export const TextareaPlusMenu = observer(
@@ -80,6 +91,8 @@ export const TextareaPlusMenu = observer(
 		textareaValue,
 		onUploadAsFile,
 		onSendVoiceMessage,
+		onCreatePoll,
+		canSendPolls = true,
 	}: TextareaPlusMenuProps) => {
 		const {i18n} = useLingui();
 		const showGifButton = Accessibility.showGifButton;
@@ -102,6 +115,11 @@ export const TextareaPlusMenu = observer(
 			? cannotSendMessagesHint
 			: !canAttachFiles
 				? cannotUploadFilesHint
+				: undefined;
+		const createPollHint = !canSendMessages
+			? cannotSendMessagesHint
+			: !canSendPolls
+				? i18n._(YOU_DO_NOT_HAVE_PERMISSION_TO_SEND_POLLS_DESCRIPTOR)
 				: undefined;
 		const sendVoiceMessageKeybind = Keybind.getByAction('chat_send_voice_message').combo;
 		const sendVoiceMessageKeybindHint =
@@ -153,6 +171,17 @@ export const TextareaPlusMenu = observer(
 						data-flx="channel.textarea.textarea-plus-menu.menu-item.send-voice-message"
 					>
 						{i18n._(SEND_VOICE_MESSAGE_DESCRIPTOR)}
+					</MenuItem>
+				)}
+				{onCreatePoll && (
+					<MenuItem
+						icon={<ChartBarIcon weight="bold" data-flx="channel.textarea.textarea-plus-menu.chart-bar-icon" />}
+						onClick={onCreatePoll}
+						disabled={createPollHint != null}
+						hint={createPollHint}
+						data-flx="channel.textarea.textarea-plus-menu.menu-item.create-poll"
+					>
+						{i18n._(CREATE_POLL_DESCRIPTOR)}
 					</MenuItem>
 				)}
 				<MenuItemSubmenu

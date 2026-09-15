@@ -9,6 +9,7 @@ import {GiftEmbed} from '@app/features/channel/components/GiftEmbed';
 import {InviteEmbed} from '@app/features/channel/components/InviteEmbed';
 import {getAttachmentRenderingState} from '@app/features/channel/components/MessageAttachmentStateUtils';
 import styles from '@app/features/channel/components/MessageAttachments.module.css';
+import {MessagePoll} from '@app/features/channel/components/MessagePoll';
 import {MessageReactions} from '@app/features/channel/components/MessageReactions';
 import {useMessageViewContext} from '@app/features/channel/components/MessageViewContext';
 import {ThemeEmbed} from '@app/features/channel/components/ThemeEmbed';
@@ -763,6 +764,14 @@ export const MessageAttachments = observer(() => {
 	}, [message.content]);
 	return (
 		<>
+			{message.poll && (
+				<MessagePoll
+					message={message}
+					channel={channel}
+					isPreview={isPreview}
+					data-flx="channel.message-attachments.message-poll"
+				/>
+			)}
 			{message.messageSnapshots && message.messageSnapshots.length > 0 && (
 				<ForwardedMessageContent
 					message={message}

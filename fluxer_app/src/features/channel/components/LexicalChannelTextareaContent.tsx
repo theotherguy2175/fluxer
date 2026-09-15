@@ -66,9 +66,11 @@ import type {SlashSlotResolvers} from '@app/features/lexical/composer/slashSlotV
 import {useLexicalAutocomplete} from '@app/features/lexical/composer/useLexicalAutocomplete';
 import * as DraftCommands from '@app/features/messaging/commands/DraftCommands';
 import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
+import {isPollFeatureEnabled} from '@app/features/messaging/commands/PollCommands';
 import {showAttachmentPermissionDeniedModal} from '@app/features/messaging/components/alerts/AttachmentPermissionDeniedModal';
 import {FileSizeTooLargeModal} from '@app/features/messaging/components/alerts/FileSizeTooLargeModal';
 import {TooManyAttachmentsModal} from '@app/features/messaging/components/alerts/TooManyAttachmentsModal';
+import {openCreatePollModal} from '@app/features/messaging/components/CreatePollModal';
 import {useTextareaAttachments} from '@app/features/messaging/hooks/useCloudUpload';
 import {useMarkdownKeybinds} from '@app/features/messaging/hooks/useMarkdownKeybinds';
 import {type SendMessageFunction, useMessageSubmission} from '@app/features/messaging/hooks/useMessageSubmission';
@@ -91,7 +93,7 @@ import MessageKeyboardFocusRollout from '@app/features/messaging/state/MessageKe
 import MessageReply from '@app/features/messaging/state/MessageReply';
 import Messages from '@app/features/messaging/state/MessagingMessages';
 import {CloudUpload} from '@app/features/messaging/upload/CloudUpload';
-import {canAttachFilesInChannel} from '@app/features/messaging/utils/AttachmentPermissionUtils';
+import {canAttachFilesInChannel, canSendPollsInChannel} from '@app/features/messaging/utils/AttachmentPermissionUtils';
 import {openFilePicker} from '@app/features/messaging/utils/FilePickerUtils';
 import * as FileUploadUtils from '@app/features/messaging/utils/FileUploadUtils';
 import {
@@ -1106,6 +1108,17 @@ export const LexicalChannelTextareaContent = observer(
 							canSendMessages={!textareaInputDisabled}
 							textareaValue={value}
 							onUploadAsFile={handleUploadMessageAsFile}
+							onCreatePoll={
+								isPollFeatureEnabled(channel.guildId)
+									? () => {
+											ContextMenuCommands.close();
+											if (!textareaInputDisabled) {
+												void openCreatePollModal(channel.id, channel.guildId);
+											}
+										}
+									: undefined
+							}
+							canSendPolls={canSendPollsInChannel(channel)}
 							onSendVoiceMessage={
 								mobileLayout.enabled
 									? undefined
