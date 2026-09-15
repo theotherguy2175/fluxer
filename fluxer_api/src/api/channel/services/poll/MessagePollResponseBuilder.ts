@@ -39,13 +39,29 @@ export async function buildPollResponse(poll: MessagePoll, viewerUserId: UserID 
  * about polls; this is the single enrichment point for lists, single
  * fetches and gateway broadcasts.
  */
-export async function attachPollsToResponses<T extends {id: string; flags?: number | null; poll?: PollResponse | null}>(
+interface PollBearingResponse {
+	id: string;
+	flags?: number | null;
+	poll?: PollResponse | null;
+	referenced_message?: PollBearingResponse | null;
+}
+
+export async function attachPollsToResponses<T extends PollBearingResponse>(
 	responses: Array<T>,
 	viewerUserId: UserID | null,
 ): Promise<Array<T>> {
-	const withPoll = responses.filter((response) => ((response.flags ?? 0) & MessageFlags.HAS_POLL) !== 0);
+	// Replies and POLL_RESULT messages carry the poll message nested as
+	// referenced_message; the result renderer reads its poll, so enrich those too.
+	const targets: Array<PollBearingResponse> = [];
+	for (const response of responses) {
+		targets.push(response);
+		if (response.referenced_message) targets.push(response.referenced_message);
+	}
+	const withPoll = targets.filter((response) => ((response.flags ?? 0) & MessageFlags.HAS_POLL) !== 0);
 	if (withPoll.length === 0) return responses;
-	const polls = await repository.getPolls(withPoll.map((response) => createMessageID(BigInt(response.id))));
+	const polls = await repository.getPolls(
+		[...new Set(withPoll.map((response) => response.id))].map((id) => createMessageID(BigInt(id))),
+	);
 	await Promise.all(
 		withPoll.map(async (response) => {
 			const poll = polls.get(response.id);

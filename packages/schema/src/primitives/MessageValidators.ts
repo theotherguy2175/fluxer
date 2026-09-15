@@ -24,6 +24,7 @@ export const MessageTypeSchema = createInt32EnumType(
 		[MessageTypes.CHANNEL_PINNED_MESSAGE, 'CHANNEL_PINNED_MESSAGE', 'A system message indicating a message was pinned'],
 		[MessageTypes.USER_JOIN, 'USER_JOIN', 'A system message indicating a user joined'],
 		[MessageTypes.REPLY, 'REPLY', 'A reply message'],
+		[MessageTypes.POLL_RESULT, 'POLL_RESULT', 'A system message announcing the result of a poll that ended'],
 	],
 	'The type of message',
 	'MessageType',
