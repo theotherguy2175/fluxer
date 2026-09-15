@@ -132,10 +132,4 @@ export const ChannelRateLimitConfigs = {
 		bucket: 'voice:entrance_sound:play::user_id::channel_id',
 		config: {limit: 3, windowMs: ms('30 seconds')},
 	} as RouteRateLimitConfig,
-	VOICE_SOUNDBOARD_SOUND_PLAY: {
-		bucket: 'voice:soundboard_sound:play::user_id::channel_id',
-		// Spamming the board is the point of a soundboard. 6/s is beyond what a
-		// human can click; the limit only exists to stop scripted floods.
-		config: {limit: 60, windowMs: ms('10 seconds')},
-	} as RouteRateLimitConfig,
 } as const;

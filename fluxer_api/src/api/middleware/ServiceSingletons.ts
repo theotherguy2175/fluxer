@@ -488,7 +488,14 @@ export const getGuildSoundboardService = singleton(
 		),
 );
 export const getGuildSoundboardPlayService = singleton(
-	() => new GuildSoundboardPlayService(getGuildSoundboardService(), getGatewayService(), getChannelRepository()),
+	() =>
+		new GuildSoundboardPlayService(
+			getGuildSoundboardService(),
+			getGatewayService(),
+			getChannelRepository(),
+			getLimitConfigService(),
+			getRateLimitService(),
+		),
 );
 export const getGatewayRequestService = singleton(() => new GatewayRequestService(getBotAuthService()));
 export const getGuildDiscoveryService = singleton(

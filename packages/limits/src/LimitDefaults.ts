@@ -47,6 +47,7 @@ import {
 } from '@fluxer/constants/src/PollConstants';
 import {
 	SOUNDBOARD_DEFAULT_MAX_DURATION_MS,
+	SOUNDBOARD_DEFAULT_MAX_PLAYS_PER_SECOND,
 	SOUNDBOARD_DEFAULT_MAX_SOUNDS,
 } from '@fluxer/constants/src/SoundboardConstants';
 
@@ -93,6 +94,7 @@ export const DEFAULT_RESTRICTED_LIMITS: Record<LimitKey, number> = {
 	max_relationships: MAX_RELATIONSHIPS,
 	max_soundboard_sound_duration_ms: SOUNDBOARD_DEFAULT_MAX_DURATION_MS,
 	max_soundboard_sounds_per_guild: SOUNDBOARD_DEFAULT_MAX_SOUNDS,
+	max_soundboard_plays_per_second: SOUNDBOARD_DEFAULT_MAX_PLAYS_PER_SECOND,
 	max_poll_answers: POLL_DEFAULT_MAX_ANSWERS,
 	max_poll_question_length: POLL_DEFAULT_MAX_QUESTION_LENGTH,
 	max_poll_answer_length: POLL_DEFAULT_MAX_ANSWER_LENGTH,

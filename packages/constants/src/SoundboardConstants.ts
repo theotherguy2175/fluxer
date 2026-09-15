@@ -9,6 +9,10 @@ export const SOUNDBOARD_EMOJI_MAX_LENGTH = 32;
 export const SOUNDBOARD_DEFAULT_MAX_DURATION_MS = 5000;
 export const SOUNDBOARD_MAX_DURATION_CEILING_MS = 30_000;
 export const SOUNDBOARD_DEFAULT_MAX_SOUNDS = 9;
+// Instance-wide ceiling on how fast one member may trigger sounds in a channel.
+// 25/s is comfortably above the fastest human clicking; it exists to stop scripts.
+export const SOUNDBOARD_DEFAULT_MAX_PLAYS_PER_SECOND = 25;
+export const SOUNDBOARD_MAX_PLAYS_PER_SECOND_CEILING = 100;
 export const SOUNDBOARD_MAX_SOUNDS_CEILING = 200;
 
 export type SoundboardSoundExtension = 'mp3' | 'ogg' | 'm4a' | 'wav';
