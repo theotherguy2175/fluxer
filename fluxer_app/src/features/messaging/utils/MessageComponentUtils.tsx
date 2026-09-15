@@ -5,6 +5,7 @@ import {ChannelIconChangeMessage} from '@app/features/channel/components/Channel
 import {ChannelNameChangeMessage} from '@app/features/channel/components/ChannelNameChangeMessage';
 import {GuildJoinMessage} from '@app/features/channel/components/GuildJoinMessage';
 import {PinSystemMessage} from '@app/features/channel/components/PinSystemMessage';
+import {PollResultMessage} from '@app/features/channel/components/PollResultMessage';
 import {RecipientAddMessage} from '@app/features/channel/components/RecipientAddMessage';
 import {RecipientRemoveMessage} from '@app/features/channel/components/RecipientRemoveMessage';
 import {UnknownMessage} from '@app/features/channel/components/UnknownMessage';
@@ -65,6 +66,13 @@ export function getMessageComponent(
 				<ChannelNameChangeMessage
 					message={message}
 					data-flx="messaging.message-component-utils.get-message-component.channel-name-change-message"
+				/>
+			);
+		case MessageTypes.POLL_RESULT:
+			return (
+				<PollResultMessage
+					message={message}
+					data-flx="messaging.message-component-utils.get-message-component.poll-result-message"
 				/>
 			);
 		case MessageTypes.CHANNEL_ICON_CHANGE:

@@ -296,6 +296,7 @@ const targetTypeMap: Partial<Record<AuditLogActionType, AuditLogTargetType>> = {
 	[AuditLogActionType.MESSAGE_BULK_DELETE]: AuditLogTargetType.MESSAGE,
 	[AuditLogActionType.MESSAGE_PIN]: AuditLogTargetType.MESSAGE,
 	[AuditLogActionType.MESSAGE_UNPIN]: AuditLogTargetType.MESSAGE,
+	[AuditLogActionType.POLL_END]: AuditLogTargetType.MESSAGE,
 };
 
 export function getTargetType(actionType: AuditLogActionType): AuditLogTargetType {
@@ -310,6 +311,7 @@ const suppressedDetailActions = new Set<AuditLogActionType>([
 	AuditLogActionType.MESSAGE_BULK_DELETE,
 	AuditLogActionType.MESSAGE_PIN,
 	AuditLogActionType.MESSAGE_UNPIN,
+	AuditLogActionType.POLL_END,
 	AuditLogActionType.CHANNEL_DELETE,
 ]);
 const NotRenderedChangeKeys: Partial<Record<AuditLogTargetType, Record<string, true>>> = {

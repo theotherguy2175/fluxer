@@ -144,6 +144,10 @@ const STICKER_DELETED_DESCRIPTOR = msg({
 	message: 'Sticker deleted',
 	comment: 'Audit log entry label. A custom sticker was removed from the community.',
 });
+const POLL_ENDED_DESCRIPTOR = msg({
+	message: 'Poll ended early',
+	comment: 'Audit log entry label. A moderator closed a poll before its timer ran out.',
+});
 const SOUNDBOARD_SOUND_CREATED_DESCRIPTOR = msg({
 	message: 'Soundboard sound created',
 	comment: 'Audit log entry label. A soundboard sound was added to the community.',
@@ -567,6 +571,11 @@ export const LEGACY_AUDIT_LOG_ACTIONS: ReadonlyArray<AuditLogActionDefinition> =
 		value: AuditLogActionType.STICKER_DELETE,
 		label: STICKER_DELETED_DESCRIPTOR,
 		targetType: AUDIT_LOG_TARGET_TYPES.STICKER,
+	},
+	{
+		value: AuditLogActionType.POLL_END,
+		label: POLL_ENDED_DESCRIPTOR,
+		targetType: AUDIT_LOG_TARGET_TYPES.CHANNEL,
 	},
 	{
 		value: AuditLogActionType.SOUNDBOARD_SOUND_CREATE,

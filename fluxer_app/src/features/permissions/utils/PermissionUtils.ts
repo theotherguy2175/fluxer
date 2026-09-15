@@ -269,6 +269,7 @@ function generateGuildTextPermissionSpec(i18n: I18n): PermissionSpec {
 		title: formatPermissionCategoryLabel(i18n, 'messagesMedia'),
 		permissions: [
 			makePermissionEntry(i18n, Permissions.SEND_MESSAGES),
+			makePermissionEntry(i18n, Permissions.SEND_POLLS),
 			makePermissionEntry(i18n, Permissions.SEND_TTS_MESSAGES),
 			makePermissionEntry(i18n, Permissions.MANAGE_MESSAGES),
 			makePermissionEntry(i18n, Permissions.PIN_MESSAGES),
@@ -346,6 +347,7 @@ export function generateChannelTextPermissionSpec(i18n: I18n): PermissionSpec {
 		title: formatPermissionCategoryLabel(i18n, 'messagesMedia'),
 		permissions: [
 			makePermissionEntry(i18n, Permissions.SEND_MESSAGES, {scope: 'channel'}),
+			makePermissionEntry(i18n, Permissions.SEND_POLLS, {scope: 'channel'}),
 			makePermissionEntry(i18n, Permissions.MANAGE_MESSAGES, {scope: 'channel'}),
 			makePermissionEntry(i18n, Permissions.PIN_MESSAGES, {scope: 'channel'}),
 			makePermissionEntry(i18n, Permissions.EMBED_LINKS, {scope: 'channel'}),

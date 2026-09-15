@@ -803,6 +803,12 @@ export const renderEntrySummary = (args: {
 					{actor} unpinned a message{channelNode ? <> in {channelNode}</> : null}.
 				</Trans>,
 			);
+		case AuditLogActionType.POLL_END:
+			return withBecause(
+				<Trans>
+					{actor} ended a poll early{channelNode ? <> in {channelNode}</> : null}.
+				</Trans>,
+			);
 		case AuditLogActionType.SOUNDBOARD_SOUND_CREATE:
 			return withBecause(
 				<Trans>

@@ -135,6 +135,11 @@ const STARTED_A_CALL_DESCRIPTOR = msg({
 	message: '{username} started a call.',
 	comment: 'System message shown inline when a user starts a voice or video call in a DM or group DM.',
 });
+const POLL_ENDED_DESCRIPTOR = msg({
+	message: "{username}'s poll has ended",
+	comment:
+		'Plain-text summary of a poll-result system message, used in notifications and channel previews. {username} is the poll author.',
+});
 
 interface StringifyableMessage {
 	id: string;
@@ -231,6 +236,8 @@ export const SystemMessageUtils = {
 				return i18n._(CHANGED_THE_CHANNEL_ICON_DESCRIPTOR, {username});
 			case MessageTypes.CALL:
 				return i18n._(STARTED_A_CALL_DESCRIPTOR, {username});
+			case MessageTypes.POLL_RESULT:
+				return i18n._(POLL_ENDED_DESCRIPTOR, {username});
 			default:
 				return null;
 		}

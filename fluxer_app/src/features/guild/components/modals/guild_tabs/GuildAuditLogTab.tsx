@@ -68,6 +68,7 @@ import type {IconWeight} from '@phosphor-icons/react';
 import {
 	BuildingsIcon,
 	CaretDownIcon,
+	ChartBarIcon,
 	ClipboardTextIcon,
 	DotIcon,
 	FunnelSimpleIcon,
@@ -181,6 +182,7 @@ const actionIconMap: Partial<Record<AuditLogActionType, IconComponent>> = {
 	[AuditLogActionType.SOUNDBOARD_SOUND_CREATE]: SpeakerHighIcon,
 	[AuditLogActionType.SOUNDBOARD_SOUND_UPDATE]: SpeakerHighIcon,
 	[AuditLogActionType.SOUNDBOARD_SOUND_DELETE]: SpeakerHighIcon,
+	[AuditLogActionType.POLL_END]: ChartBarIcon,
 };
 const targetIconMap: Record<AuditLogTargetType, IconComponent> = {
 	[AUDIT_LOG_TARGET_TYPES.ALL]: BuildingsIcon,

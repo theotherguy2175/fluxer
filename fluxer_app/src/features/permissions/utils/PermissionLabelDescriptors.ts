@@ -105,6 +105,10 @@ const USE_VOICE_ACTIVITY_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
 	comment:
 		'Permission description in the role/permission editor for the Use Voice Activity permission. Explains the inverse: without it, the user must use push-to-talk in voice channels.',
 });
+const SEND_POLLS_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
+	message: 'Create polls in text channels. Voting on polls only needs permission to read the channel.',
+	comment: 'Permission description in the role/permission editor for the Send Polls permission.',
+});
 const USE_SOUNDBOARD_PERMISSION_DESCRIPTION_DESCRIPTOR = msg({
 	message: 'Play sounds from this community’s soundboard while connected to a voice channel.',
 	comment:
@@ -481,6 +485,10 @@ const PRIORITY_SPEAKER_DESCRIPTOR = msg({
 	message: 'Priority speaker',
 	comment: 'Permission name: allows a voice participant to be heard over others.',
 });
+const SEND_POLLS_DESCRIPTOR = msg({
+	message: 'Send polls',
+	comment: 'Permission name: allows creating polls in text channels.',
+});
 const USE_SOUNDBOARD_DESCRIPTOR = msg({
 	message: 'Use soundboard',
 	comment: 'Permission name: allows playing soundboard sounds in voice channels.',
@@ -568,6 +576,7 @@ const PERMISSION_TITLE_DESCRIPTORS = new Map<bigint, MessageDescriptor>([
 	[Permissions.USE_VAD, USE_VOICE_ACTIVITY_DESCRIPTOR],
 	[Permissions.PRIORITY_SPEAKER, PRIORITY_SPEAKER_DESCRIPTOR],
 	[Permissions.USE_SOUNDBOARD, USE_SOUNDBOARD_DESCRIPTOR],
+	[Permissions.SEND_POLLS, SEND_POLLS_DESCRIPTOR],
 	[Permissions.MUTE_MEMBERS, MUTE_MEMBERS_DESCRIPTOR],
 	[Permissions.DEAFEN_MEMBERS, DEAFEN_MEMBERS_DESCRIPTOR],
 	[Permissions.MOVE_MEMBERS, MOVE_MEMBERS_DESCRIPTOR],
@@ -607,6 +616,7 @@ const PERMISSION_DESCRIPTION_DESCRIPTORS = new Map<bigint, MessageDescriptor>([
 	[Permissions.STREAM, STREAM_VIDEO_GUILD_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.USE_VAD, USE_VOICE_ACTIVITY_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.USE_SOUNDBOARD, USE_SOUNDBOARD_PERMISSION_DESCRIPTION_DESCRIPTOR],
+	[Permissions.SEND_POLLS, SEND_POLLS_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.PRIORITY_SPEAKER, PRIORITY_SPEAKER_GUILD_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.MUTE_MEMBERS, MUTE_MEMBERS_GUILD_PERMISSION_DESCRIPTION_DESCRIPTOR],
 	[Permissions.DEAFEN_MEMBERS, DEAFEN_MEMBERS_GUILD_PERMISSION_DESCRIPTION_DESCRIPTOR],

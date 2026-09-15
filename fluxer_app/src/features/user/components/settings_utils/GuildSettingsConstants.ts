@@ -6,6 +6,7 @@ import GuildDiscoveryTab from '@app/features/guild/components/modals/guild_tabs/
 import GuildEmojiTab from '@app/features/guild/components/modals/guild_tabs/GuildEmojiTab';
 import GuildInvitesTab from '@app/features/guild/components/modals/guild_tabs/GuildInvitesTab';
 import GuildModerationTab from '@app/features/guild/components/modals/guild_tabs/GuildModerationTab';
+import GuildPollsTab from '@app/features/guild/components/modals/guild_tabs/GuildPollsTab';
 import GuildRolesTab from '@app/features/guild/components/modals/guild_tabs/GuildRolesTab';
 import GuildSoundboardTab from '@app/features/guild/components/modals/guild_tabs/GuildSoundboardTab';
 import GuildStickersTab from '@app/features/guild/components/modals/guild_tabs/GuildStickersTab';
@@ -18,6 +19,7 @@ import type {I18n, MessageDescriptor} from '@lingui/core';
 import {msg} from '@lingui/core/macro';
 import {
 	BookOpenIcon,
+	ChartBarIcon,
 	CompassIcon,
 	GearIcon,
 	HammerIcon,
@@ -44,6 +46,10 @@ const STICKERS_DESCRIPTOR = msg({
 	message: 'Stickers',
 	context: 'community-settings-tab',
 	comment: 'Community settings tab for managing custom stickers uploaded to the community.',
+});
+const POLLS_DESCRIPTOR = msg({
+	message: 'Polls',
+	comment: 'Community settings tab for enabling polls and setting their size and duration limits.',
 });
 const SOUNDBOARD_DESCRIPTOR = msg({
 	message: 'Soundboard',
@@ -107,6 +113,7 @@ export type GuildSettingsTabType =
 	| 'emoji'
 	| 'stickers'
 	| 'soundboard'
+	| 'polls'
 	| 'moderation'
 	| 'audit_log'
 	| 'webhooks'
@@ -204,6 +211,14 @@ const GUILD_SETTINGS_TABS_DESCRIPTORS: Array<GuildSettingsTabDescriptor> = [
 		icon: SpeakerHighIcon,
 		component: GuildSoundboardTab,
 		permission: [Permissions.CREATE_EXPRESSIONS, Permissions.MANAGE_EXPRESSIONS],
+	},
+	{
+		type: 'polls',
+		category: 'community',
+		label: POLLS_DESCRIPTOR,
+		icon: ChartBarIcon,
+		component: GuildPollsTab,
+		permission: Permissions.MANAGE_GUILD,
 	},
 	{
 		type: 'discovery',
