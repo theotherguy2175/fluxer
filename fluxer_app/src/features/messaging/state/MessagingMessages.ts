@@ -21,6 +21,7 @@ import {MAX_MESSAGES_PER_CHANNEL} from '@fluxer/constants/src/LimitConstants';
 import type {ChannelId} from '@fluxer/schema/src/branded/WireIds';
 import type {GuildMemberData} from '@fluxer/schema/src/domains/guild/GuildMemberSchemas';
 import type {Message as WireMessage} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
+import type {PollResponse} from '@fluxer/schema/src/domains/message/PollSchemas';
 import {action, makeAutoObservable, reaction} from 'mobx';
 
 const STALE_WINDOW_REFETCH_INTERVAL_MS = 10_000;
@@ -760,6 +761,35 @@ class Messages {
 				? message.withReaction(action.emoji, true, isCurrentUser)
 				: message.withReaction(action.emoji, false, isCurrentUser);
 		});
+		this.commitMessages(updated);
+		this.notifyChange();
+		return true;
+	}
+
+	@action
+	handlePollVote(action: {
+		type: 'MESSAGE_POLL_VOTE_ADD' | 'MESSAGE_POLL_VOTE_REMOVE';
+		channelId: string;
+		messageId: string;
+		userId: string;
+		answerId: number;
+	}): boolean {
+		const existing = ChannelMessages.get(action.channelId);
+		if (!existing) return false;
+		const isCurrentUser = Users.getCurrentUser()?.id === action.userId;
+		const updated = existing.update(action.messageId, (message) =>
+			message.withPollVote(action.answerId, action.type === 'MESSAGE_POLL_VOTE_ADD', isCurrentUser),
+		);
+		this.commitMessages(updated);
+		this.notifyChange();
+		return true;
+	}
+
+	@action
+	handlePollUpdate(action: {channelId: string; messageId: string; poll: PollResponse}): boolean {
+		const existing = ChannelMessages.get(action.channelId);
+		if (!existing) return false;
+		const updated = existing.update(action.messageId, (message) => message.withUpdates({poll: action.poll}));
 		this.commitMessages(updated);
 		this.notifyChange();
 		return true;

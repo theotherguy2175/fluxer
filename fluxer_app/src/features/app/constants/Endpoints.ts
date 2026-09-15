@@ -214,6 +214,12 @@ export const Endpoints = {
 	GUILD_SOUNDBOARD_SOUNDS: (guildId: string) => `/guilds/${guildId}/soundboard-sounds`,
 	GUILD_SOUNDBOARD_SOUND: (guildId: string, soundId: string) => `/guilds/${guildId}/soundboard-sounds/${soundId}`,
 	GUILD_SOUNDBOARD_SETTINGS: (guildId: string) => `/guilds/${guildId}/soundboard-settings`,
+	GUILD_POLL_SETTINGS: (guildId: string) => `/guilds/${guildId}/poll-settings`,
+	CHANNEL_POLL_ANSWER_VOTE: (channelId: string, messageId: string, answerId: number) =>
+		`/channels/${channelId}/polls/${messageId}/answers/${answerId}/@me`,
+	CHANNEL_POLL_ANSWER_VOTERS: (channelId: string, messageId: string, answerId: number) =>
+		`/channels/${channelId}/polls/${messageId}/answers/${answerId}`,
+	CHANNEL_POLL_EXPIRE: (channelId: string, messageId: string) => `/channels/${channelId}/polls/${messageId}/expire`,
 	VOICE_CHANNEL_SOUNDBOARD_SOUND: (channelId: string) => `/voice/channels/${channelId}/soundboard-sound`,
 	USER_FAVORITE_MEMES: (query = ME) => `/users/${query}/memes`,
 	USER_FAVORITE_MEME: (query = ME, memeId: string) => `/users/${query}/memes/${memeId}`,

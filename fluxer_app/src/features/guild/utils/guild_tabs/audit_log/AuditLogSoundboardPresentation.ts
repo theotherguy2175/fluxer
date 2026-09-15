@@ -6,6 +6,7 @@ import type {
 	AuditLogPlaceholder,
 } from '@app/features/guild/utils/guild_tabs/audit_log/AuditLogPresentationTypes';
 import {
+	POLL_END_SUMMARY,
 	SOUNDBOARD_SOUND_CREATE_SUMMARY,
 	SOUNDBOARD_SOUND_CREATE_UNNAMED_SUMMARY,
 	SOUNDBOARD_SOUND_DELETE_SUMMARY,
@@ -132,4 +133,8 @@ export function presentSoundboardSoundDelete(entry: GuildAuditLogEntryResponse):
 		rows: uploaderRows(entry),
 		blocks: [],
 	};
+}
+
+export function presentPollEnd(entry: GuildAuditLogEntryResponse): AuditLogDomainResult {
+	return {summary: {descriptor: POLL_END_SUMMARY, values: {actor: actorPlaceholder(entry)}}, rows: [], blocks: []};
 }

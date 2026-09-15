@@ -40,6 +40,7 @@ import {handleMessageAck} from '@app/features/messaging/events/MessageAck';
 import {handleMessageCreate} from '@app/features/messaging/events/MessageCreate';
 import {handleMessageDelete} from '@app/features/messaging/events/MessageDelete';
 import {handleMessageDeleteBulk} from '@app/features/messaging/events/MessageDeleteBulk';
+import {handleMessagePollVoteAdd, handleMessagePollVoteRemove} from '@app/features/messaging/events/MessagePollVote';
 import {handleMessageReactionAdd} from '@app/features/messaging/events/MessageReactionAdd';
 import {handleMessageReactionAddMany} from '@app/features/messaging/events/MessageReactionAddMany';
 import {handleMessageReactionRemove} from '@app/features/messaging/events/MessageReactionRemove';
@@ -108,6 +109,8 @@ export function createHandlerRegistry(): GatewayHandlerRegistry {
 	registry.set('GUILD_EMOJIS_UPDATE', handleGuildEmojisUpdate as GatewayEventHandler);
 	registry.set('GUILD_STICKERS_UPDATE', handleGuildStickersUpdate as GatewayEventHandler);
 	registry.set('SOUNDBOARD_SOUNDS_UPDATE', handleSoundboardSoundsUpdate as GatewayEventHandler);
+	registry.set('MESSAGE_POLL_VOTE_ADD', handleMessagePollVoteAdd as GatewayEventHandler);
+	registry.set('MESSAGE_POLL_VOTE_REMOVE', handleMessagePollVoteRemove as GatewayEventHandler);
 	registry.set('GUILD_SYNC', handleGuildSync as GatewayEventHandler);
 	registry.set('GUILD_MEMBER_ADD', handleGuildMemberAdd as GatewayEventHandler);
 	registry.set('GUILD_MEMBER_UPDATE', handleGuildMemberUpdate as GatewayEventHandler);

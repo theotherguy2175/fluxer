@@ -31,9 +31,28 @@ import type {
 	ReactionEmoji,
 	Message as WireMessage,
 } from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
+import type {PollResponse} from '@fluxer/schema/src/domains/message/PollSchemas';
 
 type MessageInput = Omit<WireMessage, 'mentions' | 'mention_roles' | 'tts'> &
 	Partial<Pick<WireMessage, 'mentions' | 'mention_roles' | 'tts'>>;
+
+// Gateway broadcasts carry no per-viewer poll state (me_voted is false for
+// everyone), so an incoming poll keeps the viewer's own votes from the copy
+// we already hold. total_voters and counts always come from the server.
+function mergePollUpdate(current: PollResponse | null, incoming: PollResponse | null): PollResponse | null {
+	if (!incoming || !current) return incoming;
+	const mine = new Set(current.results.answer_counts.filter((entry) => entry.me_voted).map((entry) => entry.id));
+	if (mine.size === 0) return incoming;
+	return {
+		...incoming,
+		results: {
+			...incoming.results,
+			answer_counts: incoming.results.answer_counts.map((entry) =>
+				entry.me_voted || !mine.has(entry.id) ? entry : {...entry, me_voted: true},
+			),
+		},
+	};
+}
 
 interface TransformedMessageCall {
 	participants: ReadonlyArray<string>;
@@ -160,6 +179,7 @@ export class Message {
 	readonly referencedMessage?: Message | null;
 	readonly messageSnapshots?: ReadonlyArray<MessageSnapshot>;
 	readonly call: TransformedMessageCall | null;
+	readonly poll: PollResponse | null;
 	readonly state: string;
 	readonly nonce?: string;
 	readonly blocked: boolean;
@@ -232,6 +252,7 @@ export class Message {
 			: undefined;
 		this.messageSnapshots = message.message_snapshots ? Object.freeze(message.message_snapshots) : undefined;
 		this.call = transformMessageCall(message.call);
+		this.poll = message.poll ?? null;
 		const embeddableCodeLinkContent = extractEmbeddableCodeLinkContent(message.content);
 		this.invites = Object.freeze(InviteUtils.findInvites(embeddableCodeLinkContent));
 		this.gifts = Object.freeze(GiftCodeUtils.findGifts(embeddableCodeLinkContent));
@@ -333,6 +354,7 @@ export class Message {
 				referenced_message: updates.referenced_message ?? this.referencedMessage?.toJSON(),
 				message_snapshots: updates.message_snapshots ?? this.messageSnapshots,
 				call: updates.call ?? this.call,
+				poll: 'poll' in updates ? mergePollUpdate(this.poll, updates.poll ?? null) : this.poll,
 				state: updates.state ?? this.state,
 				nonce: updates.nonce ?? this.nonce,
 				blocked: updates.blocked ?? this.blocked,
@@ -341,6 +363,25 @@ export class Message {
 			},
 			{skipUserCache: true, instanceId: this.instanceId},
 		);
+	}
+
+	withPollVote(answerId: number, add: boolean, me: boolean): Message {
+		if (!this.poll) return this;
+		const counts = this.poll.results.answer_counts;
+		const existing = counts.find((entry) => entry.id === answerId);
+		if (existing && me && existing.me_voted === add) return this;
+		const answerCounts = existing
+			? counts.map((entry) =>
+					entry.id === answerId
+						? {
+								...entry,
+								count: Math.max(0, entry.count + (add ? 1 : -1)),
+								me_voted: me ? add : entry.me_voted,
+							}
+						: entry,
+				)
+			: [...counts, {id: answerId, count: add ? 1 : 0, me_voted: me && add}];
+		return this.withUpdates({poll: {...this.poll, results: {...this.poll.results, answer_counts: answerCounts}}});
 	}
 
 	withReaction(emoji: ReactionEmoji, add = true, me = false): Message {
@@ -539,6 +580,7 @@ export class Message {
 			referenced_message: this.referencedMessage?.toJSON(),
 			message_snapshots: this.messageSnapshots,
 			call: this.call,
+			poll: this.poll,
 			state: this.state,
 			nonce: this.nonce,
 			blocked: this.blocked,

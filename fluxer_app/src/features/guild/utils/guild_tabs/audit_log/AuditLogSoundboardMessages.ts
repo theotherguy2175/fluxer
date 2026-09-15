@@ -57,3 +57,8 @@ export const SOUNDBOARD_SOUND_UPLOADER_ROW = msg({
 	comment:
 		'Activity log detail line under a deleted soundboard sound, shown only when someone other than the person who deleted it had uploaded it. {user} is the user who uploaded the sound, shown as a clickable user chip.',
 });
+export const POLL_END_SUMMARY = msg({
+	message: '{actor} ended a poll early',
+	comment:
+		'Activity log summary for a poll that a moderator closed before its timer ran out. {actor} is the member who ended it, shown as a clickable user chip, or the word System.',
+});

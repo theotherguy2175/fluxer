@@ -54,6 +54,7 @@ import {
 } from '@app/features/guild/utils/guild_tabs/audit_log/AuditLogRolePresentation';
 import {UNKNOWN_ACTION_SUMMARY} from '@app/features/guild/utils/guild_tabs/audit_log/AuditLogSharedMessages';
 import {
+	presentPollEnd,
 	presentSoundboardSoundCreate,
 	presentSoundboardSoundDelete,
 	presentSoundboardSoundUpdate,
@@ -101,6 +102,7 @@ const PRESENTERS = {
 	[AuditLogActionType.SOUNDBOARD_SOUND_CREATE]: presentSoundboardSoundCreate,
 	[AuditLogActionType.SOUNDBOARD_SOUND_UPDATE]: presentSoundboardSoundUpdate,
 	[AuditLogActionType.SOUNDBOARD_SOUND_DELETE]: presentSoundboardSoundDelete,
+	[AuditLogActionType.POLL_END]: presentPollEnd,
 } satisfies Record<AuditLogActionType, AuditLogPresenter>;
 
 function presentUnknownAction(entry: GuildAuditLogEntryResponse): AuditLogDomainResult {
