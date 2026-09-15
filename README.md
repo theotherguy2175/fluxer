@@ -39,15 +39,20 @@ cd <your fluxer directory>          # the one holding docker-compose.yml and .en
 # 1. add the overlay file next to docker-compose.yml
 curl -fsSLO https://raw.githubusercontent.com/theotherguy2175/fluxer/main/deploy/self-hosting/docker-compose.soundboard.yml
 
-# 2. enable it in .env (append it after any overlay you already list)
-#    COMPOSE_FILE=docker-compose.yml:docker-compose.soundboard.yml
-#    COMPOSE_FILE=docker-compose.yml:docker-compose.proxy.yml:docker-compose.soundboard.yml
-echo 'COMPOSE_FILE=docker-compose.yml:docker-compose.soundboard.yml' >> .env
+# 2. add it to the COMPOSE_FILE line in .env — append to the existing line
+#    (the installer writes one, e.g. docker-compose.yml:docker-compose.proxy.yml),
+#    or create the line if there isn't one. The soundboard file must come last.
+grep -q '^COMPOSE_FILE=' .env \
+  && sed -i.bak 's|^COMPOSE_FILE=.*|&:docker-compose.soundboard.yml|' .env \
+  || echo 'COMPOSE_FILE=docker-compose.yml:docker-compose.soundboard.yml' >> .env
+grep '^COMPOSE_FILE=' .env      # e.g. COMPOSE_FILE=docker-compose.yml:docker-compose.proxy.yml:docker-compose.soundboard.yml
 
 # 3. pull and recreate the four affected services
 docker compose pull
 docker compose up -d
 ```
+
+Tested end to end on a fresh `install.sh` instance (amd64 and arm64).
 
 Then, **once**, grant *Use Soundboard* to `@everyone` on communities that already
 existed (new communities get it automatically):
