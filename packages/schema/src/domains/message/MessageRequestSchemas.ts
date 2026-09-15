@@ -7,6 +7,7 @@ import {
 	ClientAttachmentRequest,
 	ClientUploadedAttachmentRequest,
 } from '@fluxer/schema/src/domains/message/AttachmentSchemas';
+import {PollCreateRequest} from '@fluxer/schema/src/domains/message/PollSchemas';
 import {AllowedMentionsRequest, MessageReferenceRequest} from '@fluxer/schema/src/domains/message/SharedMessageSchemas';
 import {createQueryIntegerType, DateTimeType} from '@fluxer/schema/src/primitives/QueryValidators';
 import {
@@ -21,7 +22,6 @@ import {
 } from '@fluxer/schema/src/primitives/SchemaPrimitives';
 import {AttachmentURLType, URLType} from '@fluxer/schema/src/primitives/UrlValidators';
 import {z} from 'zod';
-import {PollCreateRequest} from '@fluxer/schema/src/domains/message/PollSchemas';
 
 const RICH_EMBED_AUTHOR_NAME_MAX_LENGTH = 256 as const;
 const RICH_EMBED_MEDIA_DESCRIPTION_MAX_LENGTH = 4096 as const;

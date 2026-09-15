@@ -156,12 +156,7 @@ export const GuildPollSettingsUpdateRequest = z.object({
 	max_question_length: z.number().int().min(1).max(POLL_MAX_QUESTION_LENGTH_CEILING).optional(),
 	max_answer_length: z.number().int().min(1).max(POLL_MAX_ANSWER_LENGTH_CEILING).optional(),
 	max_duration_hours: z.number().int().min(POLL_MIN_DURATION_HOURS).max(POLL_MAX_DURATION_HOURS_CEILING).optional(),
-	default_duration_hours: z
-		.number()
-		.int()
-		.min(POLL_MIN_DURATION_HOURS)
-		.max(POLL_MAX_DURATION_HOURS_CEILING)
-		.optional(),
+	default_duration_hours: z.number().int().min(POLL_MIN_DURATION_HOURS).max(POLL_MAX_DURATION_HOURS_CEILING).optional(),
 	allow_multiselect: z.boolean().optional(),
 });
 
