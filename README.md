@@ -1,8 +1,5 @@
 # Fluxer + Soundboard (fork)
 
-<p align="center">
-  <img src="./fluxer_static/marketing/screenshots/soundboard.png" alt="Fluxer app showcase" width="900">
-</p>
 
 This is a fork of [fluxerapp/fluxer](https://github.com/fluxerapp/fluxer) that
 adds a **community soundboard**: members upload short clips, and anyone in a
@@ -16,7 +13,7 @@ upstream `main`.
 - Upstream's own README continues below this section
 
 <p align="center">
-  <img src="./fluxer_static/marketing/screenshots/soundboard-voice-bar.png" alt="Soundboard menu open from the voice control bar during a call" width="720">
+  <img src="./fluxer_static/marketing/screenshots/soundboard.png" alt="Soundboard menu open from the voice control bar during a call" width="720">
 </p>
 <p align="center">
   <img src="./fluxer_static/marketing/screenshots/soundboard-settings.png" alt="Community settings: Soundboard tab with upload, limits and the sound list" width="720">
