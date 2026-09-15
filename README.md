@@ -11,6 +11,13 @@ upstream `main`.
 - Everything else in a Fluxer deployment is unchanged and keeps using upstream's images
 - Upstream's own README continues below this section
 
+<p align="center">
+  <img src="./fluxer_static/marketing/screenshots/soundboard-voice-bar.png" alt="Soundboard menu open from the voice control bar during a call" width="720">
+</p>
+<p align="center">
+  <img src="./fluxer_static/marketing/screenshots/soundboard-settings.png" alt="Community settings: Soundboard tab with upload, limits and the sound list" width="720">
+</p>
+
 ## What you get
 
 - **Community settings → Soundboard** tab: upload (`mp3` / `ogg` / `m4a` / `wav`,

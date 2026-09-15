@@ -80,6 +80,11 @@ msgstr "{actor}님이 {channel}에서 @everyone에 대한 권한 재정의를 �
 msgid "{actor} added a permission override for the role {role} in {channel}"
 msgstr "{actor}님이 {channel}에서 {role} 역할에 대한 권한 재정의를 추가했습니다"
 
+#. Activity log summary for a sound that was added to the community soundboard when its name was not recorded. {actor} is the member who added it, shown as a clickable user chip, or the word System.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:10
+msgid "{actor} added a soundboard sound"
+msgstr "{actor} added a soundboard sound"
+
 #. Activity log summary for a sticker that was added to the community when its name was not recorded. {actor} is the member who added it, shown as a clickable user chip, or the word System.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:50
 msgid "{actor} added a sticker"
@@ -120,6 +125,15 @@ msgstr "{actor}님이 이모티콘 {emoji}을(를) 추가했습니다"
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:735
 msgid "{actor} added the emoji {namedTarget}."
 msgstr "{actor}님이 이모티콘 {namedTarget}을(를) 추가했습니다."
+
+#. Activity log summary for a sound that was uploaded to the community soundboard. {actor} is the member who added it, shown as a clickable user chip, or the word System. {name} is the sound name, shown in bold. The app adds the bold, so do not add ** or <b>.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:5
+msgid "{actor} added the soundboard sound {name}"
+msgstr "{actor} added the soundboard sound {name}"
+
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:808
+msgid "{actor} added the soundboard sound {namedTarget}."
+msgstr "{actor} added the soundboard sound {namedTarget}."
 
 #. Activity log summary for a sticker that was uploaded or copied to the community. {actor} is the member who added it, shown as a clickable user chip, or the word System. {name} is the sticker name, shown in bold. The app adds the bold, so do not add ** or <b>.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:45
@@ -327,6 +341,11 @@ msgstr "{actor}님이 {channel}에서 메시지를 삭제했습니다"
 msgid "{actor} deleted a message{0}."
 msgstr "{actor}님이 메시지를 삭제했습니다{0}."
 
+#. Activity log summary for a sound that was deleted from the community soundboard when its name was not recorded. {actor} is the member who deleted it, shown as a clickable user chip, or the word System.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:50
+msgid "{actor} deleted a soundboard sound"
+msgstr "{actor} deleted a soundboard sound"
+
 #. Activity log summary for a sticker that was deleted when its name was not recorded. {actor} is the member who deleted it, shown as a clickable user chip, or the word System.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:95
 msgid "{actor} deleted a sticker"
@@ -408,6 +427,15 @@ msgstr "{actor}님이 역할 {namedTarget}을(를) 삭제했습니다."
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogRoleMessages.ts:50
 msgid "{actor} deleted the role {role}"
 msgstr "{actor}님이 {role} 역할을 삭제했습니다"
+
+#. Activity log summary for a sound that was deleted from the community soundboard. {actor} is the member who deleted it, shown as a clickable user chip, or the word System. {name} is the name of the deleted sound, shown in bold. The app adds the bold, so do not add ** or <b>.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:45
+msgid "{actor} deleted the soundboard sound {name}"
+msgstr "{actor} deleted the soundboard sound {name}"
+
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:820
+msgid "{actor} deleted the soundboard sound {namedTarget}."
+msgstr "{actor} deleted the soundboard sound {namedTarget}."
 
 #. Activity log summary for a sticker that was deleted from the community. {actor} is the member who deleted it, shown as a clickable user chip, or the word System. {name} is the name of the deleted sticker, shown in bold. The app adds the bold, so do not add ** or <b>.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:90
@@ -553,7 +581,7 @@ msgstr "{actor}님이 다른 음성 채널로 이동했습니다"
 msgid "{actor} paused invites"
 msgstr "{actor}님이 초대를 일시 중지했습니다"
 
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:808
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:826
 msgid "{actor} performed an audit action on {targetEntity}."
 msgstr "{actor}님이 {targetEntity}에 대한 감사 활동을 수행했습니다."
 
@@ -688,6 +716,11 @@ msgstr "{actor}님이 링크 채널 {oldName}의 이름을 {newName}(으)로 변
 msgid "{actor} renamed the role {oldName} to {newName}"
 msgstr "{actor}님이 역할을 {oldName}에서 {newName}(으)로 변경했습니다"
 
+#. Activity log summary for a soundboard sound that got a new name and no other change. {actor} is the member who renamed it, shown as a clickable user chip, or the word System. {oldName} is the previous sound name and {newName} is the new one, both shown in bold. The app adds the bold, so do not add ** or <b>.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:15
+msgid "{actor} renamed the soundboard sound {oldName} to {newName}"
+msgstr "{actor} renamed the soundboard sound {oldName} to {newName}"
+
 #. Activity log summary for a sticker that got a new name and no other change. Only the name changed. The sticker was not replaced with a different one. {actor} is the member who renamed it, shown as a clickable user chip, or the word System. {oldName} is the previous sticker name and {newName} is the new one, both shown in bold. The app adds the bold, so do not add ** or <b>.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:60
 msgid "{actor} renamed the sticker {oldName} to {newName}"
@@ -821,6 +854,11 @@ msgstr "{actor}님이 {target}님을 업데이트했습니다"
 msgid "{actor} updated {targetMember}."
 msgstr "{actor}님이 {targetMember}님을 업데이트했습니다."
 
+#. Activity log summary for a soundboard sound that was edited when the sound name is not known. The changes are listed as detail lines below it. {actor} is the member who edited it, shown as a clickable user chip, or the word System.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:25
+msgid "{actor} updated a soundboard sound"
+msgstr "{actor} updated a soundboard sound"
+
 #. Activity log summary for a sticker that was edited when the sticker name is not known. The changes are listed as detail lines below it. {actor} is the member who edited it, shown as a clickable user chip, or the word System.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:70
 msgid "{actor} updated a sticker"
@@ -923,6 +961,15 @@ msgstr "{actor}님이 {role} 역할을 업데이트했습니다"
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogMemberMessages.ts:135
 msgid "{actor} updated the roles of {target}"
 msgstr "{actor}님이 {target}님의 역할을 업데이트했습니다"
+
+#. Activity log summary for a soundboard sound that was edited. The changes are listed as detail lines below it. {actor} is the member who edited it, shown as a clickable user chip, or the word System. {name} is the sound name, shown in bold. The app adds the bold, so do not add ** or <b>.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:20
+msgid "{actor} updated the soundboard sound {name}"
+msgstr "{actor} updated the soundboard sound {name}"
+
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:814
+msgid "{actor} updated the soundboard sound {namedTarget}."
+msgstr "{actor} updated the soundboard sound {namedTarget}."
 
 #. Activity log summary for a sticker that was edited. The changes are listed as detail lines below it. {actor} is the member who edited it, shown as a clickable user chip, or the word System. {name} is the sticker name, shown in bold. The app adds the bold, so do not add ** or <b>.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:65
@@ -1241,7 +1288,7 @@ msgstr "{count, plural, one {펼치기 (#줄)} other {펼치기 (#줄)}}"
 msgid "{count, plural, one {Expand (# row)} other {Expand (# rows)}}"
 msgstr "{count, plural, one {펼치기 (#행)} other {펼치기 (#행)}}"
 
-#: src/features/voice/components/VoiceParticipantTile.tsx:317
+#: src/features/voice/components/VoiceParticipantTile.tsx:319
 msgid "{count, plural, one {Expand # other device} other {Expand # other devices}}"
 msgstr "{count, plural, one {다른 기기 #개 펼치기} other {다른 기기 #개 펼치기}}"
 
@@ -1262,7 +1309,7 @@ msgstr "{count, plural, one {통화 중} other {#명 통화 중}}"
 msgid "{count, plural, one {Join video call (# participant)} other {Join video call (# participants)}}"
 msgstr "{count, plural, one {영상 통화 참여 (참여자 #명)} other {영상 통화 참여 (참여자 #명)}}"
 
-#: src/features/voice/components/VoiceParticipantTile.tsx:669
+#: src/features/voice/components/VoiceParticipantTile.tsx:671
 msgid "{count, plural, one {Keep watching # stream and add this one} other {Keep watching # streams and add this one}}"
 msgstr "{count, plural, one {#개의 스트림을 계속 시청하고 이 스트림을 추가합니다} other {#개의 스트림을 계속 시청하고 이 스트림을 추가합니다}}"
 
@@ -3081,12 +3128,12 @@ msgid "Activity"
 msgstr "활동"
 
 #. Page title of the activity-log tab in community settings (the user-facing name for the audit log).
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:108
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:109
 msgid "Activity log"
 msgstr "활동 로그"
 
 #. Community settings tab showing activity log entries and moderation history.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:61
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:68
 msgctxt "community-settings-tab"
 msgid "Activity log"
 msgstr "활동 로그"
@@ -3134,7 +3181,7 @@ msgid "Add a bot to a community with requested permissions"
 msgstr "요청된 권한으로 봇을 커뮤니티에 추가"
 
 #. Placeholder text in the optional comment field of the forward modal.
-#: src/features/messaging/components/modals/ForwardModal.tsx:91
+#: src/features/messaging/components/modals/ForwardModal.tsx:92
 msgid "Add a comment (optional)"
 msgstr "코멘트 추가 (선택 사항)"
 
@@ -3317,7 +3364,7 @@ msgid "Add local files"
 msgstr "로컬 파일 추가"
 
 #. Permission description in the channel-scoped permissions editor for the Add Reactions permission. "New" reaction means starting a new reaction emoji on a message (not stacking onto an existing one).
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:270
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:275
 msgid "Add new reactions to messages in this channel."
 msgstr "이 채널의 메시지에 새로운 반응을 추가합니다."
 
@@ -3350,7 +3397,7 @@ msgid "Add reaction"
 msgstr "반응 추가"
 
 #. Permission name: allows adding reactions to messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:438
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:443
 msgid "Add reactions"
 msgstr "반응 추가"
 
@@ -3395,6 +3442,11 @@ msgstr "인스턴스에서 확인 및 알림 이메일을 보낼 수 있도록 S
 msgid "Add some CSS before sharing."
 msgstr "공유하기 전에 CSS를 추가하세요."
 
+#. Tile in the voice soundboard popover to upload a new sound.
+#: src/features/voice/components/SoundboardMenu.tsx:70
+msgid "Add Sound"
+msgstr "Add Sound"
+
 #. Action that opens the add-sticker modal.
 #: src/features/expressions/components/modals/AddGuildStickerModal.tsx:72
 msgid "Add sticker"
@@ -3423,7 +3475,9 @@ msgid "Add to dictionary"
 msgstr "사전에 추가"
 
 #. Action label that pins the current channel, DM, or attachment to the favorites list.
+#. Tooltip on the star button of a soundboard sound tile.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:322
+#: src/features/voice/components/SoundboardMenu.tsx:50
 msgid "Add to favorites"
 msgstr "즐겨찾기에 추가"
 
@@ -3623,7 +3677,7 @@ msgid "Adjust the overall zoom level of the app. Use {zoomIn} / {zoomOut} to adj
 msgstr "앱의 전체적인 확대/축소 수준을 조정합니다. {zoomIn} 또는 {zoomOut}을(를) 사용하여 빠르게 조정할 수 있습니다."
 
 #. Permission name: grants all permissions and bypasses restrictions.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:350
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:355
 msgid "Administrator"
 msgstr "관리자"
 
@@ -3727,7 +3781,7 @@ msgstr "정렬 컨트롤은 더 넓은 화면에서만 사용할 수 있습니�
 #. Short label in the discovery category bottom sheet. Keep it concise.
 #. Tab label in the DM friends view showing all friends.
 #. Tab label in the mobile memes (saved media) picker. Shows all saved media regardless of type.
-#: src/features/app/config/AuditLogConstants.ts:163
+#: src/features/app/config/AuditLogConstants.ts:175
 #: src/features/channel/components/direct_message/DMFriendsView.tsx:41
 #: src/features/channel/components/guild_members_page/GuildMembersPageDescriptors.ts:10
 #: src/features/channel/components/MobileMemesPicker.tsx:42
@@ -3756,7 +3810,7 @@ msgid "All <0/>, forever. No billing, no renewals."
 msgstr "모든 <0/>을 평생 이용할 수 있습니다. 청구도 갱신도 없습니다."
 
 #. Default option in the activity log "Filter by action" dropdown. Means no action-type filter is applied. Short standalone label.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:99
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:100
 msgid "All actions"
 msgstr "모든 작업"
 
@@ -3845,7 +3899,7 @@ msgid "All time"
 msgstr "전체 기간"
 
 #. Default option in the activity log "Filter by user" dropdown. Means no user filter is applied. Short standalone label.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:94
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:95
 msgid "All users"
 msgstr "모든 사용자"
 
@@ -4883,7 +4937,7 @@ msgid "At least one channel must have \"{viewChannelPermissionLabel}\" permissio
 msgstr "맞춤 URL이 작동하려면 하나 이상의 채널에서 {EVERYONE_MENTION}에 대해 \"{viewChannelPermissionLabel}\" 권한이 활성화되어 있어야 합니다. 현재 {EVERYONE_MENTION}에게 표시되는 채널이 없습니다."
 
 #. Permission name: allows uploading files to messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:422
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:427
 msgid "Attach files"
 msgstr "파일 첨부"
 
@@ -4987,7 +5041,7 @@ msgid "Audio"
 msgstr "오디오"
 
 #. Permission category for voice, video, and streaming permissions.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:342
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:347
 msgid "Audio & video"
 msgstr "오디오 및 비디오"
 
@@ -5097,7 +5151,7 @@ msgid "Audio settings"
 msgstr "오디오 설정"
 
 #. Voice control button label for microphone and speaker settings.
-#: src/features/voice/components/VoiceControlBar.tsx:142
+#: src/features/voice/components/VoiceControlBar.tsx:146
 msgctxt "voice-control-button"
 msgid "Audio settings"
 msgstr "오디오 설정"
@@ -5699,12 +5753,12 @@ msgid "Ban member"
 msgstr "멤버 차단"
 
 #. Permission name: allows banning members from a community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:374
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:379
 msgid "Ban members"
 msgstr "멤버 차단"
 
 #. Permission description in the role/permission editor for the Ban Members permission. A ban keeps the member out until it is lifted, and the moderator chooses how much recent message history to delete.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:123
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:128
 msgid "Ban members from the community, with the option to delete their recent messages."
 msgstr "커뮤니티에서 멤버를 차단하고, 최근 메시지를 삭제할 수 있습니다."
 
@@ -5777,7 +5831,7 @@ msgid "Banner preview"
 msgstr "배너 미리보기"
 
 #. Community settings tab for banned users.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:91
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:98
 msgctxt "community-settings-tab"
 msgid "Bans"
 msgstr "차단된 사용자"
@@ -5797,12 +5851,12 @@ msgid "Basic text inputs"
 msgstr "기본 텍스트 입력"
 
 #. Permission description in the channel-scoped permissions editor for the Priority Speaker permission. "Push to talk (priority)" is the name of a keybind in the keybind settings, so match the wording used there.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:302
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:307
 msgid "Be heard over other members in this channel while holding the push to talk (priority) keybind."
 msgstr "눌러서 말하기 (우선순위) 키를 누르고 있는 동안 이 채널의 다른 멤버보다 더 잘 들립니다."
 
 #. Permission description in the role/permission editor for the Priority Speaker permission at community scope. "Push to talk (priority)" is the name of a keybind in the keybind settings, so match the wording used there.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:177
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:182
 msgid "Be heard over other members while holding the push to talk (priority) keybind."
 msgstr "눌러서 말하기 (우선순위) 키를 누르고 있는 동안 다른 멤버보다 더 잘 들립니다."
 
@@ -6249,6 +6303,11 @@ msgstr "브랜딩 에셋 미리보기"
 msgid "Brightness"
 msgstr "밝기"
 
+#. Button that opens the OS file picker to choose a different audio file.
+#: src/features/voice/components/SoundboardSoundModal.tsx:48
+msgid "Browse"
+msgstr "Browse"
+
 #. Title of the modal shown when the browser autoplay policy blocks voice audio until the user interacts.
 #: src/features/voice/components/modals/AudioPlaybackPermissionModal.tsx:8
 msgid "Browser audio required"
@@ -6465,7 +6524,7 @@ msgid "Bypass mention suppression"
 msgstr "멘션 알림 끄기 우회"
 
 #. Permission name: allows ignoring per-channel message rate limits.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:442
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:447
 msgid "Bypass slowmode"
 msgstr "슬로우 모드 우회"
 
@@ -6629,7 +6688,7 @@ msgid "Cameras and virtual capture devices are selected here in {productName}, n
 msgstr "카메라 및 가상 캡처 기기는 Wayland 시스템 선택기가 아닌 {productName}에서 선택됩니다. 여기에 아무것도 표시되지 않으면 권한을 확인하거나 기기를 연결하세요."
 
 #. Tooltip in the voice control bar when cameras are disabled because the participant count exceeds the limit. {voiceChannelCameraUserLimit} is the configured threshold.
-#: src/features/voice/components/VoiceControlBar.tsx:132
+#: src/features/voice/components/VoiceControlBar.tsx:136
 msgid "Cameras are off above {voiceChannelCameraUserLimit} participants"
 msgstr "참여자가 {voiceChannelCameraUserLimit}명을 초과하면 카메라가 꺼집니다"
 
@@ -6687,7 +6746,7 @@ msgstr "여기에 파일을 올릴 수 없습니다"
 #: src/features/messaging/components/modals/AttachmentEditModal.tsx:133
 #: src/features/messaging/components/modals/EditAltTextModal.tsx:190
 #: src/features/messaging/components/modals/ExternalLinkWarningModal.tsx:111
-#: src/features/messaging/components/modals/ForwardModal.tsx:636
+#: src/features/messaging/components/modals/ForwardModal.tsx:645
 #: src/features/messaging/components/modals/ImageCropModal.tsx:944
 #: src/features/messaging/components/modals/MessageHistoryThresholdModal.tsx:107
 #: src/features/moderation/components/modals/BanMemberModal.tsx:262
@@ -7040,7 +7099,7 @@ msgid "Change other members' nicknames."
 msgstr "다른 멤버의 닉네임을 변경할 수 있습니다."
 
 #. Permission name: allows a member to edit their own nickname.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:382
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:387
 msgid "Change own nickname"
 msgstr "내 닉네임 변경"
 
@@ -7101,12 +7160,12 @@ msgid "Change what users without \"{readMessageHistoryPermissionLabel}\" can see
 msgstr "\"{readMessageHistoryPermissionLabel}\" 권한이 없는 사용자가 볼 수 있는 항목 변경"
 
 #. Permission description in the role/permission editor for the Set Voice Region permission at community scope. The region is the geographic location of the voice server.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:191
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:196
 msgid "Change which voice region a voice channel uses."
 msgstr "음성 채널이 사용하는 음성 지역을 변경합니다."
 
 #. Permission description in the channel-scoped permissions editor for the Set Voice Region permission. The region is the geographic location of the voice server.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:321
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:326
 msgid "Change which voice region this channel uses."
 msgstr "이 채널의 음성 지역을 변경합니다."
 
@@ -7243,6 +7302,11 @@ msgstr "기본 알림 설정을 {oldSetting}에서 {newSetting}(으)로 변경�
 msgid "Changed the description from {oldText} to {newText}"
 msgstr "설명을 {oldText}에서 {newText}(으)로 변경했습니다"
 
+#. Activity log detail line under an edited soundboard sound, for a sound whose emoji was set, replaced or removed. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:40
+msgid "Changed the emoji"
+msgstr "Changed the emoji"
+
 #. Activity log detail line under a community settings update, shown when the explicit content filter setting changed. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. {oldFilter} is the previous setting and {newFilter} is the new setting, each shown as Off, Filter members without roles or Filter everyone.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogGuildMessages.ts:246
 msgid "Changed the explicit content filter from {oldFilter} to {newFilter}"
@@ -7285,6 +7349,7 @@ msgid "Changed the message history threshold from {oldDate} to {newDate}"
 msgstr "메시지 기록 공개 시점을 {oldDate}에서 {newDate}(으)로 변경했습니다"
 
 #. Activity log detail line under an edited role that got a new name along with other changes. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. {oldName} is the role name before the change and {newName} is the role name after it. Do not swap them. The app shows both in bold, so do not add ** or <b> around them.
+#. Activity log detail line under an edited soundboard sound, for a sound that got a new name. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. Keep the word name so the line says what changed. {oldName} is the previous sound name and {newName} is the new one, both shown in bold. The app adds the bold, so do not add ** or <b>.
 #. Activity log detail line under an edited sticker, for a sticker that got a new name. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. Keep the word name so the line says what changed. {oldName} is the previous sticker name and {newName} is the new one, both shown in bold. The app adds the bold, so do not add ** or <b>.
 #. Activity log detail row under an updated channel whose name changed along with other settings. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. {oldName} is the name before the change and {newName} the name after, both shown in bold. The app adds the bold, so do not add ** or <b>.
 #. Activity log detail under a changed webhook. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. {oldName} is the previous name of the webhook and {newName} is its new name, both shown in bold by the app. Do not add ** or <b> around them.
@@ -7292,6 +7357,7 @@ msgstr "메시지 기록 공개 시점을 {oldDate}에서 {newDate}(으)로 변�
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:75
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogInviteWebhookMessages.ts:115
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogRoleMessages.ts:55
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:30
 msgid "Changed the name from {oldName} to {newName}"
 msgstr "이름을 {oldName}에서 {newName}(으)로 변경했습니다"
 
@@ -7345,6 +7411,11 @@ msgstr "음성 지역을 {oldRegion}에서 {newRegion}(으)로 변경했습니�
 msgid "Changed the voice region to {0}."
 msgstr "음성 지역을 {0}(으)로 변경했습니다."
 
+#. Activity log detail line under an edited soundboard sound, for a sound whose playback volume was changed. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. {oldVolume} and {newVolume} are whole numbers from 0 to 100, and the percent sign stays after each.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:35
+msgid "Changed the volume from {oldVolume}% to {newVolume}%"
+msgstr "Changed the volume from {oldVolume}% to {newVolume}%"
+
 #: src/features/theme_studio/sections/QuickCssSection.tsx:280
 msgid "Changes apply instantly to the live client."
 msgstr "변경사항은 라이브 클라이언트에 즉시 적용됩니다."
@@ -7362,7 +7433,7 @@ msgstr "채널"
 #. Short label in the channel layout. Keep it concise.
 #. Short label in the channel source preview. Keep it concise.
 #. Slash-command argument type name, spoken by screen readers for an argument that takes a channel.
-#: src/features/app/config/AuditLogConstants.ts:183
+#: src/features/app/config/AuditLogConstants.ts:195
 #: src/features/channel/components/bottomsheets/channel_details_bottom_sheet/ChannelDetailsBottomSheetShared.ts:24
 #: src/features/channel/components/ChannelLayout.tsx:13
 #: src/features/channel/components/ChannelSourcePreview.tsx:28
@@ -7373,12 +7444,12 @@ msgid "Channel"
 msgstr "채널"
 
 #. Short label in the settings dialog forward channel selection. Preserve {id}; it is inserted by code.
-#: src/features/app/components/dialogs/shared/UseForwardChannelObservations.ts:27
+#: src/features/app/components/dialogs/shared/UseForwardChannelObservations.ts:30
 msgid "Channel {id}"
 msgstr "채널 {id}"
 
 #. Permission category for viewing or entering channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:338
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:343
 msgid "Channel access"
 msgstr "채널 접근"
 
@@ -7478,7 +7549,7 @@ msgid "Channel list typing indicators"
 msgstr "채널 목록 입력 중 표시"
 
 #. Permission category for managing channels and channel settings.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:346
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:351
 msgid "Channel management"
 msgstr "채널 관리"
 
@@ -7827,10 +7898,12 @@ msgstr "계정 선택"
 msgid "Choose an action."
 msgstr "작업을 선택하세요."
 
+#. Accessible label for the emoji picker button in the soundboard modal.
 #. Button or menu action label in the custom status bottom sheet. Keep it concise.
 #. Button or menu action label in the custom status modal. Keep it concise.
 #: src/features/user/components/modals/CustomStatusBottomSheet.tsx:48
 #: src/features/user/components/modals/CustomStatusModal.tsx:58
+#: src/features/voice/components/SoundboardSoundModal.tsx:63
 msgid "Choose an emoji"
 msgstr "이모티콘 선택"
 
@@ -8409,6 +8482,11 @@ msgstr "클릭하여 보기"
 msgid "Click to reveal spoiler"
 msgstr "클릭하여 스포일러 보기"
 
+#. Placeholder on the soundboard emoji picker button when no emoji is chosen.
+#: src/features/voice/components/SoundboardSoundModal.tsx:58
+msgid "Click to select"
+msgstr "Click to select"
+
 #. Label in the reaction tooltip popout.
 #: src/features/messaging/components/popouts/ReactionTooltip.tsx:21
 msgid "Click to view all reactions"
@@ -8695,7 +8773,7 @@ msgstr "채널 주제 접기"
 #. Tooltip / aria label on a voice participant tile button that collapses expanded device tiles for one user.
 #. Voice menu action that collapses expanded device tiles back into a single tile.
 #: src/features/ui/action_menu/items/voice_participant_menu_data/shared.ts:128
-#: src/features/voice/components/VoiceParticipantTile.tsx:178
+#: src/features/voice/components/VoiceParticipantTile.tsx:180
 msgid "Collapse devices"
 msgstr "기기 접기"
 
@@ -8804,17 +8882,17 @@ msgid "Commands"
 msgstr "명령어"
 
 #. Helper text in the forward modal explaining why the optional comment field is disabled when at least one selected target has slowmode active.
-#: src/features/messaging/components/modals/ForwardModal.tsx:64
+#: src/features/messaging/components/modals/ForwardModal.tsx:65
 msgid "Comments are disabled because one or more selected channels have slowmode on. The comment would be blocked by slowmode right after the forward."
 msgstr "선택한 채널 중 하나 이상에 슬로우 모드가 켜져 있어 댓글을 사용할 수 없습니다. 전달 직후 슬로우 모드에 걸려 댓글이 전송되지 않습니다."
 
 #. Helper text in the forward modal explaining why the optional comment field is disabled for a single selected channel with slowmode.
-#: src/features/messaging/components/modals/ForwardModal.tsx:58
+#: src/features/messaging/components/modals/ForwardModal.tsx:59
 msgid "Comments are disabled because slowmode is on in {forwardChannelDisplayName}. The comment would be blocked by slowmode right after the forward."
 msgstr "{forwardChannelDisplayName} 채널에 슬로우 모드가 켜져 있어 댓글을 사용할 수 없습니다. 전달 직후 슬로우 모드에 걸려 댓글이 전송되지 않습니다."
 
 #. Tooltip on the disabled comment field in the forward modal when slowmode blocks comments.
-#: src/features/messaging/components/modals/ForwardModal.tsx:87
+#: src/features/messaging/components/modals/ForwardModal.tsx:88
 msgid "Comments are unavailable while slowmode is on."
 msgstr "슬로우 모드 중에는 댓글을 사용할 수 없습니다."
 
@@ -8857,10 +8935,10 @@ msgstr "250명이 넘는 커뮤니티는 \"멘션만\" 설정으로 자동 전�
 #. Developer / debug surface — keep terse and technical. Fallback label used in the IAR preview tool when no community context is supplied.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Short option type label in the OAuth bot invite destination selector.
-#: src/features/app/config/AuditLogConstants.ts:167
+#: src/features/app/config/AuditLogConstants.ts:179
 #: src/features/auth/components/pages/oauth_authorize_page/OAuthCommunityStep.tsx:48
 #: src/features/moderation/components/report_modal/IARModalPreview.tsx:16
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:253
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:269
 #: src/features/user/components/settings_utils/section_registry/PrivacySafetySections.ts:140
 msgid "Community"
 msgstr "커뮤니티"
@@ -9051,7 +9129,7 @@ msgid "Community record"
 msgstr "커뮤니티 기록"
 
 #. Root label for community settings modal and settings search paths.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:244
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:260
 msgid "Community settings"
 msgstr "커뮤니티 설정"
 
@@ -9079,7 +9157,7 @@ msgid "Community voice"
 msgstr "커뮤니티 음성"
 
 #. Permission category for permissions that affect the whole community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:326
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:331
 msgid "Community-wide"
 msgstr "커뮤니티 전체"
 
@@ -9333,7 +9411,7 @@ msgstr "마이크를 연결하고 다시 시도하세요."
 
 #. Permission name: allows joining voice channels.
 #. Primary CTA in the mobile voice-channel lobby bottom sheet. Joins the voice channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:458
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:463
 #: src/features/voice/components/bottomsheets/VoiceLobbyBottomSheet.tsx:60
 msgid "Connect to voice"
 msgstr "음성 채널에 연결"
@@ -10207,6 +10285,11 @@ msgstr "패스키를 삭제할 수 없습니다"
 msgid "Couldn't delete role"
 msgstr "역할을 삭제할 수 없습니다"
 
+#. Title of the error dialog shown when deleting a soundboard sound fails.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:99
+msgid "Couldn't delete sound"
+msgstr "Couldn't delete sound"
+
 #. Title of the generic fallback error modal shown when deleting a category fails.
 #: src/features/app/components/alerts/ChannelDeleteFailedModal.tsx:46
 msgid "Couldn't delete this category"
@@ -10430,6 +10513,16 @@ msgstr "명령을 실행할 수 없습니다: {detail}"
 #: src/features/user/components/modals/tabs/hooks/useEntranceSound.ts:47
 msgid "Couldn't save entrance sound"
 msgstr "입장음을 저장할 수 없습니다"
+
+#. Title of the error modal shown when saving the guild soundboard limits fails.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:103
+msgid "Couldn't save soundboard limits"
+msgstr "Couldn't save soundboard limits"
+
+#. Title of the soundboard save error modal.
+#: src/features/voice/components/SoundboardSoundModal.tsx:67
+msgid "Couldn't save this sound"
+msgstr "Couldn't save this sound"
 
 #. Title of the error modal shown when sending a friend request fails.
 #: src/features/relationship/components/alerts/RelationshipErrorModalUtils.tsx:11
@@ -10710,7 +10803,7 @@ msgid "Create DM"
 msgstr "DM 만들기"
 
 #. Permission name: allows uploading custom emoji and stickers.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:390
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:395
 msgid "Create emoji & stickers"
 msgstr "이모티콘 및 스티커 만들기"
 
@@ -10737,7 +10830,7 @@ msgid "Create invite"
 msgstr "초대 만들기"
 
 #. Permission name: allows creating invite links.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:378
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:383
 msgid "Create invite links"
 msgstr "초대 링크 만들기"
 
@@ -10801,7 +10894,7 @@ msgid "Create, edit, or delete roles below your highest role. Also allows editin
 msgstr "본인의 최고 역할보다 낮은 역할을 생성, 수정 또는 삭제합니다. 채널 권한 재정의도 수정할 수 있습니다."
 
 #. Permission description in the channel-scoped permissions editor for the Manage Webhooks permission. Scoped to a single channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:206
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:211
 msgid "Create, edit, or delete webhooks for this channel."
 msgstr "이 채널의 웹훅을 생성, 수정 또는 삭제합니다."
 
@@ -11470,17 +11563,17 @@ msgid "Deafen device"
 msgstr "기기 소리 끄기"
 
 #. Permission name: allows moderators to deafen other voice participants.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:483
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:492
 msgid "Deafen members"
 msgstr "멤버 소리 끄기"
 
 #. Permission description in the channel-scoped permissions editor for the Deafen Members permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:312
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:317
 msgid "Deafen other members in this voice channel, so they cannot hear or speak."
 msgstr "이 음성 채널에서 다른 멤버의 소리를 꺼서 듣지도 말하지도 못하게 합니다."
 
 #. Permission description in the role/permission editor for the Deafen Members permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:187
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:192
 msgid "Deafen other members in voice channels, so they cannot hear or speak."
 msgstr "음성 채널에서 다른 멤버의 소리를 꺼서 듣지도 말하지도 못하게 합니다."
 
@@ -11675,6 +11768,7 @@ msgctxt "us-state"
 msgid "Delaware"
 msgstr "델라웨어"
 
+#. Button label to delete a soundboard sound.
 #. Button or menu action label in the buttons tab. Keep it concise. Keep the tone plain and specific.
 #. Button or menu action label in the channel and chat embed audio. Keep it concise. Keep the tone plain and specific.
 #. Button or menu action label in the channel and chat media container. Keep it concise. Keep the tone plain and specific.
@@ -11695,6 +11789,7 @@ msgstr "델라웨어"
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:204
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:216
 #: src/features/emoji/components/stickers/StickerGridItem.tsx:35
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:87
 #: src/features/messaging/commands/MessageCommands.tsx:79
 #: src/features/moderation/components/report_modal/IARModalCopy.ts:109
 #: src/features/platform/utils/DesktopLocaleBridge.ts:76
@@ -11705,6 +11800,7 @@ msgstr "델라웨어"
 #: src/features/user/components/modals/tabs/component_gallery_tab/index.tsx:238
 #: src/features/user/components/settings_utils/search_index/AccountSecurityIndex.ts:154
 #: src/features/user/components/settings_utils/section_registry/SharedDescriptors.ts:190
+#: src/features/voice/components/SoundboardSoundModal.tsx:568
 msgid "Delete"
 msgstr "삭제"
 
@@ -11724,6 +11820,11 @@ msgstr ":{emojiName}:을(를) 삭제하시겠어요? 이 작업은 되돌릴 수
 #: src/features/channel/components/pickers/memes/MemeGridItem.tsx:34
 msgid "Delete \"{memeName}\"? Can't be undone."
 msgstr "\"{memeName}\"을(를) 삭제하시겠어요? 이 작업은 되돌릴 수 없습니다."
+
+#. Body of the confirmation dialog for deleting a soundboard sound. {name} is the sound name.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:95
+msgid "Delete \"{name}\" from the soundboard? This cannot be undone."
+msgstr "Delete \"{name}\" from the soundboard? This cannot be undone."
 
 #. Confirm dialog body before deleting a sticker.
 #: src/features/emoji/components/stickers/StickerGridItem.tsx:31
@@ -11862,7 +11963,7 @@ msgid "Delete my messages"
 msgstr "내 메시지 삭제"
 
 #. Permission description in the channel-scoped permissions editor for the Manage Messages permission. Notes that pinning has its own permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:230
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:235
 msgid "Delete other members' messages in this channel. Pinning is controlled separately."
 msgstr "이 채널에서 다른 멤버의 메시지를 삭제합니다. 고정 권한은 별도로 관리됩니다."
 
@@ -11907,6 +12008,11 @@ msgstr "저장된 미디어 삭제"
 #: src/features/user/components/modals/tabs/keybinds_tab/CustomKeybindRow.tsx:34
 msgid "Delete shortcut"
 msgstr "단축키 삭제"
+
+#. Title of the confirmation dialog for deleting a soundboard sound.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:91
+msgid "Delete sound"
+msgstr "Delete sound"
 
 #. Destructive action that deletes the selected sticker.
 #: src/features/emoji/components/stickers/StickerGridItem.tsx:27
@@ -12742,7 +12848,7 @@ msgid "Discovery"
 msgstr "디스커버리"
 
 #. Community settings tab for public community discovery/listing.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:76
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:83
 msgctxt "community-settings-tab"
 msgid "Discovery"
 msgstr "디스커버리"
@@ -13255,6 +13361,10 @@ msgstr "드래그 앤 드롭"
 msgid "Drag and drop a sticker file here (one at a time)"
 msgstr "스티커 파일을 여기로 드래그 앤 드롭하세요(한 번에 하나씩)"
 
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:391
+msgid "Drag and drop an audio file here (one at a time)"
+msgstr "Drag and drop an audio file here (one at a time)"
+
 #. Label in the community upload drop zone.
 #: src/features/guild/components/UploadDropZone.tsx:11
 msgid "Drag and drop area for file upload"
@@ -13265,12 +13375,12 @@ msgid "Drag and drop emoji files here"
 msgstr "이모티콘 파일을 여기로 드래그 앤 드롭하세요"
 
 #. Permission description in the role/permission editor for the Move Members permission. The target channel must already be accessible to the member being moved. This permission also covers forcing a member out of voice entirely.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:108
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:113
 msgid "Drag members between voice channels they can access, and disconnect them from voice."
 msgstr "접근 가능한 음성 채널 간에 멤버를 드래그하여 이동시키고, 음성에서 연결을 해제할 수 있습니다."
 
 #. Permission description in the channel-scoped permissions editor for the Move Members permission. The target channel must already be accessible to the member being moved. This permission also covers forcing a member out of voice entirely.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:316
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:321
 msgid "Drag members out of this voice channel into channels they can access, and disconnect them from voice."
 msgstr "이 음성 채널에서 멤버를 드래그하여 접근 가능한 다른 채널로 옮기거나 음성 연결을 끊을 수 있습니다."
 
@@ -13416,10 +13526,12 @@ msgid "Echo cancellation"
 msgstr "에코 제거"
 
 #. Action label for opening the edit flow for the selected item.
+#. Button label to edit a soundboard sound.
 #. Button or menu action label in the linked accounts tab. Keep it concise.
 #. Button or menu action label in the search engines tab. Keep it concise.
 #. Top-level native menu bar title (Edit menu, holds cut/copy/paste).
 #: src/features/emoji/components/stickers/StickerGridItem.tsx:43
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:83
 #: src/features/platform/utils/DesktopLocaleBridge.ts:47
 #: src/features/user/components/modals/tabs/chat_settings_tab/SearchEnginesTab.tsx:35
 #: src/features/user/components/modals/tabs/LinkedAccountsTab.tsx:51
@@ -13558,7 +13670,7 @@ msgid "Edit or delete emoji and stickers created by other members."
 msgstr "다른 멤버가 만든 이모티콘 및 스티커를 수정하거나 삭제합니다."
 
 #. Permission description in the channel-scoped permissions editor for the Manage Permissions permission. "Overwrites" are per-channel permission overrides.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:201
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:206
 msgid "Edit overwrites for roles and members in this channel."
 msgstr "이 채널의 역할 및 멤버 권한을 수정합니다."
 
@@ -13602,6 +13714,11 @@ msgstr "검색 엔진 편집"
 #: src/features/input/components/KeybindRecorder.tsx:378
 msgid "Edit shortcut"
 msgstr "단축키 편집"
+
+#. Title of the soundboard edit modal.
+#: src/features/voice/components/SoundboardSoundModal.tsx:45
+msgid "Edit Sound"
+msgstr "Edit Sound"
 
 #. Action that opens the edit-sticker modal.
 #: src/features/expressions/components/modals/EditGuildStickerModal.tsx:28
@@ -13778,7 +13895,7 @@ msgid "Embed debugger form"
 msgstr "임베드 디버거 양식"
 
 #. Permission name: allows links to unfurl/embed in messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:418
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:423
 msgid "Embed links"
 msgstr "링크 임베드"
 
@@ -13821,15 +13938,16 @@ msgstr "임베드를 다시 표시했습니다"
 #. Collapsible group heading in the Theme Studio tokens list, for emoji tokens.
 #. Column header for the custom emoji image or glyph.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/app/config/AuditLogConstants.ts:187
+#: src/features/app/config/AuditLogConstants.ts:199
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:337
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:481
 #: src/features/theme_studio/sections/TokenGroups.ts:114
 #: src/features/user/components/settings_utils/section_registry/SharedDescriptors.ts:162
 msgid "Emoji"
 msgstr "이모티콘"
 
 #. Community settings tab for managing custom emoji uploaded to the community.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:36
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:38
 msgctxt "community-settings-tab"
 msgid "Emoji"
 msgstr "이모티콘"
@@ -14303,7 +14421,7 @@ msgid "End grace period now?"
 msgstr "유예 기간을 지금 종료할까요?"
 
 #. Voice control menu action to stop sharing the screen.
-#: src/features/voice/components/VoiceControlBar.tsx:108
+#: src/features/voice/components/VoiceControlBar.tsx:112
 msgid "End screen share"
 msgstr "화면 공유 중단"
 
@@ -15031,7 +15149,7 @@ msgstr "표현 일괄 삭제"
 
 #. Community settings sidebar category grouping the emoji and stickers tabs.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:249
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:265
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:137
 msgid "Expressions"
 msgstr "표현"
@@ -15207,6 +15325,11 @@ msgstr "초대를 불러오지 못했습니다. 다시 시도해 주세요."
 #: src/features/voice/components/modals/ScreenSharePickerModal.tsx:120
 msgid "Failed to load shareable sources."
 msgstr "공유 가능한 소스를 불러오지 못했습니다."
+
+#. Error message in the guild soundboard tab.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:75
+msgid "Failed to load soundboard sounds"
+msgstr "Failed to load soundboard sounds"
 
 #. Error message in the guild stickers tab.
 #: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:74
@@ -15493,9 +15616,11 @@ msgid "Favorited"
 msgstr "즐겨찾기"
 
 #. Generic section heading / category label for favorites.
+#. Section header for favorited sounds in the voice soundboard popover.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:258
 #: src/features/user/components/settings_utils/section_registry/AppearanceSections.ts:426
+#: src/features/voice/components/SoundboardMenu.tsx:46
 msgid "Favorites"
 msgstr "즐겨찾기"
 
@@ -15519,8 +15644,10 @@ msgstr "기능"
 msgid "Fetch a URL and inspect the embed payload the chat renderer receives."
 msgstr "URL을 가져와서 채팅 렌더러가 수신하는 임베드 페이로드를 검사합니다."
 
+#. Field label for the chosen soundboard audio file.
 #. Top-level native menu bar title (File menu).
 #: src/features/platform/utils/DesktopLocaleBridge.ts:43
+#: src/features/voice/components/SoundboardSoundModal.tsx:47
 msgid "File"
 msgstr "파일"
 
@@ -15606,7 +15733,7 @@ msgid "Filter by account creation date"
 msgstr "계정 생성일로 필터링"
 
 #. Label of the action-type filter dropdown in the activity log tab.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:120
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:121
 msgid "Filter by action"
 msgstr "작업으로 필터링"
 
@@ -15644,7 +15771,7 @@ msgstr "역할로 필터링"
 
 #. Label of the user filter dropdown in the activity log tab.
 #. Short label in the search user filter sheet. Keep it concise.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:116
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:117
 #: src/features/search/components/search/UserFilterSheet.tsx:25
 msgid "Filter by user"
 msgstr "사용자로 필터링"
@@ -15686,6 +15813,11 @@ msgstr "카메라 준비 중..."
 #: src/features/channel/components/emoji_picker/EmojiPickerSearchBar.tsx:14
 msgid "Find the emoji of your dreams"
 msgstr "원하는 이모티콘을 찾아보세요"
+
+#. Placeholder in the voice soundboard popover search box.
+#: src/features/voice/components/SoundboardMenu.tsx:42
+msgid "Find the perfect sound"
+msgstr "Find the perfect sound"
 
 #. Label in the channel and chat sticker picker search bar.
 #: src/features/channel/components/sticker_picker/StickerPickerSearchBar.tsx:12
@@ -16097,7 +16229,7 @@ msgstr "미디어 전달"
 #. Keyboard shortcut action label shown in the shortcuts list and keybind editor. Keep short, sentence case.
 #. Title of the forward message modal.
 #: src/features/input/state/input_keybind/shared.ts:25
-#: src/features/messaging/components/modals/ForwardModal.tsx:79
+#: src/features/messaging/components/modals/ForwardModal.tsx:80
 msgid "Forward message"
 msgstr "메시지 전달"
 
@@ -18002,7 +18134,7 @@ msgid "Ignore the friend request from {displayName}?"
 msgstr "{displayName}님의 친구 요청을 무시하시겠어요?"
 
 #. Permission description in the channel-scoped permissions editor for the Bypass Slowmode permission. Slowmode is the per-channel cooldown between messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:275
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:280
 msgid "Ignore this channel's slowmode cooldown."
 msgstr "이 채널의 슬로우 모드 제한을 무시합니다."
 
@@ -18630,6 +18762,11 @@ msgstr "데스크톱 업데이트 {version} 설치 중…"
 msgid "Installing desktop update…"
 msgstr "데스크톱 업데이트 설치 중…"
 
+#. Small hint next to a soundboard limit input showing the instance-wide ceiling set by the admin panel.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:107
+msgid "Instance limit: {max}"
+msgstr "Instance limit: {max}"
+
 #. Audit log operation flag label for invite creation.
 #: src/features/guild/utils/guild_tabs/GuildAuditLogTabUtils.ts:193
 msgid "Instant invites"
@@ -18652,7 +18789,7 @@ msgstr "정수"
 
 #. Community settings sidebar category grouping webhooks.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:257
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:273
 #: src/features/user/components/settings_utils/search_index/AuthorizedAppsIndex.ts:26
 msgid "Integrations"
 msgstr "연동"
@@ -18786,7 +18923,7 @@ msgstr "초대하기"
 
 #. Audit log target-type filter label. Filters entries that target an invite link.
 #. Join source label on the community members page. Shown when the member joined via an invite link.
-#: src/features/app/config/AuditLogConstants.ts:195
+#: src/features/app/config/AuditLogConstants.ts:211
 #: src/features/channel/components/guild_members_page/MemberTableRow.tsx:43
 msgctxt "invite-noun"
 msgid "Invite"
@@ -18889,12 +19026,12 @@ msgid "Invite modal preview"
 msgstr "초대 모달 미리보기"
 
 #. Permission description in the channel-scoped permissions editor for the Create Invite Links permission. The invite drops the new member into this channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:216
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:221
 msgid "Invite new people to the community with a link to this channel."
 msgstr "이 채널로 연결되는 초대 링크로 커뮤니티에 새로운 사람들을 초대하세요."
 
 #. Permission description in the role/permission editor for the Create Invite Links permission. Covers links that let someone outside the community join it.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:113
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:118
 msgid "Invite new people to the community with an invite link."
 msgstr "초대 링크를 사용하여 커뮤니티에 새로운 사람들을 초대하세요."
 
@@ -18989,7 +19126,7 @@ msgid "Invites"
 msgstr "초대"
 
 #. Community settings tab for invite link management.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:86
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:93
 msgctxt "community-settings-tab"
 msgid "Invites"
 msgstr "초대"
@@ -19210,7 +19347,7 @@ msgid "Join the call"
 msgstr "통화 참여하기"
 
 #. Permission description in the channel-scoped permissions editor for the Connect permission. "View channel" is another permission in this same editor, so match the wording used for its name. The placeholder renders the literal @everyone role name and must not be translated.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:280
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:285
 msgid "Join this voice channel and hear others. Denying it along with View channel for {everyoneMention} makes the channel private."
 msgstr "이 음성 채널에 참여하여 다른 사람들의 소리를 들을 수 있습니다. {everyoneMention}에 대해 채널 보기 권한과 함께 이 권한을 거부하면 채널이 비공개로 설정됩니다."
 
@@ -19246,7 +19383,7 @@ msgid "Join voice channel"
 msgstr "음성 채널 참여"
 
 #. Permission description in the role/permission editor for the Connect permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:162
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:167
 msgid "Join voice channels and hear others."
 msgstr "음성 채널에 참여하고 다른 사람들의 소리를 들을 수 있습니다."
 
@@ -19525,7 +19662,7 @@ msgid "Kick member"
 msgstr "멤버 추방"
 
 #. Permission name: allows removing members from a community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:370
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:375
 msgid "Kick members"
 msgstr "멤버 추방"
 
@@ -19931,6 +20068,10 @@ msgstr "모든 역할을 멘션할 수 있는 권한이 있는 멤버만 이 역
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogChannelMessages.ts:91
 msgid "Limited the channel to {count, plural, one {# user} other {# users}}"
 msgstr "채널에 참여할 수 있는 사용자 수를 {count, plural, one {#명} other {#명}}으로 제한했습니다"
+
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:401
+msgid "Limits & playback"
+msgstr "Limits & playback"
 
 #. Label for the has:link filter option in the mobile channel search sheet.
 #: src/features/channel/components/bottomsheets/ChannelSearchBottomSheet.tsx:116
@@ -20426,17 +20567,17 @@ msgid "Manage blocked users"
 msgstr "차단된 사용자 관리"
 
 #. Channel-scoped permission name: allows editing this channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:495
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:504
 msgid "Manage channel"
 msgstr "채널 관리"
 
 #. Permission name: allows creating, editing, or deleting channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:366
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:371
 msgid "Manage channels"
 msgstr "채널 관리"
 
 #. Permission name: allows editing global community settings.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:358
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:363
 msgid "Manage community"
 msgstr "커뮤니티 관리"
 
@@ -20446,7 +20587,7 @@ msgid "Manage community features"
 msgstr "커뮤니티 기능 관리"
 
 #. Permission name: allows editing or deleting custom emoji and stickers.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:394
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:399
 msgid "Manage emoji & stickers"
 msgstr "이모티콘 및 스티커 관리"
 
@@ -20459,12 +20600,12 @@ msgid "Manage invite links for this channel."
 msgstr "이 채널에 대한 초대 링크를 관리합니다."
 
 #. Permission name: allows deleting other members' messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:410
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:415
 msgid "Manage messages"
 msgstr "메시지 관리"
 
 #. Permission name: allows changing other members' nicknames.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:386
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:391
 msgid "Manage nicknames"
 msgstr "닉네임 관리"
 
@@ -20474,7 +20615,7 @@ msgid "Manage payment methods"
 msgstr "결제 수단 관리"
 
 #. Channel-scoped permission name: allows editing permission overwrites.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:499
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:508
 msgid "Manage permissions"
 msgstr "권한 관리"
 
@@ -20484,9 +20625,14 @@ msgid "Manage purchased gift codes and gift URLs"
 msgstr "구매한 선물 코드 및 선물 URL 관리"
 
 #. Permission name: allows role management and permission overwrite editing.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:362
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:367
 msgid "Manage roles"
 msgstr "역할 관리"
+
+#. Accessible label for the settings button in the voice soundboard popover.
+#: src/features/voice/components/SoundboardMenu.tsx:74
+msgid "Manage soundboard"
+msgstr "Manage soundboard"
 
 #. Billing action that opens subscription management or the customer billing portal.
 #: src/features/premium/utils/PremiumMessageDescriptors.ts:13
@@ -20494,7 +20640,7 @@ msgid "Manage subscription"
 msgstr "구독 관리"
 
 #. Permission name: allows creating, editing, or deleting webhooks.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:398
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:403
 msgid "Manage webhooks"
 msgstr "웹훅 관리"
 
@@ -20813,6 +20959,10 @@ msgstr "성인 미디어"
 msgid "Max {maxSize}."
 msgstr "최대 {maxSize}."
 
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:413
+msgid "Max duration (seconds)"
+msgstr "Max duration (seconds)"
+
 #. Label above the max-uses dropdown in the invite link settings.
 #: src/features/invite/components/modals/InviteModal.tsx:116
 msgid "Max number of uses"
@@ -20821,6 +20971,10 @@ msgstr "최대 사용 횟수"
 #: src/features/theme/components/modals/BackgroundImageGalleryModal.tsx:57
 msgid "Max size: {BACKGROUND_MEDIA_MAX_SIZE_LABEL}."
 msgstr "최대 크기: {BACKGROUND_MEDIA_MAX_SIZE_LABEL}."
+
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:432
+msgid "Max sounds"
+msgstr "Max sounds"
 
 #: src/features/user/components/modals/tabs/component_gallery_tab/IndicatorsTab.tsx:451
 msgid "Max visible count"
@@ -20983,7 +21137,7 @@ msgid "Medium size (default)"
 msgstr "중간 크기(기본)"
 
 #. Audit log target-type filter label. Filters entries that target a community member.
-#: src/features/app/config/AuditLogConstants.ts:171
+#: src/features/app/config/AuditLogConstants.ts:183
 msgid "Member"
 msgstr "멤버"
 
@@ -21086,7 +21240,7 @@ msgid "Members"
 msgstr "멤버"
 
 #. Community settings tab for managing community members.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:81
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:88
 msgctxt "community-settings-tab"
 msgid "Members"
 msgstr "멤버"
@@ -21166,7 +21320,7 @@ msgid "Mention everyone or any role (even if the role isn't set to be mentionabl
 msgstr "모든 사람 또는 역할을 멘션할 수 있습니다(역할 멘션이 허용되지 않은 경우에도)."
 
 #. Permission description in the channel-scoped permissions editor for the Mention Everyone permission. Notes that this overrides the per-role "mentionable" flag.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:255
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:260
 msgid "Mention everyone or any role in this channel (even if the role isn't set to be mentionable)."
 msgstr "이 채널에서 모든 사람 또는 역할을 멘션할 수 있습니다(역할 멘션이 허용되지 않은 경우에도)."
 
@@ -21242,7 +21396,7 @@ msgstr "메시지"
 
 #. Audit log target-type filter label. Filters entries that target an individual message.
 #. Short label in the inputs tab. Keep it concise.
-#: src/features/app/config/AuditLogConstants.ts:204
+#: src/features/app/config/AuditLogConstants.ts:220
 #: src/features/user/components/modals/tabs/component_gallery_tab/ComponentGalleryTabInputsTab.tsx:86
 msgid "Message"
 msgstr "메시지"
@@ -21332,7 +21486,7 @@ msgid "Message debug"
 msgstr "메시지 디버그"
 
 #. Audit log entry label. A single message was deleted by a moderator.
-#: src/features/app/config/AuditLogConstants.ts:147
+#: src/features/app/config/AuditLogConstants.ts:159
 msgid "Message deleted"
 msgstr "메시지 삭제됨"
 
@@ -21355,7 +21509,7 @@ msgstr "메시지 표시 설정은 데스크톱에서만 사용할 수 있습니
 msgid "Message editing"
 msgstr "메시지 수정"
 
-#: src/features/messaging/components/modals/ForwardModal.tsx:307
+#: src/features/messaging/components/modals/ForwardModal.tsx:317
 msgid "Message forwarded"
 msgstr "메시지 전달됨"
 
@@ -21404,7 +21558,7 @@ msgstr "메시지 입력 버튼"
 
 #. Error modal title in the forward modal when the optional comment exceeds the message length limit.
 #. Form validation error indicating the message exceeds the allowed length.
-#: src/features/messaging/components/modals/ForwardModal.tsx:50
+#: src/features/messaging/components/modals/ForwardModal.tsx:51
 #: src/features/ui/character_counter/CharacterCountMessages.ts:16
 msgid "Message is too long"
 msgstr "메시지가 너무 깁니다"
@@ -21435,7 +21589,7 @@ msgid "Message list for {channelName}"
 msgstr "{channelName} 메시지 목록"
 
 #. Audit log entry label. A message was pinned in a channel.
-#: src/features/app/config/AuditLogConstants.ts:155
+#: src/features/app/config/AuditLogConstants.ts:167
 msgid "Message pinned"
 msgstr "메시지 고정됨"
 
@@ -21494,7 +21648,7 @@ msgid "Message time"
 msgstr "메시지 시간"
 
 #. Audit log entry label. A message was unpinned from a channel.
-#: src/features/app/config/AuditLogConstants.ts:159
+#: src/features/app/config/AuditLogConstants.ts:171
 msgid "Message unpinned"
 msgstr "메시지 고정 해제됨"
 
@@ -21528,12 +21682,12 @@ msgid "Messages"
 msgstr "메시지"
 
 #. Permission category for chat messages, uploads, embeds, reactions, and media.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:330
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:335
 msgid "Messages & media"
 msgstr "메시지 및 미디어"
 
 #. Audit log entry label. Multiple messages were bulk-deleted by a moderator.
-#: src/features/app/config/AuditLogConstants.ts:151
+#: src/features/app/config/AuditLogConstants.ts:163
 msgid "Messages deleted"
 msgstr "메시지 삭제됨"
 
@@ -21821,18 +21975,18 @@ msgid "Mod"
 msgstr "모더"
 
 #. Permission category for moderation actions against members or messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:334
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:339
 msgid "Moderation"
 msgstr "모더레이션"
 
 #. Community settings tab for moderation and safety controls.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:56
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:63
 msgctxt "community-settings-tab"
 msgid "Moderation"
 msgstr "모더레이션"
 
 #. Empty-state body in the activity log tab when there are no log entries to show.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:132
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:133
 msgid "Moderation actions and community changes will appear here."
 msgstr "모더레이션 작업 및 커뮤니티 변경 내역이 여기에 표시됩니다."
 
@@ -22037,7 +22191,7 @@ msgid "Move item up"
 msgstr "항목 위로 이동"
 
 #. Permission name: allows moving members between voice channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:487
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:496
 msgid "Move members"
 msgstr "멤버 이동"
 
@@ -22173,7 +22327,7 @@ msgstr "음소거"
 #: src/features/user/components/settings_utils/search_index/KeybindsIndex.ts:178
 #: src/features/voice/components/bottomsheets/DirectCallLobbyBottomSheet.tsx:101
 #: src/features/voice/components/bottomsheets/VoiceLobbyBottomSheet.tsx:69
-#: src/features/voice/components/VoiceControlBar.tsx:122
+#: src/features/voice/components/VoiceControlBar.tsx:126
 msgctxt "voice-control-action"
 msgid "Mute"
 msgstr "마이크 음소거"
@@ -22266,7 +22420,7 @@ msgid "Mute favorites"
 msgstr "즐겨찾기 알림 끄기"
 
 #. Permission name: allows moderators to mute other voice participants.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:479
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:488
 msgid "Mute members"
 msgstr "멤버 음소거"
 
@@ -22283,12 +22437,12 @@ msgid "Mute notifications"
 msgstr "알림 끄기"
 
 #. Permission description in the channel-scoped permissions editor for the Mute Members permission. The mute applies for every listener, not only for the moderator.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:307
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:312
 msgid "Mute other members in this voice channel for everyone."
 msgstr "이 음성 채널에서 다른 멤버를 음소거하여 모든 사람에게 들리지 않게 합니다."
 
 #. Permission description in the role/permission editor for the Mute Members permission at community scope. The mute applies for every listener, not only for the moderator.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:182
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:187
 msgid "Mute other members in voice channels for everyone."
 msgstr "음성 채널에서 다른 멤버를 음소거하여 모든 사람에게 들리지 않게 합니다."
 
@@ -22505,6 +22659,7 @@ msgstr "알림 표시줄 재정의"
 #: src/features/expressions/components/modals/meme_form/MemeFormFields.tsx:24
 #: src/features/expressions/components/modals/sticker_form/StickerFormFields.tsx:28
 #: src/features/guild/components/modals/guild_tabs/guild_overview_tab/sections/BrandingSection.tsx:27
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:484
 #: src/features/theme_studio/sections/LibrarySection.tsx:105
 #: src/features/user/components/modals/tabs/chat_settings_tab/AddCustomSearchEngineModal.tsx:76
 #: src/features/user/components/settings_utils/search_index/MyProfileIndex.ts:57
@@ -22699,6 +22854,10 @@ msgstr "애니메이션 사용 안 함"
 #: src/features/user/components/modals/tabs/notifications_tab/TextToSpeech.tsx:33
 msgid "Never automatically"
 msgstr "자동으로 안 함"
+
+#: src/features/voice/components/SoundboardSoundModal.tsx:578
+msgid "Never mind"
+msgstr "Never mind"
 
 #: src/features/channel/components/ChannelDivider.tsx:37
 #: src/features/channel/components/ChannelDivider.tsx:52
@@ -23059,7 +23218,7 @@ msgstr "저장할 변경사항 없음"
 msgid "No channels available"
 msgstr "채널을 찾을 수 없습니다"
 
-#: src/features/messaging/components/modals/ForwardModal.tsx:426
+#: src/features/messaging/components/modals/ForwardModal.tsx:436
 #: src/features/search/components/search/ChannelFilterSheet.tsx:120
 msgid "No channels found"
 msgstr "채널을 찾을 수 없습니다"
@@ -23212,7 +23371,7 @@ msgid "No local files referenced"
 msgstr "참조된 로컬 파일 없음"
 
 #. Empty-state title in the activity log tab when there are no log entries to show.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:128
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:129
 msgid "No logs yet"
 msgstr "아직 활동 로그가 없습니다"
 
@@ -23314,7 +23473,7 @@ msgid "No reason provided"
 msgstr "사유 없음"
 
 #. Fallback text in an expanded activity log entry when the moderator did not supply a reason.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:716
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:721
 msgid "No reason was provided."
 msgstr "사유가 제공되지 않았습니다."
 
@@ -23398,6 +23557,21 @@ msgstr "설정된 단축키 없음"
 #: src/features/user/components/modals/tabs/keybinds_tab/DefaultKeybindsList.tsx:94
 msgid "No shortcuts match that search."
 msgstr "검색 결과와 일치하는 단축키가 없습니다."
+
+#. Empty-state text in the guild soundboard tab.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:53
+msgid "No soundboard slots available"
+msgstr "No soundboard slots available"
+
+#. Empty state in the voice soundboard popover.
+#: src/features/voice/components/SoundboardMenu.tsx:62
+msgid "No soundboard sounds yet"
+msgstr "No soundboard sounds yet"
+
+#. Empty state in the voice soundboard popover when a search returns nothing.
+#: src/features/voice/components/SoundboardMenu.tsx:66
+msgid "No sounds match your search"
+msgstr "No sounds match your search"
 
 #: src/features/auth/components/pages/oauth_authorize_page/OAuthScopesStep.tsx:115
 msgid "No specific scopes requested."
@@ -24311,7 +24485,7 @@ msgid "Open emoji in browser"
 msgstr "브라우저에서 이모티콘 열기"
 
 #. Accessible label for the emoji picker trigger button in the forward modal comment field.
-#: src/features/messaging/components/modals/ForwardModal.tsx:95
+#: src/features/messaging/components/modals/ForwardModal.tsx:96
 #: src/features/user/components/modals/tabs/my_profile_tab/BioEditor.tsx:27
 msgid "Open emoji picker"
 msgstr "이모티콘 선택기 열기"
@@ -24847,7 +25021,7 @@ msgid "Overview"
 msgstr "개요"
 
 #. Community settings tab for basic server/community details.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:46
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:53
 msgctxt "community-settings-tab"
 msgid "Overview"
 msgstr "개요"
@@ -25055,9 +25229,11 @@ msgstr "메시지 링크를 붙여넣으세요."
 
 #. Button label in the trimmer modal that pauses preview playback.
 #. Generic media-player control: pause playback.
+#. Pause button label in the soundboard trimmer.
 #. Pause-preview button label in the voice message composer modal.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:369
 #: src/features/voice/components/EntranceSoundTrimmerModal.tsx:45
+#: src/features/voice/components/SoundboardSoundModal.tsx:75
 #: src/features/voice/components/VoiceMessageComposerModal.tsx:89
 msgid "Pause"
 msgstr "일시 정지"
@@ -25097,6 +25273,11 @@ msgstr "백그라운드에서 화면 공유 미리보기 일시 중지"
 #: src/features/user/components/modals/tabs/appearance_tab/StreamerModeTab.tsx:39
 msgid "Pause notifications"
 msgstr "알림 일시 중지"
+
+#. Accessible label for a soundboard preview pause button.
+#: src/features/voice/components/SoundWaveform.tsx:18
+msgid "Pause preview"
+msgstr "Pause preview"
 
 #. Voice screen share menu preference that pauses the local stream preview while the app is unfocused.
 #: src/features/ui/action_menu/items/voice_participant_menu_data/shared.ts:28
@@ -25176,7 +25357,7 @@ msgstr "펜실베이니아"
 #: src/features/expressions/utils/UnicodeEmojis.ts:21
 #: src/features/search/state/QuickSwitcherResultConverters.ts:22
 #: src/features/search/utils/QuickSwitcherModalUtils.tsx:53
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:261
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:277
 msgid "People"
 msgstr "사람"
 
@@ -25485,7 +25666,7 @@ msgid "Pin message"
 msgstr "메시지 고정"
 
 #. Permission name: allows pinning messages in a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:414
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:419
 msgid "Pin messages"
 msgstr "메시지 고정"
 
@@ -25495,12 +25676,12 @@ msgid "Pin messages here for everyone to see."
 msgstr "모두가 볼 수 있도록 여기에 메시지를 고정하세요."
 
 #. Permission description in the channel-scoped permissions editor for the Pin Messages permission. Covers messages from anyone, not only their own.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:235
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:240
 msgid "Pin or unpin any message in this channel."
 msgstr "이 채널의 모든 메시지를 고정하거나 고정 해제합니다."
 
 #. Permission description in the role/permission editor for the Pin Messages permission at community scope. Covers messages from anyone, not only their own.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:137
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:142
 msgid "Pin or unpin any message."
 msgstr "모든 메시지를 고정하거나 고정 해제합니다."
 
@@ -25612,8 +25793,10 @@ msgstr "플랫폼"
 msgid "Platform admin"
 msgstr "플랫폼 관리자"
 
+#. Button label to preview a soundboard sound.
 #. Generic media-player control: start playback.
 #. Play-preview button label in the voice message composer modal.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:79
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:365
 #: src/features/voice/components/VoiceMessageComposerModal.tsx:85
 msgid "Play"
@@ -25624,15 +25807,27 @@ msgstr "재생"
 msgid "Play animated emojis"
 msgstr "움직이는 이모티콘 재생"
 
+#. Accessible label for a soundboard preview play button.
+#: src/features/voice/components/SoundWaveform.tsx:14
+msgid "Play preview"
+msgstr "Play preview"
+
 #. Short label in the accessibility tab. Keep it concise.
 #: src/features/user/components/modals/tabs/AccessibilityTab.tsx:71
 msgid "Play sample"
 msgstr "샘플 재생"
 
 #. Button label in the trimmer modal. Plays the currently selected portion.
+#. Play button label in the soundboard trimmer.
 #: src/features/voice/components/EntranceSoundTrimmerModal.tsx:41
+#: src/features/voice/components/SoundboardSoundModal.tsx:71
 msgid "Play selection"
 msgstr "선택 영역 재생"
+
+#. Permission description in the role/permission editor for the Use Soundboard permission. Covers triggering soundboard sounds in voice; it does not cover adding or managing the sounds themselves.
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:108
+msgid "Play sounds from this community’s soundboard while connected to a voice channel."
+msgstr "Play sounds from this community’s soundboard while connected to a voice channel."
 
 #. Play-button label on the inline video player thumbnail before playback starts.
 #. Short label in the channel and chat embed video. Keep it concise.
@@ -25935,11 +26130,18 @@ msgstr "지정한 기간 동안 <0>{targetUserTag}</0>님이 메시지를 보내
 msgid "Prevent members from sending messages, reacting, and joining voice for a duration."
 msgstr "일정 기간 동안 멤버가 메시지를 보내거나, 반응하거나, 음성 채널에 참여하지 못하게 합니다."
 
+#. Section label above the soundboard waveform.
 #: src/features/expressions/components/modals/sticker_form/StickerPreview.tsx:21
 #: src/features/guild/components/modals/guild_tabs/guild_overview_tab/fields/GuildInviteSplashSettingsField.tsx:45
 #: src/features/user/components/modals/tabs/EmbedDebuggerTab.tsx:276
+#: src/features/voice/components/SoundboardSoundModal.tsx:46
 msgid "Preview"
 msgstr "미리보기"
+
+#. Tooltip on the speaker button that plays a soundboard sound locally without sending it to the call.
+#: src/features/voice/components/SoundboardMenu.tsx:58
+msgid "Preview (only you hear this)"
+msgstr "Preview (only you hear this)"
 
 #. Accessible label for a Discovery community card, which opens a preview of the community. {communityName} is the public community name.
 #: src/features/discovery/discovery/DiscoveryGuildCard.tsx:31
@@ -26096,7 +26298,7 @@ msgid "Prioritize speakers"
 msgstr "발언자 우선 표시"
 
 #. Permission name: allows a voice participant to be heard over others.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:475
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:480
 msgid "Priority speaker"
 msgstr "우선 발언권"
 
@@ -26545,7 +26747,7 @@ msgid "Push-to-talk is ignored in direct input. Switch to focused voice or custo
 msgstr "원본 입력에서는 눌러서 말하기가 무시됩니다. 사용하려면 음성 포커스 또는 사용자 지정으로 전환하세요."
 
 #. Tooltip on the mic button in the voice control bar when push-to-talk is enabled. {pushToTalkHint} is the formatted shortcut key combo.
-#: src/features/voice/components/VoiceControlBar.tsx:112
+#: src/features/voice/components/VoiceControlBar.tsx:116
 msgid "Push-to-talk is on. Hold {pushToTalkHint} to speak."
 msgstr "눌러서 말하기가 켜져 있습니다. {pushToTalkHint} 키를 누른 채 말하세요."
 
@@ -26727,7 +26929,7 @@ msgid "Read message aloud"
 msgstr "메시지 소리 내어 읽기"
 
 #. Permission name: allows seeing earlier messages in a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:426
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:431
 msgid "Read message history"
 msgstr "메시지 기록 읽기"
 
@@ -26739,12 +26941,12 @@ msgid "Read messages"
 msgstr "메시지 읽기"
 
 #. Permission description in the role/permission editor for the Read Message History permission at community scope. Without the permission the member sees only messages that arrive while the channel is open in front of them.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:151
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:156
 msgid "Read messages sent before opening a channel. Without this permission, members only see messages that arrive while they have the channel open."
 msgstr "채널을 열기 전에 보낸 메시지를 읽습니다. 이 권한이 없으면 멤버는 채널을 열어 둔 동안 도착하는 메시지만 볼 수 있습니다."
 
 #. Permission description in the channel-scoped permissions editor for the Read Message History permission. Without the permission the member sees only messages that arrive while the channel is open in front of them.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:249
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:254
 msgid "Read messages sent in this channel before opening it. Without this permission, members only see messages that arrive while they have it open."
 msgstr "이 채널을 열기 전에 보낸 메시지를 읽습니다. 이 권한이 없으면 멤버는 채널을 열어 둔 동안 도착하는 메시지만 볼 수 있습니다."
 
@@ -26776,8 +26978,8 @@ msgstr "업그레이드할 준비가 되셨나요?"
 msgid "Real-time"
 msgstr "실시간"
 
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:617
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:1286
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:622
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:1291
 #: src/features/moderation/components/modals/BanDetailsModal.tsx:74
 msgid "Reason"
 msgstr "사유"
@@ -27107,6 +27309,11 @@ msgstr "거절"
 msgid "Rejected"
 msgstr "거부됨"
 
+#. Field label for a soundboard sound emoji.
+#: src/features/voice/components/SoundboardSoundModal.tsx:57
+msgid "Related Emoji"
+msgstr "Related Emoji"
+
 #. Short label in the markdown tab. Keep it concise.
 #: src/features/user/components/modals/tabs/component_gallery_tab/MarkdownTab.tsx:129
 msgid "Relative"
@@ -27320,7 +27527,9 @@ msgid "Remove from dictionary"
 msgstr "사전에서 삭제"
 
 #. Action label that unpins the current channel, DM, or attachment from the favorites list.
+#. Tooltip on the star button of a favorited soundboard sound tile.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:326
+#: src/features/voice/components/SoundboardMenu.tsx:54
 msgid "Remove from favorites"
 msgstr "즐겨찾기에서 삭제"
 
@@ -27361,7 +27570,7 @@ msgid "Remove it from the channel for everyone."
 msgstr "모든 사람에게 보이지 않도록 채널에서 삭제합니다."
 
 #. Permission description in the role/permission editor for the Kick Members permission. Note that a kick is not permanent, unlike a ban.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:118
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:123
 msgid "Remove members from the community. They can rejoin with a new invite."
 msgstr "커뮤니티에서 멤버를 추방합니다. 추방된 멤버는 새 초대로 다시 참여할 수 있습니다."
 
@@ -27701,7 +27910,7 @@ msgid "Rename :{emojiName}:"
 msgstr ":{emojiName}: 이름 변경"
 
 #. Permission description in the channel-scoped permissions editor for the Manage Channel permission. "This channel" refers to the channel currently being edited.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:196
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:201
 msgid "Rename and edit this channel's settings."
 msgstr "이 채널의 설정을 편집하고 이름을 변경합니다."
 
@@ -28490,6 +28699,10 @@ msgstr "화면 공유를 사용하려면 {productName}을(를) 다시 시작하�
 msgid "Restart {productName}?"
 msgstr "{productName}을(를) 다시 시작할까요?"
 
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:450
+msgid "Restart a sound when it's re-triggered"
+msgstr "Restart a sound when it's re-triggered"
+
 #. Short confirmation button label in advanced settings.
 #. Short confirmation button label in advanced settings.
 #. Short label in the desktop settings tab. Keep it concise.
@@ -28799,7 +29012,7 @@ msgstr "벨소리"
 
 #. Audit log target-type filter label. Filters entries that target a role.
 #. Slash-command argument type name, spoken by screen readers for an argument that takes a role.
-#: src/features/app/config/AuditLogConstants.ts:179
+#: src/features/app/config/AuditLogConstants.ts:191
 #: src/features/lexical/composer/nodes/SlashSlotNode.ts:35
 msgid "Role"
 msgstr "역할"
@@ -28855,7 +29068,7 @@ msgid "Roles"
 msgstr "역할"
 
 #. Community settings tab for role hierarchy and permission rules.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:51
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:58
 msgctxt "community-settings-tab"
 msgid "Roles"
 msgstr "역할"
@@ -28983,6 +29196,7 @@ msgstr "채도"
 #: src/features/user/components/modals/CustomStatusBottomSheet.tsx:297
 #: src/features/user/components/modals/NoteEditSheet.tsx:48
 #: src/features/user/components/modals/tabs/chat_settings_tab/AddCustomSearchEngineModal.tsx:96
+#: src/features/voice/components/SoundboardSoundModal.tsx:587
 msgid "Save"
 msgstr "저장"
 
@@ -29016,6 +29230,7 @@ msgid "Save banner"
 msgstr "배너 저장"
 
 #: src/features/app/components/dialogs/shared/UnsavedChangesBannerContent.tsx:60
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:467
 msgid "Save changes"
 msgstr "변경 사항 저장"
 
@@ -29408,7 +29623,7 @@ msgid "Search channels"
 msgstr "채널 검색"
 
 #. Placeholder text in the channel picker search input of the forward modal.
-#: src/features/messaging/components/modals/ForwardModal.tsx:83
+#: src/features/messaging/components/modals/ForwardModal.tsx:84
 msgid "Search channels or DMs"
 msgstr "채널 또는 DM 검색"
 
@@ -29748,7 +29963,7 @@ msgid "Security key PIN form"
 msgstr "보안 키 PIN 입력 양식"
 
 #. Permission description in the role/permission editor for the View Channel permission at community scope. Per-channel overwrites still decide access for individual channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:128
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:133
 msgid "See channels by default. Channels that deny it stay hidden."
 msgstr "기본적으로 채널을 볼 수 있습니다. 거부된 채널은 숨겨집니다."
 
@@ -29762,12 +29977,12 @@ msgid "See the member list for channels in this community."
 msgstr "이 커뮤니티의 채널 멤버 목록을 볼 수 있습니다."
 
 #. Permission description in the channel-scoped permissions editor for the View Channel Members permission. Scoped to a single channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:211
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:216
 msgid "See the member list for this channel."
 msgstr "이 채널의 멤버 목록을 볼 수 있습니다."
 
 #. Permission description in the channel-scoped permissions editor for the View Channel permission. The placeholder renders the literal @everyone role name and must not be translated.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:221
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:226
 msgid "See this channel. Denying it for {everyoneMention} makes the channel private."
 msgstr "이 채널을 볼 수 있습니다. {everyoneMention}에 대해 이 권한을 거부하면 채널이 비공개로 설정됩니다."
 
@@ -30004,7 +30219,7 @@ msgid "Send"
 msgstr "보내기"
 
 #. Primary button label in the forward message modal. selectedCount is the number of selected destinations; selectionLimit is the maximum allowed.
-#: src/features/messaging/components/modals/ForwardModal.tsx:99
+#: src/features/messaging/components/modals/ForwardModal.tsx:100
 msgid "Send ({selectedCount}/{selectionLimit})"
 msgstr "보내기 ({selectedCount}/{selectionLimit})"
 
@@ -30111,7 +30326,7 @@ msgstr "메시지 보내기"
 #. Audit log operation flag label for message sending.
 #. Permission name: allows sending chat messages.
 #: src/features/guild/utils/guild_tabs/GuildAuditLogTabUtils.ts:197
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:402
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:407
 msgid "Send messages"
 msgstr "메시지 보내기"
 
@@ -30121,12 +30336,12 @@ msgid "Send messages disabled"
 msgstr "메시지 전송 비활성화됨"
 
 #. Permission description in the role/permission editor for the Send Messages permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:133
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:138
 msgid "Send messages in channels."
 msgstr "채널에서 메시지를 보낼 수 있습니다."
 
 #. Permission description in the channel-scoped permissions editor for the Send Messages permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:226
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:231
 msgid "Send messages in this channel."
 msgstr "이 채널에서 메시지를 보낼 수 있습니다."
 
@@ -30181,7 +30396,7 @@ msgid "Send to"
 msgstr "다음으로 전송"
 
 #. Permission name: allows sending text-to-speech messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:406
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:411
 msgid "Send TTS messages"
 msgstr "TTS 메시지 보내기"
 
@@ -30218,7 +30433,7 @@ msgid "Sending malware or dangerous links"
 msgstr "악성 코드 또는 위험한 링크 전송"
 
 #. Short label in the settings dialog forward channel selection.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:14
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:15
 msgid "Sending messages is disabled in this community"
 msgstr "이 커뮤니티에서는 메시지 전송이 비활성화되어 있습니다"
 
@@ -30383,6 +30598,10 @@ msgstr "음란물 필터를 {0}(으)로 설정했습니다."
 #: src/features/user/components/modals/tabs/components/EntranceSoundSection.tsx:108
 msgid "Set here"
 msgstr "여기서 설정"
+
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:404
+msgid "Set how long soundboard sounds can be, how many this community can hold, and how repeated sounds behave. Requires Manage Community."
+msgstr "Set how long soundboard sounds can be, how many this community can hold, and how repeated sounds behave. Requires Manage Community."
 
 #. placeholder {0}: renderInline(label, i18n)
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabRenderers.tsx:360
@@ -30656,7 +30875,7 @@ msgid "Set verification level to <0>none</0>."
 msgstr "인증 레벨을 <0>없음</0>으로 설정했습니다."
 
 #. Permission name: allows changing the voice service region.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:491
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:500
 msgid "Set voice region"
 msgstr "음성 지역 설정"
 
@@ -30923,7 +31142,7 @@ msgid "Shortcuts are paused while recording."
 msgstr "기록하는 동안에는 단축키가 일시 중지됩니다."
 
 #. Body of the error modal shown when the forward modal comment exceeds the message length limit.
-#: src/features/messaging/components/modals/ForwardModal.tsx:54
+#: src/features/messaging/components/modals/ForwardModal.tsx:55
 msgid "Shorten the message and try again."
 msgstr "메시지를 줄여서 다시 시도해 주세요."
 
@@ -31063,12 +31282,12 @@ msgid "Show download button"
 msgstr "다운로드 버튼 표시"
 
 #. Permission description in the channel-scoped permissions editor for the Embed Links permission. The preview is the card rendered under a message that contains a link.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:240
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:245
 msgid "Show embedded previews for links sent in this channel."
 msgstr "이 채널에서 보내는 링크의 미리보기를 표시합니다."
 
 #. Permission description in the role/permission editor for the Embed Links permission at community scope. The preview is the card rendered under a message that contains a link.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:142
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:147
 msgid "Show embedded previews for links sent."
 msgstr "보낸 링크의 미리보기를 표시합니다."
 
@@ -31781,7 +32000,7 @@ msgid "Slowmode"
 msgstr "슬로우 모드"
 
 #. Short label in the settings dialog forward channel selection. Preserve {remaining}; it is inserted by code.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:37
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:38
 msgid "Slowmode · wait {remaining}"
 msgstr "슬로우 모드 · {remaining} 대기"
 
@@ -32042,7 +32261,7 @@ msgid "Something went wrong while issuing your refund. Contact support if this k
 msgstr "환불 처리 중 문제가 발생했습니다. 문제가 계속되면 고객지원팀에 문의하세요."
 
 #. Generic error shown in the activity log tab when fetching log entries fails.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:104
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:105
 msgid "Something went wrong while loading the activity log."
 msgstr "활동 로그를 로드하는 동안 문제가 발생했습니다."
 
@@ -32166,12 +32385,69 @@ msgstr "효과음"
 msgid "Sound for this scope"
 msgstr "이 대상에 사용할 소리"
 
+#. Field label for a soundboard sound name.
+#. Placeholder for the soundboard sound name field.
+#: src/features/voice/components/SoundboardSoundModal.tsx:52
+#: src/features/voice/components/SoundboardSoundModal.tsx:53
+msgid "Sound Name"
+msgstr "Sound Name"
+
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/user/components/settings_utils/search_index/NotificationsIndex.ts:94
 #: src/features/user/components/settings_utils/section_registry/NotificationsSections.ts:224
 msgid "Sound volume"
 msgstr "소리 볼륨"
+
+#. Field label for the soundboard sound volume.
+#: src/features/voice/components/SoundboardSoundModal.tsx:62
+msgid "Sound Volume"
+msgstr "Sound Volume"
+
+#. Community settings tab for managing soundboard sounds uploaded to the community.
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:48
+msgctxt "community-settings-tab"
+msgid "Soundboard"
+msgstr "Soundboard"
+
+#. Voice control button label that opens the guild soundboard popover.
+#: src/features/voice/components/VoiceControlBar.tsx:155
+msgctxt "voice-control-button"
+msgid "Soundboard"
+msgstr "Soundboard"
+
+#. Audit log target-type filter label. Filters entries that target a soundboard sound.
+#: src/features/app/config/AuditLogConstants.ts:207
+msgid "Soundboard sound"
+msgstr "Soundboard sound"
+
+#. Audit log entry label. A soundboard sound was added to the community.
+#: src/features/app/config/AuditLogConstants.ts:147
+msgid "Soundboard sound created"
+msgstr "Soundboard sound created"
+
+#. Audit log entry label. A soundboard sound was removed from the community.
+#: src/features/app/config/AuditLogConstants.ts:155
+msgid "Soundboard sound deleted"
+msgstr "Soundboard sound deleted"
+
+#. Audit log entry label. A soundboard sound was renamed or edited.
+#: src/features/app/config/AuditLogConstants.ts:151
+msgid "Soundboard sound updated"
+msgstr "Soundboard sound updated"
+
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:378
+msgid "Soundboard sounds"
+msgstr "Soundboard sounds"
+
+#. Body of the error modal shown when an unsupported soundboard file is selected. {maxSize} is a formatted file size.
+#. Body of the unsupported-file error. {maxSize} is a formatted file size.
+#. Error modal body. {maxSize} is a formatted file size.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:65
+#: src/features/voice/components/SoundboardMenu.tsx:79
+#: src/features/voice/components/SoundboardSoundModal.tsx:80
+msgid "Soundboard sounds must be MP3, OGG, M4A, or WAV audio under {maxSize}."
+msgstr "Soundboard sounds must be MP3, OGG, M4A, or WAV audio under {maxSize}."
 
 #. Section heading / tab label for the notification-sounds area.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
@@ -32185,6 +32461,11 @@ msgstr "소리"
 msgctxt "notifications-settings-section"
 msgid "Sounds"
 msgstr "소리"
+
+#. Description in the community soundboard upload section. {maxSize} is a formatted file size, {maxSeconds} a number.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:70
+msgid "Sounds must be under {maxSize} and at most {maxSeconds} seconds long."
+msgstr "Sounds must be under {maxSize} and at most {maxSeconds} seconds long."
 
 #. Footer summary resolution label for native source resolution.
 #. Resolution option in the stream settings menu meaning the original source resolution (no downscale).
@@ -32291,7 +32572,7 @@ msgid "Spatial and temporal layers"
 msgstr "공간 및 시간 레이어"
 
 #. Permission name: allows speaking in voice channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:462
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:467
 msgctxt "voice-permission"
 msgid "Speak"
 msgstr "말하기"
@@ -32702,7 +32983,7 @@ msgstr "스티커"
 #. Generic label for one sticker.
 #. Label for the has:sticker option in the mobile content-type filter sheet.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/app/config/AuditLogConstants.ts:191
+#: src/features/app/config/AuditLogConstants.ts:203
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:234
 #: src/features/search/components/search/HasFilterSheet.tsx:73
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:133
@@ -32793,7 +33074,7 @@ msgid "Stickers"
 msgstr "스티커"
 
 #. Community settings tab for managing custom stickers uploaded to the community.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:41
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:43
 msgctxt "community-settings-tab"
 msgid "Stickers"
 msgstr "스티커"
@@ -32909,7 +33190,7 @@ msgid "Stop watching"
 msgstr "시청 중지"
 
 #. Tooltip / button label in the voice control bar that stops watching a remote screen share.
-#: src/features/voice/components/VoiceControlBar.tsx:147
+#: src/features/voice/components/VoiceControlBar.tsx:151
 msgid "Stop watching stream"
 msgstr "스트림 시청 중지"
 
@@ -33010,7 +33291,7 @@ msgid "Stream settings"
 msgstr "스트림 설정"
 
 #. Permission name: allows video streaming or screen sharing in voice.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:467
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:472
 msgid "Stream video"
 msgstr "비디오 스트리밍"
 
@@ -33651,12 +33932,12 @@ msgid "Talk in calls and test your input."
 msgstr "통화에서 말하고 입력을 테스트할 수 있습니다."
 
 #. Permission description in the channel-scoped permissions editor for the Speak permission. "Mute members" is another permission in this same editor, so match the wording used for its name.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:286
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:291
 msgid "Talk in this voice channel. Without this permission, members stay muted until someone with the \"Mute members\" permission unmutes them."
 msgstr "이 음성 채널에서 말할 수 있습니다. 이 권한이 없으면 \"멤버 음소거\" 권한이 있는 사람이 음소거를 해제할 때까지 멤버는 음소거 상태로 유지됩니다."
 
 #. Permission description in the role/permission editor for the Speak permission at community scope. "Mute members" is another permission in this same editor, so match the wording used for its name.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:166
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:171
 msgid "Talk in voice channels. Without this permission, members stay muted until someone with the \"Mute members\" permission unmutes them."
 msgstr "음성 채널에서 말할 수 있습니다. 이 권한이 없으면 \"멤버 음소거\" 권한이 있는 사람이 음소거를 해제할 때까지 멤버는 음소거 상태로 유지됩니다."
 
@@ -34199,6 +34480,16 @@ msgctxt "screen-share"
 msgid "The screen share source stopped sending video, so your screen share was stopped."
 msgstr "화면 공유 소스가 더 이상 비디오를 보내지 않아 화면 공유가 중단되었습니다."
 
+#. Activity log detail line under a deleted soundboard sound, shown only when someone other than the person who deleted it had uploaded it. {user} is the user who uploaded the sound, shown as a clickable user chip.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:55
+msgid "The sound was uploaded by {user}"
+msgstr "The sound was uploaded by {user}"
+
+#. Notice at the top of the community soundboard tab when the instance-wide soundboard toggle is off.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:124
+msgid "The soundboard is turned off for this instance. Existing sounds are shown for cleanup only."
+msgstr "The soundboard is turned off for this instance. Existing sounds are shown for cleanup only."
+
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabRenderers.tsx:748
 msgid "The sticker was uploaded as animated."
 msgstr "스티커가 애니메이션으로 업로드되었습니다."
@@ -34541,6 +34832,11 @@ msgstr "코드가 유효하지 않거나 이미 사용되었습니다."
 msgid "This code was already redeemed."
 msgstr "이미 사용된 코드입니다."
 
+#. Inline error under the max-sounds input when the value is below the number of sounds already uploaded.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:115
+msgid "This community already has {installed} sounds. Delete some before setting a lower limit."
+msgstr "This community already has {installed} sounds. Delete some before setting a lower limit."
+
 #: src/features/guild/components/modals/guild_tabs/GuildInvitesTab.tsx:102
 msgid "This community doesn't have any invite links yet. Go to a channel and create an invite to invite people."
 msgstr "이 커뮤니티에는 아직 초대 링크가 없습니다. 채널로 이동해 초대를 만들어 사람들을 초대해 보세요."
@@ -34738,6 +35034,11 @@ msgstr "이 인스턴스에서는 현재 최대 720p, 30 FPS로 화면 공유가
 #: src/features/app/components/setup/SetupWizardSteps.tsx:52
 msgid "This instance has no accounts yet. The first account you create automatically becomes the administrator."
 msgstr "이 인스턴스에는 아직 계정이 없습니다. 생성하는 첫 번째 계정이 자동으로 관리자가 됩니다."
+
+#. Inline error under a soundboard limit input when the entered value exceeds the instance-wide ceiling.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:111
+msgid "This instance limits this to {max}. Ask an instance admin to raise it."
+msgstr "This instance limits this to {max}. Ask an instance admin to raise it."
 
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabRenderers.tsx:688
 msgid "This invite expires after {count, plural, one {# use} other {# uses}}."
@@ -35290,7 +35591,7 @@ msgid "Time out {tag}"
 msgstr "{tag}님 타임아웃"
 
 #. Permission name: allows temporarily restricting members.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:446
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:451
 msgid "Time out members"
 msgstr "멤버 타임아웃"
 
@@ -35587,7 +35888,7 @@ msgid "TOTP"
 msgstr "TOTP"
 
 #. Subtitle under the activity-log page title.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:112
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:113
 msgid "Track moderator actions across the community."
 msgstr "커뮤니티 전체의 모더레이터 활동을 추적합니다."
 
@@ -35698,6 +35999,11 @@ msgstr "입장음 다듬기"
 #: src/features/voice/components/EntranceSoundTrimmerModal.tsx:53
 msgid "Trimmed clip is over the {limit} size limit. Try a shorter selection."
 msgstr "잘라낸 클립이 {limit} 크기 제한을 초과했습니다. 더 짧게 선택해 보세요."
+
+#. Error when a trimmed soundboard clip encodes larger than the size cap.
+#: src/features/voice/components/SoundboardSoundModal.tsx:84
+msgid "Trimmed selection is {size} — over the {limit} limit. Pick a shorter selection."
+msgstr "Trimmed selection is {size} — over the {limit} limit. Pick a shorter selection."
 
 #. Native Help submenu title that groups recovery actions like reload and reset.
 #: src/features/platform/utils/DesktopLocaleBridge.ts:154
@@ -35954,12 +36260,12 @@ msgid "Turn off streaming privacy before viewing login or account security detai
 msgstr "로그인 또는 계정 보안 세부 정보를 보려면 스트리밍 개인 정보 보호를 끄세요."
 
 #. Permission description in the channel-scoped permissions editor for the Stream Video permission. Covers both the webcam and screen sharing.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:292
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:297
 msgid "Turn on a camera or share a screen in this voice channel."
 msgstr "이 음성 채널에서 카메라를 켜거나 화면을 공유하세요."
 
 #. Permission description in the role/permission editor for the Stream Video permission at community scope. Covers both the webcam and screen sharing.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:172
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:177
 msgid "Turn on a camera or share a screen in voice channels."
 msgstr "음성 채널에서 카메라를 켜거나 화면을 공유합니다."
 
@@ -36185,7 +36491,7 @@ msgid "Ukrainian"
 msgstr "우크라이나어"
 
 #. Error-state title in the activity log tab when fetching log entries failed.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:136
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:137
 msgid "Unable to load activity logs"
 msgstr "활동 로그를 불러올 수 없습니다"
 
@@ -36543,7 +36849,7 @@ msgid "Unknown message type"
 msgstr "알 수 없는 메시지 유형"
 
 #. Fallback label for a permission bit the client does not recognize.
-#: src/features/permissions/utils/PermissionUtils.ts:421
+#: src/features/permissions/utils/PermissionUtils.ts:423
 msgid "Unknown permission"
 msgstr "알 수 없는 권한"
 
@@ -36589,10 +36895,10 @@ msgstr "알 수 없는 사용자"
 #: src/features/channel/utils/ChannelUtils.tsx:55
 #: src/features/devtools/utils/CommandUtils.ts:27
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogSentence.tsx:54
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:124
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:125
 #: src/features/lexical/composer/nodes/SlashSlotNode.ts:61
 #: src/features/voice/components/VoiceParticipantAvatarList.tsx:44
-#: src/features/voice/components/VoiceParticipantTile.tsx:174
+#: src/features/voice/components/VoiceParticipantTile.tsx:176
 #: src/features/webhook/components/WebhookListItem.tsx:31
 msgid "Unknown user"
 msgstr "알 수 없는 사용자"
@@ -36687,7 +36993,7 @@ msgstr "음소거 해제"
 #. Voice control button label to turn the user's microphone back on.
 #: src/features/voice/components/bottomsheets/DirectCallLobbyBottomSheet.tsx:96
 #: src/features/voice/components/bottomsheets/VoiceLobbyBottomSheet.tsx:64
-#: src/features/voice/components/VoiceControlBar.tsx:117
+#: src/features/voice/components/VoiceControlBar.tsx:121
 msgctxt "voice-control-action"
 msgid "Unmute"
 msgstr "마이크 음소거 해제"
@@ -36935,6 +37241,15 @@ msgstr "안 읽음"
 msgid "Unsaved changes"
 msgstr "저장되지 않은 변경사항"
 
+#. Error modal title.
+#. Title of the error modal shown when an unsupported soundboard file type is selected.
+#. Title of the error shown when a chosen soundboard file is the wrong type or too large.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:61
+#: src/features/voice/components/SoundboardMenu.tsx:78
+#: src/features/voice/components/SoundboardSoundModal.tsx:76
+msgid "Unsupported audio file"
+msgstr "Unsupported audio file"
+
 #. Error modal body shown when an entrance sound upload has an unsupported audio format.
 #: src/features/user/components/modals/tabs/hooks/useEntranceSound.ts:39
 msgid "Unsupported audio file."
@@ -37162,6 +37477,7 @@ msgstr "업그레이드하여 최대 15개의 맞춤 배경을 저장하고 HD �
 #. Button that opens a file picker to upload a branding image.
 #: src/features/app/components/setup/SetupWizardSteps.tsx:109
 #: src/features/theme/components/modals/BackgroundImageGalleryModal.tsx:84
+#: src/features/voice/components/SoundboardSoundModal.tsx:587
 msgid "Upload"
 msgstr "업로드"
 
@@ -37185,6 +37501,11 @@ msgstr "음성 채널에 참가할 때 자동으로 재생되는 사용자 지�
 #: src/features/input/state/input_keybind/shared.ts:201
 msgid "Upload a file"
 msgstr "파일 업로드"
+
+#. Title of the soundboard upload modal.
+#: src/features/voice/components/SoundboardSoundModal.tsx:44
+msgid "Upload a Sound"
+msgstr "Upload a Sound"
 
 #: src/features/theme_studio/sections/AssetsSection.tsx:138
 msgid "Upload assets"
@@ -37234,12 +37555,12 @@ msgid "Upload file"
 msgstr "파일 업로드"
 
 #. Permission description in the role/permission editor for the Attach Files permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:147
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:152
 msgid "Upload files and media in messages."
 msgstr "메시지에 파일 및 미디어를 업로드합니다."
 
 #. Permission description in the channel-scoped permissions editor for the Attach Files permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:245
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:250
 msgid "Upload files and media in this channel."
 msgstr "이 채널에 파일 및 미디어를 업로드합니다."
 
@@ -37272,6 +37593,7 @@ msgid "Upload preview frames for screen shares."
 msgstr "화면 공유 미리보기 프레임을 업로드합니다."
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:381
 #: src/features/user/components/settings_utils/section_registry/NotificationsSections.ts:200
 msgid "Upload sound"
 msgstr "사운드 업로드"
@@ -37309,6 +37631,7 @@ msgstr "업로드된 오디오 파일만"
 
 #. Column header showing who uploaded a custom emoji.
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:343
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:487
 msgid "Uploaded by"
 msgstr "업로드한 사람"
 
@@ -37520,7 +37843,7 @@ msgid "Use email"
 msgstr "이메일 사용"
 
 #. Permission description in the channel-scoped permissions editor for the Use External Emoji permission. "Other communities" means custom emoji uploaded in a different Fluxer community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:260
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:265
 msgid "Use emoji from other communities in this channel."
 msgstr "다른 커뮤니티의 이모티콘을 이 채널에서 사용합니다."
 
@@ -37535,12 +37858,12 @@ msgid "Use emoji from other communities."
 msgstr "다른 커뮤니티의 이모티콘을 사용합니다."
 
 #. Permission name: allows using emoji from other communities.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:430
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:435
 msgid "Use external emoji"
 msgstr "외부 이모티콘 사용"
 
 #. Permission name: allows using stickers from other communities.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:434
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:439
 msgid "Use external stickers"
 msgstr "외부 스티커 사용"
 
@@ -37632,8 +37955,13 @@ msgstr "재인증 텍스트 사용"
 msgid "Use selection"
 msgstr "선택 항목 사용"
 
+#. Permission name: allows playing soundboard sounds in voice channels.
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:484
+msgid "Use soundboard"
+msgstr "Use soundboard"
+
 #. Permission description in the channel-scoped permissions editor for the Use External Stickers permission. "Other communities" means stickers uploaded in a different Fluxer community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:265
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:270
 msgid "Use stickers from other communities in this channel."
 msgstr "다른 커뮤니티의 스티커를 이 채널에서 사용합니다."
 
@@ -37643,7 +37971,7 @@ msgid "Use stickers from other communities with {premiumProductName}"
 msgstr "{premiumProductName}으로 다른 커뮤니티의 스티커를 사용해 보세요"
 
 #. Permission description in the role/permission editor for the Use External Stickers permission. "Other communities" means stickers uploaded in a different Fluxer community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:157
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:162
 msgid "Use stickers from other communities."
 msgstr "다른 커뮤니티의 스티커를 사용합니다."
 
@@ -37709,7 +38037,7 @@ msgid "Use video and camera previews."
 msgstr "동영상 및 카메라 미리보기를 사용합니다."
 
 #. Permission name: allows voice activation instead of requiring push-to-talk.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:471
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:476
 msgid "Use voice activity"
 msgstr "음성 자동 감지 사용"
 
@@ -37761,7 +38089,7 @@ msgstr "이 커뮤니티에서만 사용됩니다."
 #. Audit log target-type filter label. Filters entries that target a user account.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Slash-command argument type name, spoken by screen readers for an argument that takes a user.
-#: src/features/app/config/AuditLogConstants.ts:175
+#: src/features/app/config/AuditLogConstants.ts:187
 #: src/features/lexical/composer/nodes/SlashSlotNode.ts:27
 #: src/features/user/components/settings_utils/search_index/MyProfileIndex.ts:65
 msgid "User"
@@ -38007,7 +38335,7 @@ msgid "Vanity URL"
 msgstr "맞춤 URL"
 
 #. Community settings tab for the community vanity/custom invite link.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:71
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:78
 msgctxt "community-settings-tab"
 msgid "Vanity URL"
 msgstr "맞춤 URL"
@@ -38451,7 +38779,7 @@ msgid "View {userName}'s profile"
 msgstr "{userName}님의 프로필 보기"
 
 #. Permission name: allows viewing community audit/activity logs.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:354
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:359
 msgid "View activity log"
 msgstr "활동 로그 보기"
 
@@ -38507,12 +38835,12 @@ msgid "View call controls"
 msgstr "통화 제어 보기"
 
 #. Permission name: allows seeing a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:450
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:455
 msgid "View channel"
 msgstr "채널 보기"
 
 #. Permission name: allows seeing the member list for a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:454
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:459
 msgid "View channel members"
 msgstr "채널 멤버 보기"
 
@@ -39056,12 +39384,12 @@ msgid "Waiting for passkey…"
 msgstr "패스키를 기다리는 중…"
 
 #. Inline notice in the forward modal when slowmode is active in the selected target channel. forwardChannelDisplayName is the channel name.
-#: src/features/messaging/components/modals/ForwardModal.tsx:70
+#: src/features/messaging/components/modals/ForwardModal.tsx:71
 msgid "Waiting for slowmode in {forwardChannelDisplayName} to expire."
 msgstr "{forwardChannelDisplayName} 채널의 슬로우 모드가 만료되기를 기다리는 중입니다."
 
 #. Inline notice in the forward modal when slowmode is active in one or more selected target channels.
-#: src/features/messaging/components/modals/ForwardModal.tsx:75
+#: src/features/messaging/components/modals/ForwardModal.tsx:76
 msgid "Waiting for slowmode in one or more selected channels to expire."
 msgstr "선택한 채널 중 일부 채널의 슬로우 모드 만료를 기다리는 중입니다."
 
@@ -39388,7 +39716,7 @@ msgid "Webcam"
 msgstr "웹캠"
 
 #. Audit log target-type filter label. Filters entries that target a webhook.
-#: src/features/app/config/AuditLogConstants.ts:200
+#: src/features/app/config/AuditLogConstants.ts:216
 msgid "Webhook"
 msgstr "웹훅"
 
@@ -39436,7 +39764,7 @@ msgid "Webhooks"
 msgstr "웹훅"
 
 #. Community settings tab for configuring webhooks.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:66
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:73
 msgctxt "community-settings-tab"
 msgid "Webhooks"
 msgstr "웹훅"
@@ -39621,6 +39949,10 @@ msgstr "미리보기를 켜면 {productName}에서 화면 공유 중 JPEG 프레
 #: src/features/voice/components/modals/ScreenSharePickerModal.tsx:302
 msgid "When previews are enabled, {productName} uploads occasional JPEG frames from your screen share so the other person in this DM can see a thumbnail before they watch."
 msgstr "미리보기를 켜면 {productName}에서 화면 공유 중 JPEG 프레임을 가끔 업로드하여, 이 DM의 상대방이 시청 전에 미리보기 이미지를 볼 수 있습니다."
+
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:452
+msgid "When someone plays the same sound again while it's still playing, stop it and start it over instead of layering another copy. Different sounds still overlap."
+msgstr "When someone plays the same sound again while it's still playing, stop it and start it over instead of layering another copy. Different sounds still overlap."
 
 #. Legend for streaming privacy behavior settings.
 #: src/features/user/components/modals/tabs/appearance_tab/StreamerModeTab.tsx:23
@@ -39816,7 +40148,7 @@ msgid "Withdraw"
 msgstr "신청 철회"
 
 #. Permission description in the channel-scoped permissions editor for the Use Voice Activity permission. Explains the inverse: without it, the user must use push-to-talk in this voice channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:297
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:302
 msgid "Without this permission, push-to-talk is required in this channel."
 msgstr "이 권한이 없으면 이 채널에서 눌러서 말하기를 사용해야 합니다."
 
@@ -40161,7 +40493,7 @@ msgstr "이 커뮤니티에서는 메시지를 보낼 수 없습니다."
 #. Tooltip in the voice control bar when the user lacks the Screen Share permission in this channel. Tone stays plain.
 #. Tooltip shown when the user lacks the Screen Share permission in the voice channel. Tone stays plain.
 #: src/features/voice/components/voice_connection_status/LocalParticipantControls.tsx:54
-#: src/features/voice/components/VoiceControlBar.tsx:137
+#: src/features/voice/components/VoiceControlBar.tsx:141
 msgid "You can't share your screen in this channel"
 msgstr "이 채널에서는 화면을 공유할 수 없습니다"
 
@@ -40175,7 +40507,7 @@ msgstr "이 채널에서는 말할 수 없습니다"
 #. Tooltip shown when the user lacks the Video permission in the voice channel. Tone stays plain.
 #: src/features/voice/components/modals/CameraPreviewModal.tsx:76
 #: src/features/voice/components/voice_connection_status/LocalParticipantControls.tsx:50
-#: src/features/voice/components/VoiceControlBar.tsx:127
+#: src/features/voice/components/VoiceControlBar.tsx:131
 msgid "You can't turn on your camera in this channel"
 msgstr "이 채널에서는 카메라를 켤 수 없습니다"
 
@@ -40390,12 +40722,12 @@ msgid "You need access to your current email to change it from here. Use phone v
 msgstr "이메일을 변경하려면 현재 이메일에 액세스해야 합니다. 가능한 경우 전화 인증을 사용하거나 고객지원팀에 문의하세요."
 
 #. Forward dialog error shown when the forwarded message has attachments and the user lacks Attach Files in the target channel.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:32
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:33
 msgid "You need the \"{attachFilesPermissionLabel}\" permission to attach files in this channel"
 msgstr "이 채널에 파일을 첨부하려면 \"{attachFilesPermissionLabel}\" 권한이 필요합니다"
 
 #. Forward dialog error shown when the forwarded message contains embeds and the user lacks Embed Links in the target channel.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:27
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:28
 msgid "You need the \"{embedLinksPermissionLabel}\" permission to embed links in this channel"
 msgstr "이 채널에 링크를 임베드하려면 \"{embedLinksPermissionLabel}\" 권한이 필요합니다"
 
@@ -40433,7 +40765,7 @@ msgid "You need the \"{permissionLabel}\" permission to use stickers from other 
 msgstr "여기에서 다른 커뮤니티의 스티커를 사용하려면 \"{permissionLabel}\" 권한이 필요합니다."
 
 #. Forward dialog error shown when the user lacks the Send Messages permission in the target channel. Permission name is interpolated.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:22
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:23
 msgid "You need the \"{sendMessagesPermissionLabel}\" permission to send messages in this channel"
 msgstr "이 채널에서 메시지를 보내려면 \"{sendMessagesPermissionLabel}\" 권한이 필요합니다"
 
@@ -40680,7 +41012,7 @@ msgid "You're streaming!"
 msgstr "스트리밍 중입니다!"
 
 #. Short label in the settings dialog forward channel selection. Keep the tone plain and specific.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:18
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:19
 msgid "You're timed out in this community"
 msgstr "이 커뮤니티에서 타임아웃 상태입니다"
 
@@ -40754,6 +41086,11 @@ msgstr "그룹 DM 한도에 도달했습니다"
 #: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:52
 msgid "You've reached the maximum number of emojis. Delete some existing emojis to make room."
 msgstr "이모티콘 최대 개수에 도달했습니다. 공간을 확보하려면 기존 이모티콘을 일부 삭제하세요."
+
+#. Soundboard upload limit message in community soundboard settings.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:57
+msgid "You've reached the maximum number of soundboard sounds. Delete an existing sound to make room."
+msgstr "You've reached the maximum number of soundboard sounds. Delete an existing sound to make room."
 
 #. Sticker upload limit message in community sticker settings. Do not suggest that communities can be upgraded.
 #: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:65

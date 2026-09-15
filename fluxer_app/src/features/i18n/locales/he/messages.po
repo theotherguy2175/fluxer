@@ -80,6 +80,11 @@ msgstr "{actor} הוסיף עקיפת הרשאות עבור @everyone ב-{channe
 msgid "{actor} added a permission override for the role {role} in {channel}"
 msgstr "{actor} הוסיף עקיפת הרשאות עבור התפקיד {role} ב-{channel}"
 
+#. Activity log summary for a sound that was added to the community soundboard when its name was not recorded. {actor} is the member who added it, shown as a clickable user chip, or the word System.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:10
+msgid "{actor} added a soundboard sound"
+msgstr "{actor} added a soundboard sound"
+
 #. Activity log summary for a sticker that was added to the community when its name was not recorded. {actor} is the member who added it, shown as a clickable user chip, or the word System.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:50
 msgid "{actor} added a sticker"
@@ -120,6 +125,15 @@ msgstr "{actor} הוסיף את האימוג'י {emoji}"
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:735
 msgid "{actor} added the emoji {namedTarget}."
 msgstr "{actor} הוסיף/ה את האימוג'י {namedTarget}."
+
+#. Activity log summary for a sound that was uploaded to the community soundboard. {actor} is the member who added it, shown as a clickable user chip, or the word System. {name} is the sound name, shown in bold. The app adds the bold, so do not add ** or <b>.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:5
+msgid "{actor} added the soundboard sound {name}"
+msgstr "{actor} added the soundboard sound {name}"
+
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:808
+msgid "{actor} added the soundboard sound {namedTarget}."
+msgstr "{actor} added the soundboard sound {namedTarget}."
 
 #. Activity log summary for a sticker that was uploaded or copied to the community. {actor} is the member who added it, shown as a clickable user chip, or the word System. {name} is the sticker name, shown in bold. The app adds the bold, so do not add ** or <b>.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:45
@@ -327,6 +341,11 @@ msgstr "{actor} מחק הודעה ב-{channel}"
 msgid "{actor} deleted a message{0}."
 msgstr "{actor} מחק/ה הודעה{0}."
 
+#. Activity log summary for a sound that was deleted from the community soundboard when its name was not recorded. {actor} is the member who deleted it, shown as a clickable user chip, or the word System.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:50
+msgid "{actor} deleted a soundboard sound"
+msgstr "{actor} deleted a soundboard sound"
+
 #. Activity log summary for a sticker that was deleted when its name was not recorded. {actor} is the member who deleted it, shown as a clickable user chip, or the word System.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:95
 msgid "{actor} deleted a sticker"
@@ -408,6 +427,15 @@ msgstr "{actor} מחק/ה את התפקיד {namedTarget}."
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogRoleMessages.ts:50
 msgid "{actor} deleted the role {role}"
 msgstr "{actor} מחק את התפקיד {role}"
+
+#. Activity log summary for a sound that was deleted from the community soundboard. {actor} is the member who deleted it, shown as a clickable user chip, or the word System. {name} is the name of the deleted sound, shown in bold. The app adds the bold, so do not add ** or <b>.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:45
+msgid "{actor} deleted the soundboard sound {name}"
+msgstr "{actor} deleted the soundboard sound {name}"
+
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:820
+msgid "{actor} deleted the soundboard sound {namedTarget}."
+msgstr "{actor} deleted the soundboard sound {namedTarget}."
 
 #. Activity log summary for a sticker that was deleted from the community. {actor} is the member who deleted it, shown as a clickable user chip, or the word System. {name} is the name of the deleted sticker, shown in bold. The app adds the bold, so do not add ** or <b>.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:90
@@ -553,7 +581,7 @@ msgstr "{actor} עבר לערוץ קולי אחר"
 msgid "{actor} paused invites"
 msgstr "{actor} השהה את ההזמנות"
 
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:808
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:826
 msgid "{actor} performed an audit action on {targetEntity}."
 msgstr "{actor} ביצע/ה פעולת ביקורת על {targetEntity}."
 
@@ -688,6 +716,11 @@ msgstr "{actor} שינה את שם ערוץ הקישור מ-{oldName} ל-{newNam
 msgid "{actor} renamed the role {oldName} to {newName}"
 msgstr "{actor} שינה את שם התפקיד {oldName} ל-{newName}"
 
+#. Activity log summary for a soundboard sound that got a new name and no other change. {actor} is the member who renamed it, shown as a clickable user chip, or the word System. {oldName} is the previous sound name and {newName} is the new one, both shown in bold. The app adds the bold, so do not add ** or <b>.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:15
+msgid "{actor} renamed the soundboard sound {oldName} to {newName}"
+msgstr "{actor} renamed the soundboard sound {oldName} to {newName}"
+
 #. Activity log summary for a sticker that got a new name and no other change. Only the name changed. The sticker was not replaced with a different one. {actor} is the member who renamed it, shown as a clickable user chip, or the word System. {oldName} is the previous sticker name and {newName} is the new one, both shown in bold. The app adds the bold, so do not add ** or <b>.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:60
 msgid "{actor} renamed the sticker {oldName} to {newName}"
@@ -821,6 +854,11 @@ msgstr "{actor} עדכן את {target}"
 msgid "{actor} updated {targetMember}."
 msgstr "{actor} עדכן/ה את {targetMember}."
 
+#. Activity log summary for a soundboard sound that was edited when the sound name is not known. The changes are listed as detail lines below it. {actor} is the member who edited it, shown as a clickable user chip, or the word System.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:25
+msgid "{actor} updated a soundboard sound"
+msgstr "{actor} updated a soundboard sound"
+
 #. Activity log summary for a sticker that was edited when the sticker name is not known. The changes are listed as detail lines below it. {actor} is the member who edited it, shown as a clickable user chip, or the word System.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:70
 msgid "{actor} updated a sticker"
@@ -923,6 +961,15 @@ msgstr "{actor} עדכן את התפקיד {role}"
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogMemberMessages.ts:135
 msgid "{actor} updated the roles of {target}"
 msgstr "{actor} עדכן את התפקידים של {target}"
+
+#. Activity log summary for a soundboard sound that was edited. The changes are listed as detail lines below it. {actor} is the member who edited it, shown as a clickable user chip, or the word System. {name} is the sound name, shown in bold. The app adds the bold, so do not add ** or <b>.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:20
+msgid "{actor} updated the soundboard sound {name}"
+msgstr "{actor} updated the soundboard sound {name}"
+
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:814
+msgid "{actor} updated the soundboard sound {namedTarget}."
+msgstr "{actor} updated the soundboard sound {namedTarget}."
 
 #. Activity log summary for a sticker that was edited. The changes are listed as detail lines below it. {actor} is the member who edited it, shown as a clickable user chip, or the word System. {name} is the sticker name, shown in bold. The app adds the bold, so do not add ** or <b>.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:65
@@ -1241,7 +1288,7 @@ msgstr "{count, plural, one {הרחב (שורה אחת)} other {הרחב (# שו
 msgid "{count, plural, one {Expand (# row)} other {Expand (# rows)}}"
 msgstr "{count, plural, one {הרחב (שורה אחת)} other {הרחב (# שורות)}}"
 
-#: src/features/voice/components/VoiceParticipantTile.tsx:317
+#: src/features/voice/components/VoiceParticipantTile.tsx:319
 msgid "{count, plural, one {Expand # other device} other {Expand # other devices}}"
 msgstr "{count, plural, one {הרחב מכשיר אחד נוסף} other {הרחב # מכשירים נוספים}}"
 
@@ -1262,7 +1309,7 @@ msgstr "{count, plural, one {בשיחה} other {# בשיחה}}"
 msgid "{count, plural, one {Join video call (# participant)} other {Join video call (# participants)}}"
 msgstr "{count, plural, one {הצטרף לשיחת וידאו (משתתף אחד)} other {הצטרף לשיחת וידאו (# משתתפים)}}"
 
-#: src/features/voice/components/VoiceParticipantTile.tsx:669
+#: src/features/voice/components/VoiceParticipantTile.tsx:671
 msgid "{count, plural, one {Keep watching # stream and add this one} other {Keep watching # streams and add this one}}"
 msgstr "{count, plural, one {המשך לצפות בשידור אחד והוסף גם את זה} other {המשך לצפות ב-# שידורים והוסף גם את זה}}"
 
@@ -3081,12 +3128,12 @@ msgid "Activity"
 msgstr "פעילות"
 
 #. Page title of the activity-log tab in community settings (the user-facing name for the audit log).
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:108
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:109
 msgid "Activity log"
 msgstr "יומן פעילות"
 
 #. Community settings tab showing activity log entries and moderation history.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:61
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:68
 msgctxt "community-settings-tab"
 msgid "Activity log"
 msgstr "יומן פעילות"
@@ -3134,7 +3181,7 @@ msgid "Add a bot to a community with requested permissions"
 msgstr "הוספת בוט לקהילה עם ההרשאות המבוקשות"
 
 #. Placeholder text in the optional comment field of the forward modal.
-#: src/features/messaging/components/modals/ForwardModal.tsx:91
+#: src/features/messaging/components/modals/ForwardModal.tsx:92
 msgid "Add a comment (optional)"
 msgstr "הוסף הערה (אופציונלי)"
 
@@ -3317,7 +3364,7 @@ msgid "Add local files"
 msgstr "הוספת קבצים מקומיים"
 
 #. Permission description in the channel-scoped permissions editor for the Add Reactions permission. "New" reaction means starting a new reaction emoji on a message (not stacking onto an existing one).
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:270
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:275
 msgid "Add new reactions to messages in this channel."
 msgstr "הוספת ריאקציות חדשות להודעות בערוץ זה."
 
@@ -3350,7 +3397,7 @@ msgid "Add reaction"
 msgstr "הוספת ריאקציה"
 
 #. Permission name: allows adding reactions to messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:438
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:443
 msgid "Add reactions"
 msgstr "הוספת ריאקציות"
 
@@ -3395,6 +3442,11 @@ msgstr "הוסף פרטי כניסה ל-SMTP כדי שהמופע יוכל לשל
 msgid "Add some CSS before sharing."
 msgstr "הוסף קצת CSS לפני השיתוף."
 
+#. Tile in the voice soundboard popover to upload a new sound.
+#: src/features/voice/components/SoundboardMenu.tsx:70
+msgid "Add Sound"
+msgstr "Add Sound"
+
 #. Action that opens the add-sticker modal.
 #: src/features/expressions/components/modals/AddGuildStickerModal.tsx:72
 msgid "Add sticker"
@@ -3423,7 +3475,9 @@ msgid "Add to dictionary"
 msgstr "הוספה למילון"
 
 #. Action label that pins the current channel, DM, or attachment to the favorites list.
+#. Tooltip on the star button of a soundboard sound tile.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:322
+#: src/features/voice/components/SoundboardMenu.tsx:50
 msgid "Add to favorites"
 msgstr "הוספה למועדפים"
 
@@ -3623,7 +3677,7 @@ msgid "Adjust the overall zoom level of the app. Use {zoomIn} / {zoomOut} to adj
 msgstr "התאם את רמת הזום הכוללת של האפליקציה. השתמש ב-{zoomIn} / {zoomOut} כדי להתאים במהירות."
 
 #. Permission name: grants all permissions and bypasses restrictions.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:350
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:355
 msgid "Administrator"
 msgstr "מנהל מערכת"
 
@@ -3727,7 +3781,7 @@ msgstr "פקדי יישור זמינים רק במסכים רחבים יותר"
 #. Short label in the discovery category bottom sheet. Keep it concise.
 #. Tab label in the DM friends view showing all friends.
 #. Tab label in the mobile memes (saved media) picker. Shows all saved media regardless of type.
-#: src/features/app/config/AuditLogConstants.ts:163
+#: src/features/app/config/AuditLogConstants.ts:175
 #: src/features/channel/components/direct_message/DMFriendsView.tsx:41
 #: src/features/channel/components/guild_members_page/GuildMembersPageDescriptors.ts:10
 #: src/features/channel/components/MobileMemesPicker.tsx:42
@@ -3756,7 +3810,7 @@ msgid "All <0/>, forever. No billing, no renewals."
 msgstr "כל <0/>, לנצח. בלי חיובים, בלי חידושים."
 
 #. Default option in the activity log "Filter by action" dropdown. Means no action-type filter is applied. Short standalone label.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:99
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:100
 msgid "All actions"
 msgstr "כל הפעולות"
 
@@ -3845,7 +3899,7 @@ msgid "All time"
 msgstr "כל הזמנים"
 
 #. Default option in the activity log "Filter by user" dropdown. Means no user filter is applied. Short standalone label.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:94
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:95
 msgid "All users"
 msgstr "כל המשתמשים"
 
@@ -4883,7 +4937,7 @@ msgid "At least one channel must have \"{viewChannelPermissionLabel}\" permissio
 msgstr "לפחות בערוץ אחד צריכה להיות מופעלת ההרשאה \"{viewChannelPermissionLabel}\" עבור {EVERYONE_MENTION} כדי שכתובת ה-URL המותאמת אישית תעבוד. כרגע אין ערוצים הגלויים ל-{EVERYONE_MENTION}."
 
 #. Permission name: allows uploading files to messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:422
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:427
 msgid "Attach files"
 msgstr "צירוף קבצים"
 
@@ -4987,7 +5041,7 @@ msgid "Audio"
 msgstr "שמע"
 
 #. Permission category for voice, video, and streaming permissions.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:342
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:347
 msgid "Audio & video"
 msgstr "שמע ווידאו"
 
@@ -5097,7 +5151,7 @@ msgid "Audio settings"
 msgstr "הגדרות שמע"
 
 #. Voice control button label for microphone and speaker settings.
-#: src/features/voice/components/VoiceControlBar.tsx:142
+#: src/features/voice/components/VoiceControlBar.tsx:146
 msgctxt "voice-control-button"
 msgid "Audio settings"
 msgstr "הגדרות שמע"
@@ -5699,12 +5753,12 @@ msgid "Ban member"
 msgstr "חסימת חבר"
 
 #. Permission name: allows banning members from a community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:374
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:379
 msgid "Ban members"
 msgstr "חסימת חברים"
 
 #. Permission description in the role/permission editor for the Ban Members permission. A ban keeps the member out until it is lifted, and the moderator chooses how much recent message history to delete.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:123
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:128
 msgid "Ban members from the community, with the option to delete their recent messages."
 msgstr "חסום חברים מהקהילה, עם אפשרות למחוק את ההודעות האחרונות שלהם."
 
@@ -5777,7 +5831,7 @@ msgid "Banner preview"
 msgstr "תצוגה מקדימה של הבאנר"
 
 #. Community settings tab for banned users.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:91
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:98
 msgctxt "community-settings-tab"
 msgid "Bans"
 msgstr "חסימות"
@@ -5797,12 +5851,12 @@ msgid "Basic text inputs"
 msgstr "שדות קלט בסיסיים"
 
 #. Permission description in the channel-scoped permissions editor for the Priority Speaker permission. "Push to talk (priority)" is the name of a keybind in the keybind settings, so match the wording used there.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:302
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:307
 msgid "Be heard over other members in this channel while holding the push to talk (priority) keybind."
 msgstr "להישמע מעל חברים אחרים בערוץ זה בזמן החזקת מקש \"דיבור בלחיצה (עדיפות)\"."
 
 #. Permission description in the role/permission editor for the Priority Speaker permission at community scope. "Push to talk (priority)" is the name of a keybind in the keybind settings, so match the wording used there.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:177
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:182
 msgid "Be heard over other members while holding the push to talk (priority) keybind."
 msgstr "להישמע מעל חברים אחרים בזמן החזקת מקש \"דיבור בלחיצה (עדיפות)\"."
 
@@ -6249,6 +6303,11 @@ msgstr "תצוגה מקדימה של נכס מיתוג"
 msgid "Brightness"
 msgstr "בהירות"
 
+#. Button that opens the OS file picker to choose a different audio file.
+#: src/features/voice/components/SoundboardSoundModal.tsx:48
+msgid "Browse"
+msgstr "Browse"
+
 #. Title of the modal shown when the browser autoplay policy blocks voice audio until the user interacts.
 #: src/features/voice/components/modals/AudioPlaybackPermissionModal.tsx:8
 msgid "Browser audio required"
@@ -6465,7 +6524,7 @@ msgid "Bypass mention suppression"
 msgstr "עקוף השתקת אזכורים"
 
 #. Permission name: allows ignoring per-channel message rate limits.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:442
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:447
 msgid "Bypass slowmode"
 msgstr "עקיפת מצב איטי"
 
@@ -6629,7 +6688,7 @@ msgid "Cameras and virtual capture devices are selected here in {productName}, n
 msgstr "מצלמות והתקני לכידה וירטואליים נבחרים כאן ב-{productName}, לא בבורר המערכת של Wayland. אם שום דבר לא מופיע כאן, יש לבדוק את ההרשאות או לחבר התקן."
 
 #. Tooltip in the voice control bar when cameras are disabled because the participant count exceeds the limit. {voiceChannelCameraUserLimit} is the configured threshold.
-#: src/features/voice/components/VoiceControlBar.tsx:132
+#: src/features/voice/components/VoiceControlBar.tsx:136
 msgid "Cameras are off above {voiceChannelCameraUserLimit} participants"
 msgstr "המצלמות כבויות מעל {voiceChannelCameraUserLimit} משתתפים"
 
@@ -6687,7 +6746,7 @@ msgstr "לא ניתן להעלות קבצים כאן"
 #: src/features/messaging/components/modals/AttachmentEditModal.tsx:133
 #: src/features/messaging/components/modals/EditAltTextModal.tsx:190
 #: src/features/messaging/components/modals/ExternalLinkWarningModal.tsx:111
-#: src/features/messaging/components/modals/ForwardModal.tsx:636
+#: src/features/messaging/components/modals/ForwardModal.tsx:645
 #: src/features/messaging/components/modals/ImageCropModal.tsx:944
 #: src/features/messaging/components/modals/MessageHistoryThresholdModal.tsx:107
 #: src/features/moderation/components/modals/BanMemberModal.tsx:262
@@ -7040,7 +7099,7 @@ msgid "Change other members' nicknames."
 msgstr "שינוי כינויים של חברים אחרים."
 
 #. Permission name: allows a member to edit their own nickname.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:382
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:387
 msgid "Change own nickname"
 msgstr "שינוי הכינוי שלך"
 
@@ -7101,12 +7160,12 @@ msgid "Change what users without \"{readMessageHistoryPermissionLabel}\" can see
 msgstr "שנה את מה שמשתמשים ללא \"{readMessageHistoryPermissionLabel}\" יכולים לראות"
 
 #. Permission description in the role/permission editor for the Set Voice Region permission at community scope. The region is the geographic location of the voice server.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:191
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:196
 msgid "Change which voice region a voice channel uses."
 msgstr "שינוי האזור הקולי שבו משתמש ערוץ קולי."
 
 #. Permission description in the channel-scoped permissions editor for the Set Voice Region permission. The region is the geographic location of the voice server.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:321
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:326
 msgid "Change which voice region this channel uses."
 msgstr "שינוי האזור הקולי שבו משתמש הערוץ הזה."
 
@@ -7243,6 +7302,11 @@ msgstr "שינוי הגדרת ברירת המחדל להתראות מ-{oldSettin
 msgid "Changed the description from {oldText} to {newText}"
 msgstr "שינוי התיאור מ-{oldText} ל-{newText}"
 
+#. Activity log detail line under an edited soundboard sound, for a sound whose emoji was set, replaced or removed. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:40
+msgid "Changed the emoji"
+msgstr "Changed the emoji"
+
 #. Activity log detail line under a community settings update, shown when the explicit content filter setting changed. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. {oldFilter} is the previous setting and {newFilter} is the new setting, each shown as Off, Filter members without roles or Filter everyone.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogGuildMessages.ts:246
 msgid "Changed the explicit content filter from {oldFilter} to {newFilter}"
@@ -7285,6 +7349,7 @@ msgid "Changed the message history threshold from {oldDate} to {newDate}"
 msgstr "שינוי סף היסטוריית ההודעות מ-{oldDate} ל-{newDate}"
 
 #. Activity log detail line under an edited role that got a new name along with other changes. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. {oldName} is the role name before the change and {newName} is the role name after it. Do not swap them. The app shows both in bold, so do not add ** or <b> around them.
+#. Activity log detail line under an edited soundboard sound, for a sound that got a new name. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. Keep the word name so the line says what changed. {oldName} is the previous sound name and {newName} is the new one, both shown in bold. The app adds the bold, so do not add ** or <b>.
 #. Activity log detail line under an edited sticker, for a sticker that got a new name. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. Keep the word name so the line says what changed. {oldName} is the previous sticker name and {newName} is the new one, both shown in bold. The app adds the bold, so do not add ** or <b>.
 #. Activity log detail row under an updated channel whose name changed along with other settings. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. {oldName} is the name before the change and {newName} the name after, both shown in bold. The app adds the bold, so do not add ** or <b>.
 #. Activity log detail under a changed webhook. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. {oldName} is the previous name of the webhook and {newName} is its new name, both shown in bold by the app. Do not add ** or <b> around them.
@@ -7292,6 +7357,7 @@ msgstr "שינוי סף היסטוריית ההודעות מ-{oldDate} ל-{newDa
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogExpressionMessageMessages.ts:75
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogInviteWebhookMessages.ts:115
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogRoleMessages.ts:55
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:30
 msgid "Changed the name from {oldName} to {newName}"
 msgstr "שינוי השם מ-{oldName} ל-{newName}"
 
@@ -7345,6 +7411,11 @@ msgstr "שינוי אזור הקול מ-{oldRegion} ל-{newRegion}"
 msgid "Changed the voice region to {0}."
 msgstr "האזור הקולי שונה ל-{0}."
 
+#. Activity log detail line under an edited soundboard sound, for a sound whose playback volume was changed. It continues the entry summary, so it has no subject. It is a past tense record of a change the actor in the summary already made, never an instruction to the reader. Do not write it as a command, a button label or in first or second person. {oldVolume} and {newVolume} are whole numbers from 0 to 100, and the percent sign stays after each.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:35
+msgid "Changed the volume from {oldVolume}% to {newVolume}%"
+msgstr "Changed the volume from {oldVolume}% to {newVolume}%"
+
 #: src/features/theme_studio/sections/QuickCssSection.tsx:280
 msgid "Changes apply instantly to the live client."
 msgstr "השינויים יחולו באופן מיידי על הלקוח הפעיל."
@@ -7362,7 +7433,7 @@ msgstr "ערוץ"
 #. Short label in the channel layout. Keep it concise.
 #. Short label in the channel source preview. Keep it concise.
 #. Slash-command argument type name, spoken by screen readers for an argument that takes a channel.
-#: src/features/app/config/AuditLogConstants.ts:183
+#: src/features/app/config/AuditLogConstants.ts:195
 #: src/features/channel/components/bottomsheets/channel_details_bottom_sheet/ChannelDetailsBottomSheetShared.ts:24
 #: src/features/channel/components/ChannelLayout.tsx:13
 #: src/features/channel/components/ChannelSourcePreview.tsx:28
@@ -7373,12 +7444,12 @@ msgid "Channel"
 msgstr "ערוץ"
 
 #. Short label in the settings dialog forward channel selection. Preserve {id}; it is inserted by code.
-#: src/features/app/components/dialogs/shared/UseForwardChannelObservations.ts:27
+#: src/features/app/components/dialogs/shared/UseForwardChannelObservations.ts:30
 msgid "Channel {id}"
 msgstr "ערוץ {id}"
 
 #. Permission category for viewing or entering channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:338
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:343
 msgid "Channel access"
 msgstr "גישה לערוץ"
 
@@ -7478,7 +7549,7 @@ msgid "Channel list typing indicators"
 msgstr "מחווני הקלדה ברשימת הערוצים"
 
 #. Permission category for managing channels and channel settings.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:346
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:351
 msgid "Channel management"
 msgstr "ניהול ערוצים"
 
@@ -7827,10 +7898,12 @@ msgstr "בחר חשבון"
 msgid "Choose an action."
 msgstr "בחר פעולה."
 
+#. Accessible label for the emoji picker button in the soundboard modal.
 #. Button or menu action label in the custom status bottom sheet. Keep it concise.
 #. Button or menu action label in the custom status modal. Keep it concise.
 #: src/features/user/components/modals/CustomStatusBottomSheet.tsx:48
 #: src/features/user/components/modals/CustomStatusModal.tsx:58
+#: src/features/voice/components/SoundboardSoundModal.tsx:63
 msgid "Choose an emoji"
 msgstr "בחר אימוג'י"
 
@@ -8409,6 +8482,11 @@ msgstr "יש ללחוץ כדי להציג"
 msgid "Click to reveal spoiler"
 msgstr "יש ללחוץ כדי לחשוף ספוילר"
 
+#. Placeholder on the soundboard emoji picker button when no emoji is chosen.
+#: src/features/voice/components/SoundboardSoundModal.tsx:58
+msgid "Click to select"
+msgstr "Click to select"
+
 #. Label in the reaction tooltip popout.
 #: src/features/messaging/components/popouts/ReactionTooltip.tsx:21
 msgid "Click to view all reactions"
@@ -8695,7 +8773,7 @@ msgstr "כיווץ נושא הערוץ"
 #. Tooltip / aria label on a voice participant tile button that collapses expanded device tiles for one user.
 #. Voice menu action that collapses expanded device tiles back into a single tile.
 #: src/features/ui/action_menu/items/voice_participant_menu_data/shared.ts:128
-#: src/features/voice/components/VoiceParticipantTile.tsx:178
+#: src/features/voice/components/VoiceParticipantTile.tsx:180
 msgid "Collapse devices"
 msgstr "כיווץ מכשירים"
 
@@ -8804,17 +8882,17 @@ msgid "Commands"
 msgstr "פקודות"
 
 #. Helper text in the forward modal explaining why the optional comment field is disabled when at least one selected target has slowmode active.
-#: src/features/messaging/components/modals/ForwardModal.tsx:64
+#: src/features/messaging/components/modals/ForwardModal.tsx:65
 msgid "Comments are disabled because one or more selected channels have slowmode on. The comment would be blocked by slowmode right after the forward."
 msgstr "התגובות מושבתות כי מצב איטי מופעל באחד או יותר מהערוצים שבחרת. התגובה תיחסם על ידי מצב איטי מיד לאחר ההעברה."
 
 #. Helper text in the forward modal explaining why the optional comment field is disabled for a single selected channel with slowmode.
-#: src/features/messaging/components/modals/ForwardModal.tsx:58
+#: src/features/messaging/components/modals/ForwardModal.tsx:59
 msgid "Comments are disabled because slowmode is on in {forwardChannelDisplayName}. The comment would be blocked by slowmode right after the forward."
 msgstr "התגובות מושבתות כי מצב איטי מופעל ב-{forwardChannelDisplayName}. התגובה תיחסם על ידי מצב איטי מיד לאחר ההעברה."
 
 #. Tooltip on the disabled comment field in the forward modal when slowmode blocks comments.
-#: src/features/messaging/components/modals/ForwardModal.tsx:87
+#: src/features/messaging/components/modals/ForwardModal.tsx:88
 msgid "Comments are unavailable while slowmode is on."
 msgstr "התגובות אינן זמינות כשמצב איטי מופעל."
 
@@ -8857,10 +8935,10 @@ msgstr "קהילות עם יותר מ-250 אנשים מוגדרות אוטומט
 #. Developer / debug surface — keep terse and technical. Fallback label used in the IAR preview tool when no community context is supplied.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Short option type label in the OAuth bot invite destination selector.
-#: src/features/app/config/AuditLogConstants.ts:167
+#: src/features/app/config/AuditLogConstants.ts:179
 #: src/features/auth/components/pages/oauth_authorize_page/OAuthCommunityStep.tsx:48
 #: src/features/moderation/components/report_modal/IARModalPreview.tsx:16
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:253
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:269
 #: src/features/user/components/settings_utils/section_registry/PrivacySafetySections.ts:140
 msgid "Community"
 msgstr "קהילה"
@@ -9051,7 +9129,7 @@ msgid "Community record"
 msgstr "רשומת קהילה"
 
 #. Root label for community settings modal and settings search paths.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:244
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:260
 msgid "Community settings"
 msgstr "הגדרות קהילה"
 
@@ -9079,7 +9157,7 @@ msgid "Community voice"
 msgstr "קול בקהילה"
 
 #. Permission category for permissions that affect the whole community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:326
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:331
 msgid "Community-wide"
 msgstr "כלל הקהילה"
 
@@ -9333,7 +9411,7 @@ msgstr "חבר מיקרופון ונסה שוב."
 
 #. Permission name: allows joining voice channels.
 #. Primary CTA in the mobile voice-channel lobby bottom sheet. Joins the voice channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:458
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:463
 #: src/features/voice/components/bottomsheets/VoiceLobbyBottomSheet.tsx:60
 msgid "Connect to voice"
 msgstr "התחברות לערוץ קולי"
@@ -10207,6 +10285,11 @@ msgstr "לא ניתן היה למחוק את מפתח הגישה"
 msgid "Couldn't delete role"
 msgstr "לא ניתן היה למחוק את התפקיד"
 
+#. Title of the error dialog shown when deleting a soundboard sound fails.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:99
+msgid "Couldn't delete sound"
+msgstr "Couldn't delete sound"
+
 #. Title of the generic fallback error modal shown when deleting a category fails.
 #: src/features/app/components/alerts/ChannelDeleteFailedModal.tsx:46
 msgid "Couldn't delete this category"
@@ -10430,6 +10513,16 @@ msgstr "לא ניתן היה להריץ את הפקודה: {detail}"
 #: src/features/user/components/modals/tabs/hooks/useEntranceSound.ts:47
 msgid "Couldn't save entrance sound"
 msgstr "לא ניתן היה לשמור את צליל הכניסה"
+
+#. Title of the error modal shown when saving the guild soundboard limits fails.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:103
+msgid "Couldn't save soundboard limits"
+msgstr "Couldn't save soundboard limits"
+
+#. Title of the soundboard save error modal.
+#: src/features/voice/components/SoundboardSoundModal.tsx:67
+msgid "Couldn't save this sound"
+msgstr "Couldn't save this sound"
 
 #. Title of the error modal shown when sending a friend request fails.
 #: src/features/relationship/components/alerts/RelationshipErrorModalUtils.tsx:11
@@ -10710,7 +10803,7 @@ msgid "Create DM"
 msgstr "יצירת צ'אט"
 
 #. Permission name: allows uploading custom emoji and stickers.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:390
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:395
 msgid "Create emoji & stickers"
 msgstr "יצירת אימוג'י ומדבקות"
 
@@ -10737,7 +10830,7 @@ msgid "Create invite"
 msgstr "יצירת הזמנה"
 
 #. Permission name: allows creating invite links.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:378
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:383
 msgid "Create invite links"
 msgstr "יצירת קישורי הזמנה"
 
@@ -10801,7 +10894,7 @@ msgid "Create, edit, or delete roles below your highest role. Also allows editin
 msgstr "יצירה, עריכה או מחיקה של תפקידים מתחת לתפקיד הגבוה ביותר שלך. מאפשר גם עריכת עקיפות הרשאות ערוץ."
 
 #. Permission description in the channel-scoped permissions editor for the Manage Webhooks permission. Scoped to a single channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:206
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:211
 msgid "Create, edit, or delete webhooks for this channel."
 msgstr "יצירה, עריכה או מחיקה של webhooks עבור הערוץ הזה."
 
@@ -11470,17 +11563,17 @@ msgid "Deafen device"
 msgstr "השתק את השמע במכשיר"
 
 #. Permission name: allows moderators to deafen other voice participants.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:483
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:492
 msgid "Deafen members"
 msgstr "השתקת שמע של חברים"
 
 #. Permission description in the channel-scoped permissions editor for the Deafen Members permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:312
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:317
 msgid "Deafen other members in this voice channel, so they cannot hear or speak."
 msgstr "השתק את השמע של חברים אחרים בערוץ הקולי הזה, כך שהם לא יוכלו לשמוע או לדבר."
 
 #. Permission description in the role/permission editor for the Deafen Members permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:187
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:192
 msgid "Deafen other members in voice channels, so they cannot hear or speak."
 msgstr "השתק את השמע של חברים אחרים בערוצי קול, כך שהם לא יוכלו לשמוע או לדבר."
 
@@ -11675,6 +11768,7 @@ msgctxt "us-state"
 msgid "Delaware"
 msgstr "דלאוור"
 
+#. Button label to delete a soundboard sound.
 #. Button or menu action label in the buttons tab. Keep it concise. Keep the tone plain and specific.
 #. Button or menu action label in the channel and chat embed audio. Keep it concise. Keep the tone plain and specific.
 #. Button or menu action label in the channel and chat media container. Keep it concise. Keep the tone plain and specific.
@@ -11695,6 +11789,7 @@ msgstr "דלאוור"
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:204
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:216
 #: src/features/emoji/components/stickers/StickerGridItem.tsx:35
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:87
 #: src/features/messaging/commands/MessageCommands.tsx:79
 #: src/features/moderation/components/report_modal/IARModalCopy.ts:109
 #: src/features/platform/utils/DesktopLocaleBridge.ts:76
@@ -11705,6 +11800,7 @@ msgstr "דלאוור"
 #: src/features/user/components/modals/tabs/component_gallery_tab/index.tsx:238
 #: src/features/user/components/settings_utils/search_index/AccountSecurityIndex.ts:154
 #: src/features/user/components/settings_utils/section_registry/SharedDescriptors.ts:190
+#: src/features/voice/components/SoundboardSoundModal.tsx:568
 msgid "Delete"
 msgstr "מחק"
 
@@ -11724,6 +11820,11 @@ msgstr "למחוק את :{emojiName}:? לא ניתן לבטל פעולה זו."
 #: src/features/channel/components/pickers/memes/MemeGridItem.tsx:34
 msgid "Delete \"{memeName}\"? Can't be undone."
 msgstr "למחוק את \"{memeName}\"? לא ניתן לבטל פעולה זו."
+
+#. Body of the confirmation dialog for deleting a soundboard sound. {name} is the sound name.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:95
+msgid "Delete \"{name}\" from the soundboard? This cannot be undone."
+msgstr "Delete \"{name}\" from the soundboard? This cannot be undone."
 
 #. Confirm dialog body before deleting a sticker.
 #: src/features/emoji/components/stickers/StickerGridItem.tsx:31
@@ -11862,7 +11963,7 @@ msgid "Delete my messages"
 msgstr "מחיקת ההודעות שלי"
 
 #. Permission description in the channel-scoped permissions editor for the Manage Messages permission. Notes that pinning has its own permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:230
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:235
 msgid "Delete other members' messages in this channel. Pinning is controlled separately."
 msgstr "מחיקת הודעות של חברים אחרים בערוץ זה. הצמדה נשלטת בנפרד."
 
@@ -11907,6 +12008,11 @@ msgstr "מחיקת מדיה שמורה"
 #: src/features/user/components/modals/tabs/keybinds_tab/CustomKeybindRow.tsx:34
 msgid "Delete shortcut"
 msgstr "מחיקת קיצור דרך"
+
+#. Title of the confirmation dialog for deleting a soundboard sound.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:91
+msgid "Delete sound"
+msgstr "Delete sound"
 
 #. Destructive action that deletes the selected sticker.
 #: src/features/emoji/components/stickers/StickerGridItem.tsx:27
@@ -12742,7 +12848,7 @@ msgid "Discovery"
 msgstr "גילוי"
 
 #. Community settings tab for public community discovery/listing.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:76
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:83
 msgctxt "community-settings-tab"
 msgid "Discovery"
 msgstr "גילוי"
@@ -13255,6 +13361,10 @@ msgstr "גרור ושחרר"
 msgid "Drag and drop a sticker file here (one at a time)"
 msgstr "גרור ושחרר קובץ מדבקה לכאן (אחד בכל פעם)"
 
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:391
+msgid "Drag and drop an audio file here (one at a time)"
+msgstr "Drag and drop an audio file here (one at a time)"
+
 #. Label in the community upload drop zone.
 #: src/features/guild/components/UploadDropZone.tsx:11
 msgid "Drag and drop area for file upload"
@@ -13265,12 +13375,12 @@ msgid "Drag and drop emoji files here"
 msgstr "גרור ושחרר קובצי אימוג'י לכאן"
 
 #. Permission description in the role/permission editor for the Move Members permission. The target channel must already be accessible to the member being moved. This permission also covers forcing a member out of voice entirely.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:108
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:113
 msgid "Drag members between voice channels they can access, and disconnect them from voice."
 msgstr "גרור חברים בין ערוצי קול שהם יכולים לגשת אליהם, ונתק אותם מהשיחה הקולית."
 
 #. Permission description in the channel-scoped permissions editor for the Move Members permission. The target channel must already be accessible to the member being moved. This permission also covers forcing a member out of voice entirely.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:316
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:321
 msgid "Drag members out of this voice channel into channels they can access, and disconnect them from voice."
 msgstr "גרור חברים מערוץ קולי זה לערוצים שהם יכולים לגשת אליהם, ונתק אותם מהשיחה הקולית."
 
@@ -13416,10 +13526,12 @@ msgid "Echo cancellation"
 msgstr "ביטול הד"
 
 #. Action label for opening the edit flow for the selected item.
+#. Button label to edit a soundboard sound.
 #. Button or menu action label in the linked accounts tab. Keep it concise.
 #. Button or menu action label in the search engines tab. Keep it concise.
 #. Top-level native menu bar title (Edit menu, holds cut/copy/paste).
 #: src/features/emoji/components/stickers/StickerGridItem.tsx:43
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:83
 #: src/features/platform/utils/DesktopLocaleBridge.ts:47
 #: src/features/user/components/modals/tabs/chat_settings_tab/SearchEnginesTab.tsx:35
 #: src/features/user/components/modals/tabs/LinkedAccountsTab.tsx:51
@@ -13558,7 +13670,7 @@ msgid "Edit or delete emoji and stickers created by other members."
 msgstr "עריכה או מחיקה של אימוג'י ומדבקות שנוצרו על ידי חברים אחרים."
 
 #. Permission description in the channel-scoped permissions editor for the Manage Permissions permission. "Overwrites" are per-channel permission overrides.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:201
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:206
 msgid "Edit overwrites for roles and members in this channel."
 msgstr "ערוך עקיפות הרשאות עבור תפקידים וחברים בערוץ זה."
 
@@ -13602,6 +13714,11 @@ msgstr "עריכת מנוע חיפוש"
 #: src/features/input/components/KeybindRecorder.tsx:378
 msgid "Edit shortcut"
 msgstr "עריכת קיצור דרך"
+
+#. Title of the soundboard edit modal.
+#: src/features/voice/components/SoundboardSoundModal.tsx:45
+msgid "Edit Sound"
+msgstr "Edit Sound"
 
 #. Action that opens the edit-sticker modal.
 #: src/features/expressions/components/modals/EditGuildStickerModal.tsx:28
@@ -13778,7 +13895,7 @@ msgid "Embed debugger form"
 msgstr "טופס מנפה שגיאות ההטמעות"
 
 #. Permission name: allows links to unfurl/embed in messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:418
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:423
 msgid "Embed links"
 msgstr "הטמעת קישורים"
 
@@ -13821,15 +13938,16 @@ msgstr "ההטמעות הוצגו שוב"
 #. Collapsible group heading in the Theme Studio tokens list, for emoji tokens.
 #. Column header for the custom emoji image or glyph.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/app/config/AuditLogConstants.ts:187
+#: src/features/app/config/AuditLogConstants.ts:199
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:337
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:481
 #: src/features/theme_studio/sections/TokenGroups.ts:114
 #: src/features/user/components/settings_utils/section_registry/SharedDescriptors.ts:162
 msgid "Emoji"
 msgstr "אימוג'י"
 
 #. Community settings tab for managing custom emoji uploaded to the community.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:36
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:38
 msgctxt "community-settings-tab"
 msgid "Emoji"
 msgstr "אימוג'י"
@@ -14303,7 +14421,7 @@ msgid "End grace period now?"
 msgstr "לסיים את תקופת החסד עכשיו?"
 
 #. Voice control menu action to stop sharing the screen.
-#: src/features/voice/components/VoiceControlBar.tsx:108
+#: src/features/voice/components/VoiceControlBar.tsx:112
 msgid "End screen share"
 msgstr "הפסקת שיתוף מסך"
 
@@ -15031,7 +15149,7 @@ msgstr "מחיקת ביטויים"
 
 #. Community settings sidebar category grouping the emoji and stickers tabs.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:249
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:265
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:137
 msgid "Expressions"
 msgstr "ביטויים"
@@ -15207,6 +15325,11 @@ msgstr "טעינת ההזמנות נכשלה. יש לנסות שוב."
 #: src/features/voice/components/modals/ScreenSharePickerModal.tsx:120
 msgid "Failed to load shareable sources."
 msgstr "טעינת המקורות הניתנים לשיתוף נכשלה."
+
+#. Error message in the guild soundboard tab.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:75
+msgid "Failed to load soundboard sounds"
+msgstr "Failed to load soundboard sounds"
 
 #. Error message in the guild stickers tab.
 #: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:74
@@ -15493,9 +15616,11 @@ msgid "Favorited"
 msgstr "מועדפים"
 
 #. Generic section heading / category label for favorites.
+#. Section header for favorited sounds in the voice soundboard popover.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:258
 #: src/features/user/components/settings_utils/section_registry/AppearanceSections.ts:426
+#: src/features/voice/components/SoundboardMenu.tsx:46
 msgid "Favorites"
 msgstr "מועדפים"
 
@@ -15519,8 +15644,10 @@ msgstr "תכונות"
 msgid "Fetch a URL and inspect the embed payload the chat renderer receives."
 msgstr "יש לאחזר כתובת URL ולבדוק את מטען ההטמעה שרכיב התצוגה של הצ'אט מקבל."
 
+#. Field label for the chosen soundboard audio file.
 #. Top-level native menu bar title (File menu).
 #: src/features/platform/utils/DesktopLocaleBridge.ts:43
+#: src/features/voice/components/SoundboardSoundModal.tsx:47
 msgid "File"
 msgstr "קובץ"
 
@@ -15606,7 +15733,7 @@ msgid "Filter by account creation date"
 msgstr "סינון לפי תאריך יצירת החשבון"
 
 #. Label of the action-type filter dropdown in the activity log tab.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:120
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:121
 msgid "Filter by action"
 msgstr "סינון לפי פעולה"
 
@@ -15644,7 +15771,7 @@ msgstr "סינון לפי תפקידים"
 
 #. Label of the user filter dropdown in the activity log tab.
 #. Short label in the search user filter sheet. Keep it concise.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:116
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:117
 #: src/features/search/components/search/UserFilterSheet.tsx:25
 msgid "Filter by user"
 msgstr "סינון לפי משתמש"
@@ -15686,6 +15813,11 @@ msgstr "מכין את המצלמה..."
 #: src/features/channel/components/emoji_picker/EmojiPickerSearchBar.tsx:14
 msgid "Find the emoji of your dreams"
 msgstr "מצא את האימוג'י המושלם"
+
+#. Placeholder in the voice soundboard popover search box.
+#: src/features/voice/components/SoundboardMenu.tsx:42
+msgid "Find the perfect sound"
+msgstr "Find the perfect sound"
 
 #. Label in the channel and chat sticker picker search bar.
 #: src/features/channel/components/sticker_picker/StickerPickerSearchBar.tsx:12
@@ -16097,7 +16229,7 @@ msgstr "העבר מדיה"
 #. Keyboard shortcut action label shown in the shortcuts list and keybind editor. Keep short, sentence case.
 #. Title of the forward message modal.
 #: src/features/input/state/input_keybind/shared.ts:25
-#: src/features/messaging/components/modals/ForwardModal.tsx:79
+#: src/features/messaging/components/modals/ForwardModal.tsx:80
 msgid "Forward message"
 msgstr "העברת הודעה"
 
@@ -18002,7 +18134,7 @@ msgid "Ignore the friend request from {displayName}?"
 msgstr "להתעלם מבקשת החברות מ-{displayName}?"
 
 #. Permission description in the channel-scoped permissions editor for the Bypass Slowmode permission. Slowmode is the per-channel cooldown between messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:275
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:280
 msgid "Ignore this channel's slowmode cooldown."
 msgstr "התעלם מהשהיית המצב האיטי של הערוץ הזה."
 
@@ -18630,6 +18762,11 @@ msgstr "מתקין את עדכון שולחן העבודה {version}…"
 msgid "Installing desktop update…"
 msgstr "מתקין את עדכון שולחן העבודה…"
 
+#. Small hint next to a soundboard limit input showing the instance-wide ceiling set by the admin panel.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:107
+msgid "Instance limit: {max}"
+msgstr "Instance limit: {max}"
+
 #. Audit log operation flag label for invite creation.
 #: src/features/guild/utils/guild_tabs/GuildAuditLogTabUtils.ts:193
 msgid "Instant invites"
@@ -18652,7 +18789,7 @@ msgstr "מספר שלם"
 
 #. Community settings sidebar category grouping webhooks.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:257
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:273
 #: src/features/user/components/settings_utils/search_index/AuthorizedAppsIndex.ts:26
 msgid "Integrations"
 msgstr "אינטגרציות"
@@ -18786,7 +18923,7 @@ msgstr "הזמן"
 
 #. Audit log target-type filter label. Filters entries that target an invite link.
 #. Join source label on the community members page. Shown when the member joined via an invite link.
-#: src/features/app/config/AuditLogConstants.ts:195
+#: src/features/app/config/AuditLogConstants.ts:211
 #: src/features/channel/components/guild_members_page/MemberTableRow.tsx:43
 msgctxt "invite-noun"
 msgid "Invite"
@@ -18889,12 +19026,12 @@ msgid "Invite modal preview"
 msgstr "תצוגה מקדימה של חלון ההזמנה"
 
 #. Permission description in the channel-scoped permissions editor for the Create Invite Links permission. The invite drops the new member into this channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:216
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:221
 msgid "Invite new people to the community with a link to this channel."
 msgstr "הזמן אנשים חדשים לקהילה באמצעות קישור לערוץ זה."
 
 #. Permission description in the role/permission editor for the Create Invite Links permission. Covers links that let someone outside the community join it.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:113
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:118
 msgid "Invite new people to the community with an invite link."
 msgstr "הזמן אנשים חדשים לקהילה באמצעות קישור הזמנה."
 
@@ -18989,7 +19126,7 @@ msgid "Invites"
 msgstr "הזמנות"
 
 #. Community settings tab for invite link management.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:86
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:93
 msgctxt "community-settings-tab"
 msgid "Invites"
 msgstr "הזמנות"
@@ -19210,7 +19347,7 @@ msgid "Join the call"
 msgstr "הצטרף לשיחה"
 
 #. Permission description in the channel-scoped permissions editor for the Connect permission. "View channel" is another permission in this same editor, so match the wording used for its name. The placeholder renders the literal @everyone role name and must not be translated.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:280
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:285
 msgid "Join this voice channel and hear others. Denying it along with View channel for {everyoneMention} makes the channel private."
 msgstr "הצטרף לערוץ הקולי הזה והאזן לאחרים. שלילת הרשאה זו יחד עם \"הצגת ערוץ\" עבור {everyoneMention} הופכת את הערוץ לפרטי."
 
@@ -19246,7 +19383,7 @@ msgid "Join voice channel"
 msgstr "הצטרף לערוץ הקולי"
 
 #. Permission description in the role/permission editor for the Connect permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:162
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:167
 msgid "Join voice channels and hear others."
 msgstr "הצטרף לערוצי קול ושמע אחרים."
 
@@ -19525,7 +19662,7 @@ msgid "Kick member"
 msgstr "הוצאת חבר"
 
 #. Permission name: allows removing members from a community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:370
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:375
 msgid "Kick members"
 msgstr "הוצאת חברים"
 
@@ -19931,6 +20068,10 @@ msgstr "הגבלת אזכורים של תפקיד זה לחברים בעלי ה�
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogChannelMessages.ts:91
 msgid "Limited the channel to {count, plural, one {# user} other {# users}}"
 msgstr "הגבלת הערוץ ל-{count, plural, one {# משתמש} other {# משתמשים}}"
+
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:401
+msgid "Limits & playback"
+msgstr "Limits & playback"
 
 #. Label for the has:link filter option in the mobile channel search sheet.
 #: src/features/channel/components/bottomsheets/ChannelSearchBottomSheet.tsx:116
@@ -20426,17 +20567,17 @@ msgid "Manage blocked users"
 msgstr "ניהול משתמשים חסומים"
 
 #. Channel-scoped permission name: allows editing this channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:495
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:504
 msgid "Manage channel"
 msgstr "ניהול ערוץ"
 
 #. Permission name: allows creating, editing, or deleting channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:366
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:371
 msgid "Manage channels"
 msgstr "ניהול ערוצים"
 
 #. Permission name: allows editing global community settings.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:358
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:363
 msgid "Manage community"
 msgstr "ניהול קהילה"
 
@@ -20446,7 +20587,7 @@ msgid "Manage community features"
 msgstr "ניהול תכונות קהילה"
 
 #. Permission name: allows editing or deleting custom emoji and stickers.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:394
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:399
 msgid "Manage emoji & stickers"
 msgstr "ניהול אימוג'י ומדבקות"
 
@@ -20459,12 +20600,12 @@ msgid "Manage invite links for this channel."
 msgstr "נהל קישורי הזמנה עבור ערוץ זה."
 
 #. Permission name: allows deleting other members' messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:410
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:415
 msgid "Manage messages"
 msgstr "ניהול הודעות"
 
 #. Permission name: allows changing other members' nicknames.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:386
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:391
 msgid "Manage nicknames"
 msgstr "ניהול כינויים"
 
@@ -20474,7 +20615,7 @@ msgid "Manage payment methods"
 msgstr "ניהול אמצעי תשלום"
 
 #. Channel-scoped permission name: allows editing permission overwrites.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:499
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:508
 msgid "Manage permissions"
 msgstr "ניהול הרשאות"
 
@@ -20484,9 +20625,14 @@ msgid "Manage purchased gift codes and gift URLs"
 msgstr "ניהול קודי מתנה וקישורי מתנה שנרכשו"
 
 #. Permission name: allows role management and permission overwrite editing.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:362
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:367
 msgid "Manage roles"
 msgstr "ניהול תפקידים"
+
+#. Accessible label for the settings button in the voice soundboard popover.
+#: src/features/voice/components/SoundboardMenu.tsx:74
+msgid "Manage soundboard"
+msgstr "Manage soundboard"
 
 #. Billing action that opens subscription management or the customer billing portal.
 #: src/features/premium/utils/PremiumMessageDescriptors.ts:13
@@ -20494,7 +20640,7 @@ msgid "Manage subscription"
 msgstr "ניהול המנוי"
 
 #. Permission name: allows creating, editing, or deleting webhooks.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:398
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:403
 msgid "Manage webhooks"
 msgstr "ניהול webhooks"
 
@@ -20813,6 +20959,10 @@ msgstr "מדיה למבוגרים"
 msgid "Max {maxSize}."
 msgstr "גודל קובץ מקסימלי: {maxSize}."
 
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:413
+msgid "Max duration (seconds)"
+msgstr "Max duration (seconds)"
+
 #. Label above the max-uses dropdown in the invite link settings.
 #: src/features/invite/components/modals/InviteModal.tsx:116
 msgid "Max number of uses"
@@ -20821,6 +20971,10 @@ msgstr "מספר השימושים המקסימלי"
 #: src/features/theme/components/modals/BackgroundImageGalleryModal.tsx:57
 msgid "Max size: {BACKGROUND_MEDIA_MAX_SIZE_LABEL}."
 msgstr "גודל מקסימלי: {BACKGROUND_MEDIA_MAX_SIZE_LABEL}."
+
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:432
+msgid "Max sounds"
+msgstr "Max sounds"
 
 #: src/features/user/components/modals/tabs/component_gallery_tab/IndicatorsTab.tsx:451
 msgid "Max visible count"
@@ -20983,7 +21137,7 @@ msgid "Medium size (default)"
 msgstr "גודל בינוני (ברירת מחדל)"
 
 #. Audit log target-type filter label. Filters entries that target a community member.
-#: src/features/app/config/AuditLogConstants.ts:171
+#: src/features/app/config/AuditLogConstants.ts:183
 msgid "Member"
 msgstr "חבר"
 
@@ -21086,7 +21240,7 @@ msgid "Members"
 msgstr "חברים"
 
 #. Community settings tab for managing community members.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:81
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:88
 msgctxt "community-settings-tab"
 msgid "Members"
 msgstr "חברים"
@@ -21166,7 +21320,7 @@ msgid "Mention everyone or any role (even if the role isn't set to be mentionabl
 msgstr "אזכור כולם או כל תפקיד (גם אם התפקיד לא מוגדר כניתן לאזכור)."
 
 #. Permission description in the channel-scoped permissions editor for the Mention Everyone permission. Notes that this overrides the per-role "mentionable" flag.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:255
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:260
 msgid "Mention everyone or any role in this channel (even if the role isn't set to be mentionable)."
 msgstr "אזכור כולם או כל תפקיד בערוץ זה (גם אם לתפקיד לא הוגדר שהוא ניתן לאזכור)."
 
@@ -21242,7 +21396,7 @@ msgstr "הודעה"
 
 #. Audit log target-type filter label. Filters entries that target an individual message.
 #. Short label in the inputs tab. Keep it concise.
-#: src/features/app/config/AuditLogConstants.ts:204
+#: src/features/app/config/AuditLogConstants.ts:220
 #: src/features/user/components/modals/tabs/component_gallery_tab/ComponentGalleryTabInputsTab.tsx:86
 msgid "Message"
 msgstr "הודעה"
@@ -21332,7 +21486,7 @@ msgid "Message debug"
 msgstr "ניפוי באגים בהודעה"
 
 #. Audit log entry label. A single message was deleted by a moderator.
-#: src/features/app/config/AuditLogConstants.ts:147
+#: src/features/app/config/AuditLogConstants.ts:159
 msgid "Message deleted"
 msgstr "ההודעה נמחקה"
 
@@ -21355,7 +21509,7 @@ msgstr "הגדרות תצוגת ההודעות זמינות רק במחשב."
 msgid "Message editing"
 msgstr "עריכת הודעה"
 
-#: src/features/messaging/components/modals/ForwardModal.tsx:307
+#: src/features/messaging/components/modals/ForwardModal.tsx:317
 msgid "Message forwarded"
 msgstr "ההודעה הועברה"
 
@@ -21404,7 +21558,7 @@ msgstr "כפתורי שדה ההודעה"
 
 #. Error modal title in the forward modal when the optional comment exceeds the message length limit.
 #. Form validation error indicating the message exceeds the allowed length.
-#: src/features/messaging/components/modals/ForwardModal.tsx:50
+#: src/features/messaging/components/modals/ForwardModal.tsx:51
 #: src/features/ui/character_counter/CharacterCountMessages.ts:16
 msgid "Message is too long"
 msgstr "ההודעה ארוכה מדי"
@@ -21435,7 +21589,7 @@ msgid "Message list for {channelName}"
 msgstr "רשימת הודעות עבור {channelName}"
 
 #. Audit log entry label. A message was pinned in a channel.
-#: src/features/app/config/AuditLogConstants.ts:155
+#: src/features/app/config/AuditLogConstants.ts:167
 msgid "Message pinned"
 msgstr "הודעה הוצמדה"
 
@@ -21494,7 +21648,7 @@ msgid "Message time"
 msgstr "שעת הודעה"
 
 #. Audit log entry label. A message was unpinned from a channel.
-#: src/features/app/config/AuditLogConstants.ts:159
+#: src/features/app/config/AuditLogConstants.ts:171
 msgid "Message unpinned"
 msgstr "הצמדת ההודעה בוטלה"
 
@@ -21528,12 +21682,12 @@ msgid "Messages"
 msgstr "הודעות"
 
 #. Permission category for chat messages, uploads, embeds, reactions, and media.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:330
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:335
 msgid "Messages & media"
 msgstr "הודעות ומדיה"
 
 #. Audit log entry label. Multiple messages were bulk-deleted by a moderator.
-#: src/features/app/config/AuditLogConstants.ts:151
+#: src/features/app/config/AuditLogConstants.ts:163
 msgid "Messages deleted"
 msgstr "הודעות נמחקו"
 
@@ -21821,18 +21975,18 @@ msgid "Mod"
 msgstr "מודרטור"
 
 #. Permission category for moderation actions against members or messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:334
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:339
 msgid "Moderation"
 msgstr "ניהול תוכן"
 
 #. Community settings tab for moderation and safety controls.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:56
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:63
 msgctxt "community-settings-tab"
 msgid "Moderation"
 msgstr "ניהול"
 
 #. Empty-state body in the activity log tab when there are no log entries to show.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:132
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:133
 msgid "Moderation actions and community changes will appear here."
 msgstr "פעולות ניהול ושינויים בקהילה יופיעו כאן."
 
@@ -22037,7 +22191,7 @@ msgid "Move item up"
 msgstr "העבר פריט למעלה"
 
 #. Permission name: allows moving members between voice channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:487
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:496
 msgid "Move members"
 msgstr "העברת חברים"
 
@@ -22173,7 +22327,7 @@ msgstr "השתק שמע"
 #: src/features/user/components/settings_utils/search_index/KeybindsIndex.ts:178
 #: src/features/voice/components/bottomsheets/DirectCallLobbyBottomSheet.tsx:101
 #: src/features/voice/components/bottomsheets/VoiceLobbyBottomSheet.tsx:69
-#: src/features/voice/components/VoiceControlBar.tsx:122
+#: src/features/voice/components/VoiceControlBar.tsx:126
 msgctxt "voice-control-action"
 msgid "Mute"
 msgstr "השתק מיקרופון"
@@ -22266,7 +22420,7 @@ msgid "Mute favorites"
 msgstr "השתקת מועדפים"
 
 #. Permission name: allows moderators to mute other voice participants.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:479
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:488
 msgid "Mute members"
 msgstr "השתקת חברים"
 
@@ -22283,12 +22437,12 @@ msgid "Mute notifications"
 msgstr "השתקת התראות"
 
 #. Permission description in the channel-scoped permissions editor for the Mute Members permission. The mute applies for every listener, not only for the moderator.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:307
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:312
 msgid "Mute other members in this voice channel for everyone."
 msgstr "השתק חברים אחרים בערוץ הקולי הזה עבור כולם."
 
 #. Permission description in the role/permission editor for the Mute Members permission at community scope. The mute applies for every listener, not only for the moderator.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:182
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:187
 msgid "Mute other members in voice channels for everyone."
 msgstr "השתק חברים אחרים בערוצי קול עבור כולם."
 
@@ -22505,6 +22659,7 @@ msgstr "עקיפות Nagbar"
 #: src/features/expressions/components/modals/meme_form/MemeFormFields.tsx:24
 #: src/features/expressions/components/modals/sticker_form/StickerFormFields.tsx:28
 #: src/features/guild/components/modals/guild_tabs/guild_overview_tab/sections/BrandingSection.tsx:27
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:484
 #: src/features/theme_studio/sections/LibrarySection.tsx:105
 #: src/features/user/components/modals/tabs/chat_settings_tab/AddCustomSearchEngineModal.tsx:76
 #: src/features/user/components/settings_utils/search_index/MyProfileIndex.ts:57
@@ -22699,6 +22854,10 @@ msgstr "לעולם אל תנפש"
 #: src/features/user/components/modals/tabs/notifications_tab/TextToSpeech.tsx:33
 msgid "Never automatically"
 msgstr "ללא הקראה אוטומטית"
+
+#: src/features/voice/components/SoundboardSoundModal.tsx:578
+msgid "Never mind"
+msgstr "Never mind"
 
 #: src/features/channel/components/ChannelDivider.tsx:37
 #: src/features/channel/components/ChannelDivider.tsx:52
@@ -23059,7 +23218,7 @@ msgstr "אין שינויים לשמירה"
 msgid "No channels available"
 msgstr "אין ערוצים זמינים"
 
-#: src/features/messaging/components/modals/ForwardModal.tsx:426
+#: src/features/messaging/components/modals/ForwardModal.tsx:436
 #: src/features/search/components/search/ChannelFilterSheet.tsx:120
 msgid "No channels found"
 msgstr "לא נמצאו ערוצים"
@@ -23212,7 +23371,7 @@ msgid "No local files referenced"
 msgstr "אין הפניות לקבצים מקומיים"
 
 #. Empty-state title in the activity log tab when there are no log entries to show.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:128
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:129
 msgid "No logs yet"
 msgstr "אין יומנים עדיין"
 
@@ -23314,7 +23473,7 @@ msgid "No reason provided"
 msgstr "לא צוינה סיבה"
 
 #. Fallback text in an expanded activity log entry when the moderator did not supply a reason.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:716
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:721
 msgid "No reason was provided."
 msgstr "לא ניתנה סיבה."
 
@@ -23398,6 +23557,21 @@ msgstr "לא הוגדר קיצור דרך"
 #: src/features/user/components/modals/tabs/keybinds_tab/DefaultKeybindsList.tsx:94
 msgid "No shortcuts match that search."
 msgstr "לא נמצאו קיצורי דרך התואמים לחיפוש."
+
+#. Empty-state text in the guild soundboard tab.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:53
+msgid "No soundboard slots available"
+msgstr "No soundboard slots available"
+
+#. Empty state in the voice soundboard popover.
+#: src/features/voice/components/SoundboardMenu.tsx:62
+msgid "No soundboard sounds yet"
+msgstr "No soundboard sounds yet"
+
+#. Empty state in the voice soundboard popover when a search returns nothing.
+#: src/features/voice/components/SoundboardMenu.tsx:66
+msgid "No sounds match your search"
+msgstr "No sounds match your search"
 
 #: src/features/auth/components/pages/oauth_authorize_page/OAuthScopesStep.tsx:115
 msgid "No specific scopes requested."
@@ -24311,7 +24485,7 @@ msgid "Open emoji in browser"
 msgstr "פתח אימוג'י בדפדפן"
 
 #. Accessible label for the emoji picker trigger button in the forward modal comment field.
-#: src/features/messaging/components/modals/ForwardModal.tsx:95
+#: src/features/messaging/components/modals/ForwardModal.tsx:96
 #: src/features/user/components/modals/tabs/my_profile_tab/BioEditor.tsx:27
 msgid "Open emoji picker"
 msgstr "פתח בורר אימוג'י"
@@ -24847,7 +25021,7 @@ msgid "Overview"
 msgstr "סקירה כללית"
 
 #. Community settings tab for basic server/community details.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:46
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:53
 msgctxt "community-settings-tab"
 msgid "Overview"
 msgstr "סקירה כללית"
@@ -25055,9 +25229,11 @@ msgstr "הדבק את קישור ההודעה."
 
 #. Button label in the trimmer modal that pauses preview playback.
 #. Generic media-player control: pause playback.
+#. Pause button label in the soundboard trimmer.
 #. Pause-preview button label in the voice message composer modal.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:369
 #: src/features/voice/components/EntranceSoundTrimmerModal.tsx:45
+#: src/features/voice/components/SoundboardSoundModal.tsx:75
 #: src/features/voice/components/VoiceMessageComposerModal.tsx:89
 msgid "Pause"
 msgstr "השהה"
@@ -25097,6 +25273,11 @@ msgstr "השהה את התצוגה המקדימה של שיתוף המסך של�
 #: src/features/user/components/modals/tabs/appearance_tab/StreamerModeTab.tsx:39
 msgid "Pause notifications"
 msgstr "השהיית התראות"
+
+#. Accessible label for a soundboard preview pause button.
+#: src/features/voice/components/SoundWaveform.tsx:18
+msgid "Pause preview"
+msgstr "Pause preview"
 
 #. Voice screen share menu preference that pauses the local stream preview while the app is unfocused.
 #: src/features/ui/action_menu/items/voice_participant_menu_data/shared.ts:28
@@ -25176,7 +25357,7 @@ msgstr "פנסילבניה"
 #: src/features/expressions/utils/UnicodeEmojis.ts:21
 #: src/features/search/state/QuickSwitcherResultConverters.ts:22
 #: src/features/search/utils/QuickSwitcherModalUtils.tsx:53
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:261
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:277
 msgid "People"
 msgstr "אנשים"
 
@@ -25485,7 +25666,7 @@ msgid "Pin message"
 msgstr "הצמד הודעה"
 
 #. Permission name: allows pinning messages in a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:414
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:419
 msgid "Pin messages"
 msgstr "הצמדת הודעות"
 
@@ -25495,12 +25676,12 @@ msgid "Pin messages here for everyone to see."
 msgstr "הצמד כאן הודעות שכולם יוכלו לראות."
 
 #. Permission description in the channel-scoped permissions editor for the Pin Messages permission. Covers messages from anyone, not only their own.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:235
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:240
 msgid "Pin or unpin any message in this channel."
 msgstr "הצמדה או ביטול הצמדה של כל הודעה בערוץ זה."
 
 #. Permission description in the role/permission editor for the Pin Messages permission at community scope. Covers messages from anyone, not only their own.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:137
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:142
 msgid "Pin or unpin any message."
 msgstr "הצמדה או ביטול הצמדה של כל הודעה."
 
@@ -25612,8 +25793,10 @@ msgstr "פלטפורמה"
 msgid "Platform admin"
 msgstr "מנהל פלטפורמה"
 
+#. Button label to preview a soundboard sound.
 #. Generic media-player control: start playback.
 #. Play-preview button label in the voice message composer modal.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:79
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:365
 #: src/features/voice/components/VoiceMessageComposerModal.tsx:85
 msgid "Play"
@@ -25624,15 +25807,27 @@ msgstr "הפעל"
 msgid "Play animated emojis"
 msgstr "הפעלת אימוג'י מונפשים"
 
+#. Accessible label for a soundboard preview play button.
+#: src/features/voice/components/SoundWaveform.tsx:14
+msgid "Play preview"
+msgstr "Play preview"
+
 #. Short label in the accessibility tab. Keep it concise.
 #: src/features/user/components/modals/tabs/AccessibilityTab.tsx:71
 msgid "Play sample"
 msgstr "הפעל דוגמה"
 
 #. Button label in the trimmer modal. Plays the currently selected portion.
+#. Play button label in the soundboard trimmer.
 #: src/features/voice/components/EntranceSoundTrimmerModal.tsx:41
+#: src/features/voice/components/SoundboardSoundModal.tsx:71
 msgid "Play selection"
 msgstr "הפעל קטע נבחר"
+
+#. Permission description in the role/permission editor for the Use Soundboard permission. Covers triggering soundboard sounds in voice; it does not cover adding or managing the sounds themselves.
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:108
+msgid "Play sounds from this community’s soundboard while connected to a voice channel."
+msgstr "Play sounds from this community’s soundboard while connected to a voice channel."
 
 #. Play-button label on the inline video player thumbnail before playback starts.
 #. Short label in the channel and chat embed video. Keep it concise.
@@ -25935,11 +26130,18 @@ msgstr "מנע מ-<0>{targetUserTag}</0> לשלוח הודעות, להגיב ו�
 msgid "Prevent members from sending messages, reacting, and joining voice for a duration."
 msgstr "מניעת חברים מלשלוח הודעות, להגיב ולהצטרף לשיחות קוליות למשך זמן מוגדר."
 
+#. Section label above the soundboard waveform.
 #: src/features/expressions/components/modals/sticker_form/StickerPreview.tsx:21
 #: src/features/guild/components/modals/guild_tabs/guild_overview_tab/fields/GuildInviteSplashSettingsField.tsx:45
 #: src/features/user/components/modals/tabs/EmbedDebuggerTab.tsx:276
+#: src/features/voice/components/SoundboardSoundModal.tsx:46
 msgid "Preview"
 msgstr "תצוגה מקדימה"
+
+#. Tooltip on the speaker button that plays a soundboard sound locally without sending it to the call.
+#: src/features/voice/components/SoundboardMenu.tsx:58
+msgid "Preview (only you hear this)"
+msgstr "Preview (only you hear this)"
 
 #. Accessible label for a Discovery community card, which opens a preview of the community. {communityName} is the public community name.
 #: src/features/discovery/discovery/DiscoveryGuildCard.tsx:31
@@ -26096,7 +26298,7 @@ msgid "Prioritize speakers"
 msgstr "תעדוף דוברים"
 
 #. Permission name: allows a voice participant to be heard over others.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:475
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:480
 msgid "Priority speaker"
 msgstr "דובר בעדיפות"
 
@@ -26545,7 +26747,7 @@ msgid "Push-to-talk is ignored in direct input. Switch to focused voice or custo
 msgstr "דיבור בלחיצה אינו פעיל בקלט ישיר. עבור לקול ממוקד או למצב מותאם אישית כדי להשתמש בו."
 
 #. Tooltip on the mic button in the voice control bar when push-to-talk is enabled. {pushToTalkHint} is the formatted shortcut key combo.
-#: src/features/voice/components/VoiceControlBar.tsx:112
+#: src/features/voice/components/VoiceControlBar.tsx:116
 msgid "Push-to-talk is on. Hold {pushToTalkHint} to speak."
 msgstr "הדיבור בלחיצה מופעל. החזק את {pushToTalkHint} כדי לדבר."
 
@@ -26727,7 +26929,7 @@ msgid "Read message aloud"
 msgstr "הקראת ההודעה בקול"
 
 #. Permission name: allows seeing earlier messages in a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:426
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:431
 msgid "Read message history"
 msgstr "קריאת היסטוריית הודעות"
 
@@ -26739,12 +26941,12 @@ msgid "Read messages"
 msgstr "קריאת הודעות"
 
 #. Permission description in the role/permission editor for the Read Message History permission at community scope. Without the permission the member sees only messages that arrive while the channel is open in front of them.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:151
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:156
 msgid "Read messages sent before opening a channel. Without this permission, members only see messages that arrive while they have the channel open."
 msgstr "קריאת הודעות שנשלחו לפני הכניסה לערוץ. בלי הרשאה זו, חברים רואים רק הודעות שמגיעות בזמן שהערוץ פתוח."
 
 #. Permission description in the channel-scoped permissions editor for the Read Message History permission. Without the permission the member sees only messages that arrive while the channel is open in front of them.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:249
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:254
 msgid "Read messages sent in this channel before opening it. Without this permission, members only see messages that arrive while they have it open."
 msgstr "קריאת הודעות שנשלחו בערוץ זה לפני הכניסה אליו. בלי הרשאה זו, חברים רואים רק הודעות שמגיעות בזמן שהערוץ פתוח."
 
@@ -26776,8 +26978,8 @@ msgstr "מוכן לשדרג?"
 msgid "Real-time"
 msgstr "זמן אמת"
 
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:617
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:1286
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:622
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:1291
 #: src/features/moderation/components/modals/BanDetailsModal.tsx:74
 msgid "Reason"
 msgstr "סיבה"
@@ -27107,6 +27309,11 @@ msgstr "דחה"
 msgid "Rejected"
 msgstr "נדחה"
 
+#. Field label for a soundboard sound emoji.
+#: src/features/voice/components/SoundboardSoundModal.tsx:57
+msgid "Related Emoji"
+msgstr "Related Emoji"
+
 #. Short label in the markdown tab. Keep it concise.
 #: src/features/user/components/modals/tabs/component_gallery_tab/MarkdownTab.tsx:129
 msgid "Relative"
@@ -27320,7 +27527,9 @@ msgid "Remove from dictionary"
 msgstr "הסרה מהמילון"
 
 #. Action label that unpins the current channel, DM, or attachment from the favorites list.
+#. Tooltip on the star button of a favorited soundboard sound tile.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:326
+#: src/features/voice/components/SoundboardMenu.tsx:54
 msgid "Remove from favorites"
 msgstr "הסר מהמועדפים"
 
@@ -27361,7 +27570,7 @@ msgid "Remove it from the channel for everyone."
 msgstr "הסר אותה מהערוץ עבור כולם."
 
 #. Permission description in the role/permission editor for the Kick Members permission. Note that a kick is not permanent, unlike a ban.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:118
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:123
 msgid "Remove members from the community. They can rejoin with a new invite."
 msgstr "הסר חברים מהקהילה. הם יכולים להצטרף מחדש עם הזמנה חדשה."
 
@@ -27701,7 +27910,7 @@ msgid "Rename :{emojiName}:"
 msgstr "שנה את השם של :{emojiName}:"
 
 #. Permission description in the channel-scoped permissions editor for the Manage Channel permission. "This channel" refers to the channel currently being edited.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:196
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:201
 msgid "Rename and edit this channel's settings."
 msgstr "שנה את שם הערוץ הזה וערוך את ההגדרות שלו."
 
@@ -28490,6 +28699,10 @@ msgstr "הפעל מחדש את {productName} כדי להשתמש בשיתוף מ
 msgid "Restart {productName}?"
 msgstr "להפעיל מחדש את {productName}?"
 
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:450
+msgid "Restart a sound when it's re-triggered"
+msgstr "Restart a sound when it's re-triggered"
+
 #. Short confirmation button label in advanced settings.
 #. Short confirmation button label in advanced settings.
 #. Short label in the desktop settings tab. Keep it concise.
@@ -28799,7 +29012,7 @@ msgstr "רינגטון"
 
 #. Audit log target-type filter label. Filters entries that target a role.
 #. Slash-command argument type name, spoken by screen readers for an argument that takes a role.
-#: src/features/app/config/AuditLogConstants.ts:179
+#: src/features/app/config/AuditLogConstants.ts:191
 #: src/features/lexical/composer/nodes/SlashSlotNode.ts:35
 msgid "Role"
 msgstr "תפקיד"
@@ -28855,7 +29068,7 @@ msgid "Roles"
 msgstr "תפקידים"
 
 #. Community settings tab for role hierarchy and permission rules.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:51
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:58
 msgctxt "community-settings-tab"
 msgid "Roles"
 msgstr "תפקידים"
@@ -28983,6 +29196,7 @@ msgstr "רוויה"
 #: src/features/user/components/modals/CustomStatusBottomSheet.tsx:297
 #: src/features/user/components/modals/NoteEditSheet.tsx:48
 #: src/features/user/components/modals/tabs/chat_settings_tab/AddCustomSearchEngineModal.tsx:96
+#: src/features/voice/components/SoundboardSoundModal.tsx:587
 msgid "Save"
 msgstr "שמירה"
 
@@ -29016,6 +29230,7 @@ msgid "Save banner"
 msgstr "שמירת באנר"
 
 #: src/features/app/components/dialogs/shared/UnsavedChangesBannerContent.tsx:60
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:467
 msgid "Save changes"
 msgstr "שמור שינויים"
 
@@ -29408,7 +29623,7 @@ msgid "Search channels"
 msgstr "חיפוש ערוצים"
 
 #. Placeholder text in the channel picker search input of the forward modal.
-#: src/features/messaging/components/modals/ForwardModal.tsx:83
+#: src/features/messaging/components/modals/ForwardModal.tsx:84
 msgid "Search channels or DMs"
 msgstr "חיפוש ערוצים או צ'אטים פרטיים"
 
@@ -29748,7 +29963,7 @@ msgid "Security key PIN form"
 msgstr "טופס קוד ה-PIN של מפתח האבטחה"
 
 #. Permission description in the role/permission editor for the View Channel permission at community scope. Per-channel overwrites still decide access for individual channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:128
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:133
 msgid "See channels by default. Channels that deny it stay hidden."
 msgstr "ראה ערוצים כברירת מחדל. ערוצים ששוללים את ההרשאה נשארים מוסתרים."
 
@@ -29762,12 +29977,12 @@ msgid "See the member list for channels in this community."
 msgstr "הצגת רשימת החברים בערוצים בקהילה זו."
 
 #. Permission description in the channel-scoped permissions editor for the View Channel Members permission. Scoped to a single channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:211
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:216
 msgid "See the member list for this channel."
 msgstr "הצגת רשימת החברים בערוץ זה."
 
 #. Permission description in the channel-scoped permissions editor for the View Channel permission. The placeholder renders the literal @everyone role name and must not be translated.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:221
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:226
 msgid "See this channel. Denying it for {everyoneMention} makes the channel private."
 msgstr "ראה ערוץ זה. שלילת הרשאה זו עבור {everyoneMention} הופכת את הערוץ לפרטי."
 
@@ -30004,7 +30219,7 @@ msgid "Send"
 msgstr "שליחה"
 
 #. Primary button label in the forward message modal. selectedCount is the number of selected destinations; selectionLimit is the maximum allowed.
-#: src/features/messaging/components/modals/ForwardModal.tsx:99
+#: src/features/messaging/components/modals/ForwardModal.tsx:100
 msgid "Send ({selectedCount}/{selectionLimit})"
 msgstr "שליחה ({selectedCount}/{selectionLimit})"
 
@@ -30111,7 +30326,7 @@ msgstr "שלח הודעה"
 #. Audit log operation flag label for message sending.
 #. Permission name: allows sending chat messages.
 #: src/features/guild/utils/guild_tabs/GuildAuditLogTabUtils.ts:197
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:402
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:407
 msgid "Send messages"
 msgstr "שליחת הודעות"
 
@@ -30121,12 +30336,12 @@ msgid "Send messages disabled"
 msgstr "שליחת הודעות מושבתת"
 
 #. Permission description in the role/permission editor for the Send Messages permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:133
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:138
 msgid "Send messages in channels."
 msgstr "שלח הודעות בערוצים."
 
 #. Permission description in the channel-scoped permissions editor for the Send Messages permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:226
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:231
 msgid "Send messages in this channel."
 msgstr "שלח הודעות בערוץ זה."
 
@@ -30181,7 +30396,7 @@ msgid "Send to"
 msgstr "שליחה אל"
 
 #. Permission name: allows sending text-to-speech messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:406
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:411
 msgid "Send TTS messages"
 msgstr "שליחת הודעות טקסט לדיבור"
 
@@ -30218,7 +30433,7 @@ msgid "Sending malware or dangerous links"
 msgstr "שליחת תוכנות זדוניות או קישורים מסוכנים"
 
 #. Short label in the settings dialog forward channel selection.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:14
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:15
 msgid "Sending messages is disabled in this community"
 msgstr "שליחת הודעות מושבתת בקהילה זו"
 
@@ -30383,6 +30598,10 @@ msgstr "סינון התוכן הבוטה הוגדר ל-{0}."
 #: src/features/user/components/modals/tabs/components/EntranceSoundSection.tsx:108
 msgid "Set here"
 msgstr "הוגדר כאן"
+
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:404
+msgid "Set how long soundboard sounds can be, how many this community can hold, and how repeated sounds behave. Requires Manage Community."
+msgstr "Set how long soundboard sounds can be, how many this community can hold, and how repeated sounds behave. Requires Manage Community."
 
 #. placeholder {0}: renderInline(label, i18n)
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabRenderers.tsx:360
@@ -30656,7 +30875,7 @@ msgid "Set verification level to <0>none</0>."
 msgstr "רמת האימות הוגדרה ל-<0>ללא</0>."
 
 #. Permission name: allows changing the voice service region.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:491
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:500
 msgid "Set voice region"
 msgstr "הגדרת אזור קולי"
 
@@ -30923,7 +31142,7 @@ msgid "Shortcuts are paused while recording."
 msgstr "קיצורי הדרך מושהים בזמן הקלטת צירוף מקשים."
 
 #. Body of the error modal shown when the forward modal comment exceeds the message length limit.
-#: src/features/messaging/components/modals/ForwardModal.tsx:54
+#: src/features/messaging/components/modals/ForwardModal.tsx:55
 msgid "Shorten the message and try again."
 msgstr "יש לקצר את ההודעה ולנסות שוב."
 
@@ -31063,12 +31282,12 @@ msgid "Show download button"
 msgstr "הצג כפתור הורדה"
 
 #. Permission description in the channel-scoped permissions editor for the Embed Links permission. The preview is the card rendered under a message that contains a link.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:240
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:245
 msgid "Show embedded previews for links sent in this channel."
 msgstr "הצג תצוגות מקדימות מוטמעות לקישורים שנשלחים בערוץ זה."
 
 #. Permission description in the role/permission editor for the Embed Links permission at community scope. The preview is the card rendered under a message that contains a link.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:142
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:147
 msgid "Show embedded previews for links sent."
 msgstr "הצג תצוגות מקדימות מוטמעות לקישורים שנשלחים."
 
@@ -31781,7 +32000,7 @@ msgid "Slowmode"
 msgstr "מצב איטי"
 
 #. Short label in the settings dialog forward channel selection. Preserve {remaining}; it is inserted by code.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:37
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:38
 msgid "Slowmode · wait {remaining}"
 msgstr "מצב איטי · המתן {remaining}"
 
@@ -32042,7 +32261,7 @@ msgid "Something went wrong while issuing your refund. Contact support if this k
 msgstr "משהו השתבש בעת ביצוע ההחזר הכספי. אם זה ממשיך לקרות, יש לפנות לתמיכה."
 
 #. Generic error shown in the activity log tab when fetching log entries fails.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:104
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:105
 msgid "Something went wrong while loading the activity log."
 msgstr "משהו השתבש בזמן טעינת יומן הפעילות."
 
@@ -32166,12 +32385,69 @@ msgstr "אפקט קולי"
 msgid "Sound for this scope"
 msgstr "צליל עבור היקף זה"
 
+#. Field label for a soundboard sound name.
+#. Placeholder for the soundboard sound name field.
+#: src/features/voice/components/SoundboardSoundModal.tsx:52
+#: src/features/voice/components/SoundboardSoundModal.tsx:53
+msgid "Sound Name"
+msgstr "Sound Name"
+
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/user/components/settings_utils/search_index/NotificationsIndex.ts:94
 #: src/features/user/components/settings_utils/section_registry/NotificationsSections.ts:224
 msgid "Sound volume"
 msgstr "עוצמת קול"
+
+#. Field label for the soundboard sound volume.
+#: src/features/voice/components/SoundboardSoundModal.tsx:62
+msgid "Sound Volume"
+msgstr "Sound Volume"
+
+#. Community settings tab for managing soundboard sounds uploaded to the community.
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:48
+msgctxt "community-settings-tab"
+msgid "Soundboard"
+msgstr "Soundboard"
+
+#. Voice control button label that opens the guild soundboard popover.
+#: src/features/voice/components/VoiceControlBar.tsx:155
+msgctxt "voice-control-button"
+msgid "Soundboard"
+msgstr "Soundboard"
+
+#. Audit log target-type filter label. Filters entries that target a soundboard sound.
+#: src/features/app/config/AuditLogConstants.ts:207
+msgid "Soundboard sound"
+msgstr "Soundboard sound"
+
+#. Audit log entry label. A soundboard sound was added to the community.
+#: src/features/app/config/AuditLogConstants.ts:147
+msgid "Soundboard sound created"
+msgstr "Soundboard sound created"
+
+#. Audit log entry label. A soundboard sound was removed from the community.
+#: src/features/app/config/AuditLogConstants.ts:155
+msgid "Soundboard sound deleted"
+msgstr "Soundboard sound deleted"
+
+#. Audit log entry label. A soundboard sound was renamed or edited.
+#: src/features/app/config/AuditLogConstants.ts:151
+msgid "Soundboard sound updated"
+msgstr "Soundboard sound updated"
+
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:378
+msgid "Soundboard sounds"
+msgstr "Soundboard sounds"
+
+#. Body of the error modal shown when an unsupported soundboard file is selected. {maxSize} is a formatted file size.
+#. Body of the unsupported-file error. {maxSize} is a formatted file size.
+#. Error modal body. {maxSize} is a formatted file size.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:65
+#: src/features/voice/components/SoundboardMenu.tsx:79
+#: src/features/voice/components/SoundboardSoundModal.tsx:80
+msgid "Soundboard sounds must be MP3, OGG, M4A, or WAV audio under {maxSize}."
+msgstr "Soundboard sounds must be MP3, OGG, M4A, or WAV audio under {maxSize}."
 
 #. Section heading / tab label for the notification-sounds area.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
@@ -32185,6 +32461,11 @@ msgstr "צלילים"
 msgctxt "notifications-settings-section"
 msgid "Sounds"
 msgstr "צלילים"
+
+#. Description in the community soundboard upload section. {maxSize} is a formatted file size, {maxSeconds} a number.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:70
+msgid "Sounds must be under {maxSize} and at most {maxSeconds} seconds long."
+msgstr "Sounds must be under {maxSize} and at most {maxSeconds} seconds long."
 
 #. Footer summary resolution label for native source resolution.
 #. Resolution option in the stream settings menu meaning the original source resolution (no downscale).
@@ -32291,7 +32572,7 @@ msgid "Spatial and temporal layers"
 msgstr "שכבות מרחביות וזמניות"
 
 #. Permission name: allows speaking in voice channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:462
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:467
 msgctxt "voice-permission"
 msgid "Speak"
 msgstr "דיבור"
@@ -32702,7 +32983,7 @@ msgstr "מדבקה"
 #. Generic label for one sticker.
 #. Label for the has:sticker option in the mobile content-type filter sheet.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/app/config/AuditLogConstants.ts:191
+#: src/features/app/config/AuditLogConstants.ts:203
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:234
 #: src/features/search/components/search/HasFilterSheet.tsx:73
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:133
@@ -32793,7 +33074,7 @@ msgid "Stickers"
 msgstr "מדבקות"
 
 #. Community settings tab for managing custom stickers uploaded to the community.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:41
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:43
 msgctxt "community-settings-tab"
 msgid "Stickers"
 msgstr "מדבקות"
@@ -32909,7 +33190,7 @@ msgid "Stop watching"
 msgstr "הפסק צפייה"
 
 #. Tooltip / button label in the voice control bar that stops watching a remote screen share.
-#: src/features/voice/components/VoiceControlBar.tsx:147
+#: src/features/voice/components/VoiceControlBar.tsx:151
 msgid "Stop watching stream"
 msgstr "הפסק לצפות בשידור"
 
@@ -33010,7 +33291,7 @@ msgid "Stream settings"
 msgstr "הגדרות שידור"
 
 #. Permission name: allows video streaming or screen sharing in voice.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:467
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:472
 msgid "Stream video"
 msgstr "הזרמת וידאו"
 
@@ -33651,12 +33932,12 @@ msgid "Talk in calls and test your input."
 msgstr "דבר בשיחות ובדוק את הקלט שלך."
 
 #. Permission description in the channel-scoped permissions editor for the Speak permission. "Mute members" is another permission in this same editor, so match the wording used for its name.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:286
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:291
 msgid "Talk in this voice channel. Without this permission, members stay muted until someone with the \"Mute members\" permission unmutes them."
 msgstr "דיבור בערוץ הקולי הזה. בלי הרשאה זו, חברים יישארו מושתקים עד שמישהו עם הרשאת \"השתקת חברים\" יבטל את השתקתם."
 
 #. Permission description in the role/permission editor for the Speak permission at community scope. "Mute members" is another permission in this same editor, so match the wording used for its name.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:166
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:171
 msgid "Talk in voice channels. Without this permission, members stay muted until someone with the \"Mute members\" permission unmutes them."
 msgstr "דיבור בערוצי קול. בלי הרשאה זו, חברים יישארו מושתקים עד שמישהו עם הרשאת \"השתקת חברים\" יבטל את השתקתם."
 
@@ -34199,6 +34480,16 @@ msgctxt "screen-share"
 msgid "The screen share source stopped sending video, so your screen share was stopped."
 msgstr "מקור שיתוף המסך הפסיק לשלוח וידאו, ולכן שיתוף המסך שלך הופסק."
 
+#. Activity log detail line under a deleted soundboard sound, shown only when someone other than the person who deleted it had uploaded it. {user} is the user who uploaded the sound, shown as a clickable user chip.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:55
+msgid "The sound was uploaded by {user}"
+msgstr "The sound was uploaded by {user}"
+
+#. Notice at the top of the community soundboard tab when the instance-wide soundboard toggle is off.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:124
+msgid "The soundboard is turned off for this instance. Existing sounds are shown for cleanup only."
+msgstr "The soundboard is turned off for this instance. Existing sounds are shown for cleanup only."
+
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabRenderers.tsx:748
 msgid "The sticker was uploaded as animated."
 msgstr "המדבקה הועלתה כמונפשת."
@@ -34541,6 +34832,11 @@ msgstr "קוד זה שגוי או שכבר נעשה בו שימוש."
 msgid "This code was already redeemed."
 msgstr "קוד זה כבר מומש."
 
+#. Inline error under the max-sounds input when the value is below the number of sounds already uploaded.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:115
+msgid "This community already has {installed} sounds. Delete some before setting a lower limit."
+msgstr "This community already has {installed} sounds. Delete some before setting a lower limit."
+
 #: src/features/guild/components/modals/guild_tabs/GuildInvitesTab.tsx:102
 msgid "This community doesn't have any invite links yet. Go to a channel and create an invite to invite people."
 msgstr "לקהילה הזו אין עדיין קישורי הזמנה. עבור לערוץ וצור הזמנה כדי להזמין אנשים."
@@ -34738,6 +35034,11 @@ msgstr "המופע הזה מאפשר כרגע שיתוף מסך עד 720p ב-30 
 #: src/features/app/components/setup/SetupWizardSteps.tsx:52
 msgid "This instance has no accounts yet. The first account you create automatically becomes the administrator."
 msgstr "למופע זה עדיין אין חשבונות. החשבון הראשון שתיצור יהפוך אוטומטית למנהל המערכת."
+
+#. Inline error under a soundboard limit input when the entered value exceeds the instance-wide ceiling.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:111
+msgid "This instance limits this to {max}. Ask an instance admin to raise it."
+msgstr "This instance limits this to {max}. Ask an instance admin to raise it."
 
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabRenderers.tsx:688
 msgid "This invite expires after {count, plural, one {# use} other {# uses}}."
@@ -35290,7 +35591,7 @@ msgid "Time out {tag}"
 msgstr "הטלת פסק זמן על {tag}"
 
 #. Permission name: allows temporarily restricting members.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:446
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:451
 msgid "Time out members"
 msgstr "הטלת פסק זמן על חברים"
 
@@ -35587,7 +35888,7 @@ msgid "TOTP"
 msgstr "TOTP"
 
 #. Subtitle under the activity-log page title.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:112
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:113
 msgid "Track moderator actions across the community."
 msgstr "מעקב אחר פעולות מנהלים ברחבי הקהילה."
 
@@ -35698,6 +35999,11 @@ msgstr "חיתוך צליל כניסה"
 #: src/features/voice/components/EntranceSoundTrimmerModal.tsx:53
 msgid "Trimmed clip is over the {limit} size limit. Try a shorter selection."
 msgstr "הקליפ החתוך חורג ממגבלת הגודל של {limit}. נסה בחירה קצרה יותר."
+
+#. Error when a trimmed soundboard clip encodes larger than the size cap.
+#: src/features/voice/components/SoundboardSoundModal.tsx:84
+msgid "Trimmed selection is {size} — over the {limit} limit. Pick a shorter selection."
+msgstr "Trimmed selection is {size} — over the {limit} limit. Pick a shorter selection."
 
 #. Native Help submenu title that groups recovery actions like reload and reset.
 #: src/features/platform/utils/DesktopLocaleBridge.ts:154
@@ -35954,12 +36260,12 @@ msgid "Turn off streaming privacy before viewing login or account security detai
 msgstr "כבה את פרטיות הסטרימינג לפני הצגת פרטי התחברות או אבטחת חשבון."
 
 #. Permission description in the channel-scoped permissions editor for the Stream Video permission. Covers both the webcam and screen sharing.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:292
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:297
 msgid "Turn on a camera or share a screen in this voice channel."
 msgstr "הפעל מצלמה או שתף מסך בערוץ הקולי הזה."
 
 #. Permission description in the role/permission editor for the Stream Video permission at community scope. Covers both the webcam and screen sharing.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:172
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:177
 msgid "Turn on a camera or share a screen in voice channels."
 msgstr "הפעל מצלמה או שתף מסך בערוצי קול."
 
@@ -36185,7 +36491,7 @@ msgid "Ukrainian"
 msgstr "אוקראינית"
 
 #. Error-state title in the activity log tab when fetching log entries failed.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:136
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:137
 msgid "Unable to load activity logs"
 msgstr "לא ניתן לטעון את יומני הפעילות"
 
@@ -36543,7 +36849,7 @@ msgid "Unknown message type"
 msgstr "סוג הודעה לא ידוע"
 
 #. Fallback label for a permission bit the client does not recognize.
-#: src/features/permissions/utils/PermissionUtils.ts:421
+#: src/features/permissions/utils/PermissionUtils.ts:423
 msgid "Unknown permission"
 msgstr "הרשאה לא ידועה"
 
@@ -36589,10 +36895,10 @@ msgstr "משתמש לא ידוע"
 #: src/features/channel/utils/ChannelUtils.tsx:55
 #: src/features/devtools/utils/CommandUtils.ts:27
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogSentence.tsx:54
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:124
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:125
 #: src/features/lexical/composer/nodes/SlashSlotNode.ts:61
 #: src/features/voice/components/VoiceParticipantAvatarList.tsx:44
-#: src/features/voice/components/VoiceParticipantTile.tsx:174
+#: src/features/voice/components/VoiceParticipantTile.tsx:176
 #: src/features/webhook/components/WebhookListItem.tsx:31
 msgid "Unknown user"
 msgstr "משתמש לא ידוע"
@@ -36687,7 +36993,7 @@ msgstr "בטל השתקת שמע"
 #. Voice control button label to turn the user's microphone back on.
 #: src/features/voice/components/bottomsheets/DirectCallLobbyBottomSheet.tsx:96
 #: src/features/voice/components/bottomsheets/VoiceLobbyBottomSheet.tsx:64
-#: src/features/voice/components/VoiceControlBar.tsx:117
+#: src/features/voice/components/VoiceControlBar.tsx:121
 msgctxt "voice-control-action"
 msgid "Unmute"
 msgstr "בטל השתקת מיקרופון"
@@ -36935,6 +37241,15 @@ msgstr "הודעות שלא נקראו"
 msgid "Unsaved changes"
 msgstr "שינויים שלא נשמרו"
 
+#. Error modal title.
+#. Title of the error modal shown when an unsupported soundboard file type is selected.
+#. Title of the error shown when a chosen soundboard file is the wrong type or too large.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:61
+#: src/features/voice/components/SoundboardMenu.tsx:78
+#: src/features/voice/components/SoundboardSoundModal.tsx:76
+msgid "Unsupported audio file"
+msgstr "Unsupported audio file"
+
 #. Error modal body shown when an entrance sound upload has an unsupported audio format.
 #: src/features/user/components/modals/tabs/hooks/useEntranceSound.ts:39
 msgid "Unsupported audio file."
@@ -37162,6 +37477,7 @@ msgstr "שדרג כדי לאחסן עד 15 רקעים מותאמים אישית 
 #. Button that opens a file picker to upload a branding image.
 #: src/features/app/components/setup/SetupWizardSteps.tsx:109
 #: src/features/theme/components/modals/BackgroundImageGalleryModal.tsx:84
+#: src/features/voice/components/SoundboardSoundModal.tsx:587
 msgid "Upload"
 msgstr "העלאה"
 
@@ -37185,6 +37501,11 @@ msgstr "העלה צליל מותאם אישית שמתנגן באופן אוטו
 #: src/features/input/state/input_keybind/shared.ts:201
 msgid "Upload a file"
 msgstr "העלאת קובץ"
+
+#. Title of the soundboard upload modal.
+#: src/features/voice/components/SoundboardSoundModal.tsx:44
+msgid "Upload a Sound"
+msgstr "Upload a Sound"
 
 #: src/features/theme_studio/sections/AssetsSection.tsx:138
 msgid "Upload assets"
@@ -37234,12 +37555,12 @@ msgid "Upload file"
 msgstr "העלאת קובץ"
 
 #. Permission description in the role/permission editor for the Attach Files permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:147
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:152
 msgid "Upload files and media in messages."
 msgstr "העלה קבצים ומדיה בהודעות."
 
 #. Permission description in the channel-scoped permissions editor for the Attach Files permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:245
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:250
 msgid "Upload files and media in this channel."
 msgstr "העלה קבצים ומדיה בערוץ זה."
 
@@ -37272,6 +37593,7 @@ msgid "Upload preview frames for screen shares."
 msgstr "העלה פריימים לתצוגה מקדימה עבור שיתופי מסך."
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:381
 #: src/features/user/components/settings_utils/section_registry/NotificationsSections.ts:200
 msgid "Upload sound"
 msgstr "העלאת צליל"
@@ -37309,6 +37631,7 @@ msgstr "קבצי שמע שהועלו בלבד"
 
 #. Column header showing who uploaded a custom emoji.
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:343
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:487
 msgid "Uploaded by"
 msgstr "הועלה על ידי"
 
@@ -37520,7 +37843,7 @@ msgid "Use email"
 msgstr "שימוש באימייל"
 
 #. Permission description in the channel-scoped permissions editor for the Use External Emoji permission. "Other communities" means custom emoji uploaded in a different Fluxer community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:260
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:265
 msgid "Use emoji from other communities in this channel."
 msgstr "השתמש באימוג'י מקהילות אחרות בערוץ זה."
 
@@ -37535,12 +37858,12 @@ msgid "Use emoji from other communities."
 msgstr "השתמש באימוג'י מקהילות אחרות."
 
 #. Permission name: allows using emoji from other communities.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:430
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:435
 msgid "Use external emoji"
 msgstr "שימוש באימוג'י חיצוניים"
 
 #. Permission name: allows using stickers from other communities.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:434
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:439
 msgid "Use external stickers"
 msgstr "שימוש במדבקות חיצוניות"
 
@@ -37632,8 +37955,13 @@ msgstr "השתמש בטקסט אימות מחדש"
 msgid "Use selection"
 msgstr "שימוש בבחירה"
 
+#. Permission name: allows playing soundboard sounds in voice channels.
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:484
+msgid "Use soundboard"
+msgstr "Use soundboard"
+
 #. Permission description in the channel-scoped permissions editor for the Use External Stickers permission. "Other communities" means stickers uploaded in a different Fluxer community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:265
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:270
 msgid "Use stickers from other communities in this channel."
 msgstr "השתמש במדבקות מקהילות אחרות בערוץ זה."
 
@@ -37643,7 +37971,7 @@ msgid "Use stickers from other communities with {premiumProductName}"
 msgstr "השתמש במדבקות מקהילות אחרות עם {premiumProductName}"
 
 #. Permission description in the role/permission editor for the Use External Stickers permission. "Other communities" means stickers uploaded in a different Fluxer community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:157
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:162
 msgid "Use stickers from other communities."
 msgstr "השתמש במדבקות מקהילות אחרות."
 
@@ -37709,7 +38037,7 @@ msgid "Use video and camera previews."
 msgstr "השתמש בתצוגות מקדימות של וידאו ומצלמה."
 
 #. Permission name: allows voice activation instead of requiring push-to-talk.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:471
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:476
 msgid "Use voice activity"
 msgstr "שימוש בפעילות קולית"
 
@@ -37761,7 +38089,7 @@ msgstr "בשימוש בקהילה זו בלבד."
 #. Audit log target-type filter label. Filters entries that target a user account.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Slash-command argument type name, spoken by screen readers for an argument that takes a user.
-#: src/features/app/config/AuditLogConstants.ts:175
+#: src/features/app/config/AuditLogConstants.ts:187
 #: src/features/lexical/composer/nodes/SlashSlotNode.ts:27
 #: src/features/user/components/settings_utils/search_index/MyProfileIndex.ts:65
 msgid "User"
@@ -38007,7 +38335,7 @@ msgid "Vanity URL"
 msgstr "כתובת URL מותאמת אישית"
 
 #. Community settings tab for the community vanity/custom invite link.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:71
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:78
 msgctxt "community-settings-tab"
 msgid "Vanity URL"
 msgstr "כתובת URL מותאמת אישית"
@@ -38451,7 +38779,7 @@ msgid "View {userName}'s profile"
 msgstr "הצג את הפרופיל של {userName}"
 
 #. Permission name: allows viewing community audit/activity logs.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:354
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:359
 msgid "View activity log"
 msgstr "הצגת יומן פעילות"
 
@@ -38507,12 +38835,12 @@ msgid "View call controls"
 msgstr "הצגת פקדי שיחה"
 
 #. Permission name: allows seeing a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:450
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:455
 msgid "View channel"
 msgstr "הצגת ערוץ"
 
 #. Permission name: allows seeing the member list for a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:454
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:459
 msgid "View channel members"
 msgstr "הצגת חברי ערוץ"
 
@@ -39056,12 +39384,12 @@ msgid "Waiting for passkey…"
 msgstr "ממתין למפתח גישה…"
 
 #. Inline notice in the forward modal when slowmode is active in the selected target channel. forwardChannelDisplayName is the channel name.
-#: src/features/messaging/components/modals/ForwardModal.tsx:70
+#: src/features/messaging/components/modals/ForwardModal.tsx:71
 msgid "Waiting for slowmode in {forwardChannelDisplayName} to expire."
 msgstr "ממתין שתוקף מצב איטי ב-{forwardChannelDisplayName} יפוג."
 
 #. Inline notice in the forward modal when slowmode is active in one or more selected target channels.
-#: src/features/messaging/components/modals/ForwardModal.tsx:75
+#: src/features/messaging/components/modals/ForwardModal.tsx:76
 msgid "Waiting for slowmode in one or more selected channels to expire."
 msgstr "ממתין שתוקף מצב איטי באחד או יותר מהערוצים שנבחרו יפוג."
 
@@ -39388,7 +39716,7 @@ msgid "Webcam"
 msgstr "מצלמת רשת"
 
 #. Audit log target-type filter label. Filters entries that target a webhook.
-#: src/features/app/config/AuditLogConstants.ts:200
+#: src/features/app/config/AuditLogConstants.ts:216
 msgid "Webhook"
 msgstr "Webhook"
 
@@ -39436,7 +39764,7 @@ msgid "Webhooks"
 msgstr "Webhooks"
 
 #. Community settings tab for configuring webhooks.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:66
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:73
 msgctxt "community-settings-tab"
 msgid "Webhooks"
 msgstr "Webhooks"
@@ -39621,6 +39949,10 @@ msgstr "כאשר התצוגות המקדימות מופעלות, {productName} �
 #: src/features/voice/components/modals/ScreenSharePickerModal.tsx:302
 msgid "When previews are enabled, {productName} uploads occasional JPEG frames from your screen share so the other person in this DM can see a thumbnail before they watch."
 msgstr "כאשר התצוגות המקדימות מופעלות, {productName} מעלה מדי פעם פריימים בפורמט JPEG משיתוף המסך שלך, כך שהמשתמש השני בצ'אט הפרטי הזה יוכל לראות תמונה ממוזערת לפני שהוא צופה."
+
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:452
+msgid "When someone plays the same sound again while it's still playing, stop it and start it over instead of layering another copy. Different sounds still overlap."
+msgstr "When someone plays the same sound again while it's still playing, stop it and start it over instead of layering another copy. Different sounds still overlap."
 
 #. Legend for streaming privacy behavior settings.
 #: src/features/user/components/modals/tabs/appearance_tab/StreamerModeTab.tsx:23
@@ -39816,7 +40148,7 @@ msgid "Withdraw"
 msgstr "ביטול הבקשה"
 
 #. Permission description in the channel-scoped permissions editor for the Use Voice Activity permission. Explains the inverse: without it, the user must use push-to-talk in this voice channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:297
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:302
 msgid "Without this permission, push-to-talk is required in this channel."
 msgstr "ללא הרשאה זו, נדרש דיבור בלחיצה בערוץ זה."
 
@@ -40161,7 +40493,7 @@ msgstr "אינך יכול לשלוח הודעות בקהילה זו."
 #. Tooltip in the voice control bar when the user lacks the Screen Share permission in this channel. Tone stays plain.
 #. Tooltip shown when the user lacks the Screen Share permission in the voice channel. Tone stays plain.
 #: src/features/voice/components/voice_connection_status/LocalParticipantControls.tsx:54
-#: src/features/voice/components/VoiceControlBar.tsx:137
+#: src/features/voice/components/VoiceControlBar.tsx:141
 msgid "You can't share your screen in this channel"
 msgstr "אינך יכול לשתף את המסך שלך בערוץ זה"
 
@@ -40175,7 +40507,7 @@ msgstr "אינך יכול לדבר בערוץ זה"
 #. Tooltip shown when the user lacks the Video permission in the voice channel. Tone stays plain.
 #: src/features/voice/components/modals/CameraPreviewModal.tsx:76
 #: src/features/voice/components/voice_connection_status/LocalParticipantControls.tsx:50
-#: src/features/voice/components/VoiceControlBar.tsx:127
+#: src/features/voice/components/VoiceControlBar.tsx:131
 msgid "You can't turn on your camera in this channel"
 msgstr "אינך יכול להפעיל את המצלמה שלך בערוץ זה"
 
@@ -40390,12 +40722,12 @@ msgid "You need access to your current email to change it from here. Use phone v
 msgstr "כדי לשנות את כתובת האימייל שלך מכאן, עליך לגשת לאימייל הנוכחי שלך. השתמש באימות טלפוני אם זמין, או פנה לתמיכה."
 
 #. Forward dialog error shown when the forwarded message has attachments and the user lacks Attach Files in the target channel.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:32
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:33
 msgid "You need the \"{attachFilesPermissionLabel}\" permission to attach files in this channel"
 msgstr "דרושה לך ההרשאה \"{attachFilesPermissionLabel}\" כדי לצרף קבצים בערוץ זה"
 
 #. Forward dialog error shown when the forwarded message contains embeds and the user lacks Embed Links in the target channel.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:27
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:28
 msgid "You need the \"{embedLinksPermissionLabel}\" permission to embed links in this channel"
 msgstr "דרושה לך ההרשאה \"{embedLinksPermissionLabel}\" כדי להטמיע קישורים בערוץ זה"
 
@@ -40433,7 +40765,7 @@ msgid "You need the \"{permissionLabel}\" permission to use stickers from other 
 msgstr "דרושה לך ההרשאה \"{permissionLabel}\" כדי להשתמש במדבקות מקהילות אחרות כאן."
 
 #. Forward dialog error shown when the user lacks the Send Messages permission in the target channel. Permission name is interpolated.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:22
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:23
 msgid "You need the \"{sendMessagesPermissionLabel}\" permission to send messages in this channel"
 msgstr "דרושה לך ההרשאה \"{sendMessagesPermissionLabel}\" כדי לשלוח הודעות בערוץ זה"
 
@@ -40680,7 +41012,7 @@ msgid "You're streaming!"
 msgstr "אתה משדר!"
 
 #. Short label in the settings dialog forward channel selection. Keep the tone plain and specific.
-#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:18
+#: src/features/app/components/dialogs/shared/ForwardChannelIndex.ts:19
 msgid "You're timed out in this community"
 msgstr "אתה בפסק זמן בקהילה זו"
 
@@ -40754,6 +41086,11 @@ msgstr "הגעת למגבלת הצ'אטים הקבוצתיים"
 #: src/features/guild/components/modals/guild_tabs/GuildEmojiTab.tsx:52
 msgid "You've reached the maximum number of emojis. Delete some existing emojis to make room."
 msgstr "הגעת למספר המרבי של אימוג'י. מחק אימוג'י קיימים כדי לפנות מקום."
+
+#. Soundboard upload limit message in community soundboard settings.
+#: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:57
+msgid "You've reached the maximum number of soundboard sounds. Delete an existing sound to make room."
+msgstr "You've reached the maximum number of soundboard sounds. Delete an existing sound to make room."
 
 #. Sticker upload limit message in community sticker settings. Do not suggest that communities can be upgraded.
 #: src/features/guild/components/modals/guild_tabs/GuildStickersTab.tsx:65
