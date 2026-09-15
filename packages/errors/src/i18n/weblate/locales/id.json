@@ -396,6 +396,7 @@
 	"polls.not_found": "Pesan ini tidak memiliki polling.",
 	"polls.question_length_invalid": "Pertanyaan polling harus terdiri dari 1 sampai {max, number} karakter.",
 	"polls.setting_exceeds_instance_limit": "Instans ini membatasi nilai ini hingga {max}. Minta admin instans untuk menaikkan batasnya.",
+	"polls.vote_change_not_allowed": "Suara dalam polling ini bersifat final dan tidak dapat diubah.",
 	"premium_and_plans.animated_avatars_require_premium": "Avatar animasi butuh paket Premium.",
 	"premium_and_plans.banners_require_premium": "Banner butuh paket Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Bio lebih dari {maxLength} karakter butuh paket Premium.",

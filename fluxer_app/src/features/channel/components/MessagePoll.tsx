@@ -34,6 +34,10 @@ const SELECT_MANY_DESCRIPTOR = msg({
 	message: 'Select one or more answers',
 	comment: 'Hint under a poll question when members may pick several answers.',
 });
+const VOTES_FINAL_DESCRIPTOR = msg({
+	message: 'Votes are final',
+	comment: 'Hint under a poll question when the author disabled changing votes.',
+});
 const POLL_ENDED_DESCRIPTOR = msg({
 	message: 'Poll ended',
 	comment: 'Status shown in a poll footer once voting has closed.',
@@ -136,6 +140,9 @@ export const MessagePoll = observer(({message, channel, isPreview}: MessagePollP
 		(message.author.id === currentUserId ||
 			(!channel.isPrivate() && Permission.can(Permissions.MANAGE_MESSAGES, channel)));
 	const canVote = !isPreview && !isFinalized;
+	// Votes are final: nothing to click once the viewer has voted on a single-choice
+	// poll, and voted answers can never be un-clicked.
+	const votesLocked = poll ? !poll.allow_vote_change && meVotedAny && !poll.allow_multiselect : false;
 
 	const countFor = useCallback((answerId: number) => counts.find((entry) => entry.id === answerId), [counts]);
 
@@ -143,6 +150,7 @@ export const MessagePoll = observer(({message, channel, isPreview}: MessagePollP
 		async (answer: PollAnswerResponse) => {
 			if (!poll || !canVote || busyAnswer !== null) return;
 			const entry = countFor(answer.answer_id);
+			if (!poll.allow_vote_change && (entry?.me_voted || votesLocked)) return;
 			setBusyAnswer(answer.answer_id);
 			try {
 				if (entry?.me_voted) {
@@ -161,7 +169,7 @@ export const MessagePoll = observer(({message, channel, isPreview}: MessagePollP
 				setBusyAnswer(null);
 			}
 		},
-		[poll, canVote, busyAnswer, countFor, channel.id, message.id, i18n],
+		[poll, canVote, busyAnswer, votesLocked, countFor, channel.id, message.id, i18n],
 	);
 
 	const handleRemoveVotes = useCallback(async () => {
@@ -207,6 +215,7 @@ export const MessagePoll = observer(({message, channel, isPreview}: MessagePollP
 			{!isFinalized && (
 				<div className={styles.hint} data-flx="channel.message-poll.hint">
 					{i18n._(poll.allow_multiselect ? SELECT_MANY_DESCRIPTOR : SELECT_ONE_DESCRIPTOR)}
+					{!poll.allow_vote_change && <> · {i18n._(VOTES_FINAL_DESCRIPTOR)}</>}
 				</div>
 			)}
 			<ul className={styles.answers} data-flx="channel.message-poll.answers">
@@ -224,7 +233,7 @@ export const MessagePoll = observer(({message, channel, isPreview}: MessagePollP
 								count={count}
 								showResults={showResults}
 								multiselect={poll.allow_multiselect}
-								disabled={!canVote || busyAnswer !== null}
+								disabled={!canVote || busyAnswer !== null || (!poll.allow_vote_change && (voted || votesLocked))}
 								onClick={() => void handleAnswerClick(answer)}
 								channelId={channel.id}
 								messageId={message.id}
@@ -249,7 +258,7 @@ export const MessagePoll = observer(({message, channel, isPreview}: MessagePollP
 						{i18n._(revealed ? HIDE_VOTES_DESCRIPTOR : SHOW_VOTES_DESCRIPTOR)}
 					</button>
 				)}
-				{!isFinalized && meVotedAny && !isPreview && (
+				{!isFinalized && meVotedAny && !isPreview && poll.allow_vote_change && (
 					<button
 						type="button"
 						className={clsx(styles.footerButton, styles.dot)}

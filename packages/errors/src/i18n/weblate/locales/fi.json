@@ -396,6 +396,7 @@
 	"polls.not_found": "Tässä viestissä ei ole kyselyä.",
 	"polls.question_length_invalid": "Kyselyn kysymyksen on oltava 1–{max, number} merkkiä pitkä.",
 	"polls.setting_exceeds_instance_limit": "Tämä instanssi rajoittaa arvon enintään arvoon {max}. Pyydä instanssin ylläpitäjää nostamaan rajaa.",
+	"polls.vote_change_not_allowed": "Tämän kyselyn äänet ovat lopullisia, eikä niitä voi muuttaa.",
 	"premium_and_plans.animated_avatars_require_premium": "Animoidut avatarit vaativat Premiumin.",
 	"premium_and_plans.banners_require_premium": "Bannerit vaativat Premiumin.",
 	"premium_and_plans.bio_requires_premium_for_length": "Yli {maxLength} merkin pituinen esittelyteksti vaatii Premiumin.",

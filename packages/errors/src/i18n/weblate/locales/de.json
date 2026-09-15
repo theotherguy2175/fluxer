@@ -396,6 +396,7 @@
 	"polls.not_found": "Diese Nachricht enthält keine Umfrage.",
 	"polls.question_length_invalid": "Umfragefragen müssen zwischen 1 und {max, number} Zeichen lang sein.",
 	"polls.setting_exceeds_instance_limit": "Diese Instanz begrenzt das auf {max}. Bitte einen Instanz-Admin, das Limit zu erhöhen.",
+	"polls.vote_change_not_allowed": "Stimmen in dieser Umfrage sind endgültig und können nicht geändert werden.",
 	"premium_and_plans.animated_avatars_require_premium": "Animierte Avatare erfordern Premium.",
 	"premium_and_plans.banners_require_premium": "Banner erfordern Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Eine Bio mit mehr als {maxLength} Zeichen erfordert Premium.",

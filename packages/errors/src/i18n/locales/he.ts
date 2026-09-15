@@ -400,6 +400,7 @@ const ERROR_I18N_HE_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "בהודעה הזו אין סקר.",
 	"polls.question_length_invalid": "שאלת סקר חייבת להכיל בין 1 ל-{max, number} תווים.",
 	"polls.setting_exceeds_instance_limit": "המופע הזה מגביל את הערך ל-{max}. יש לבקש ממנהל המופע להעלות את המגבלה.",
+	"polls.vote_change_not_allowed": "ההצבעות בסקר הזה סופיות ולא ניתן לשנותן.",
 	"premium_and_plans.animated_avatars_require_premium": "אווטרים מונפשים דורשים מסלול פרימיום.",
 	"premium_and_plans.banners_require_premium": "באנרים דורשים מסלול פרימיום.",
 	"premium_and_plans.bio_requires_premium_for_length": "ביוגרפיה באורך של יותר מ-{maxLength} תווים דורשת מסלול פרימיום.",

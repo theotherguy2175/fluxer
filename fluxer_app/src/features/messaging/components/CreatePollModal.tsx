@@ -66,6 +66,14 @@ const MULTISELECT_DISABLED_DESCRIPTOR = msg({
 	message: 'This community only allows single-answer polls.',
 	comment: 'Description under the multiple-answers toggle when the community has disabled it.',
 });
+const VOTE_CHANGE_LABEL_DESCRIPTOR = msg({
+	message: 'Allow changing votes',
+	comment: 'Toggle in the poll composer. When on, voters may withdraw or switch their vote while the poll is open.',
+});
+const VOTE_CHANGE_DESCRIPTION_DESCRIPTOR = msg({
+	message: 'When off, a vote is final once cast.',
+	comment: 'Description under the Allow changing votes toggle in the poll composer.',
+});
 const POST_DESCRIPTOR = msg({message: 'Post poll', comment: 'Submit button of the poll composer.'});
 const DURATION_RANGE_ERROR_DESCRIPTOR = msg({
 	message: 'Polls can stay open between {min} and {max} hours.',
@@ -109,6 +117,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = observer(({channe
 	const [customDuration, setCustomDuration] = useState<string>('');
 	const [useCustom, setUseCustom] = useState(false);
 	const [multiselect, setMultiselect] = useState(false);
+	const [allowVoteChange, setAllowVoteChange] = useState(true);
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [pickerFor, setPickerFor] = useState<number | null>(null);
@@ -158,6 +167,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = observer(({channe
 			})),
 			duration_hours: effectiveDuration,
 			allow_multiselect: multiselect,
+			allow_vote_change: allowVoteChange,
 		};
 		try {
 			const result = await MessageCommands.send(channelId, {
@@ -179,7 +189,7 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = observer(({channe
 		} finally {
 			setSubmitting(false);
 		}
-	}, [canSubmit, questionTrimmed, filledAnswers, effectiveDuration, multiselect, channelId, i18n]);
+	}, [canSubmit, questionTrimmed, filledAnswers, effectiveDuration, multiselect, allowVoteChange, channelId, i18n]);
 
 	return (
 		<Modal.Root onClose={() => ModalCommands.pop()} size="small" data-flx="messaging.create-poll-modal.modal-root">
@@ -368,6 +378,14 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = observer(({channe
 						onChange={setMultiselect}
 						disabled={!limits.allow_multiselect}
 						data-flx="messaging.create-poll-modal.multiselect-switch"
+					/>
+
+					<Switch
+						label={i18n._(VOTE_CHANGE_LABEL_DESCRIPTOR)}
+						description={i18n._(VOTE_CHANGE_DESCRIPTION_DESCRIPTOR)}
+						value={allowVoteChange}
+						onChange={setAllowVoteChange}
+						data-flx="messaging.create-poll-modal.vote-change-switch"
 					/>
 
 					{error && (

@@ -396,6 +396,7 @@
 	"polls.not_found": "这条消息没有投票。",
 	"polls.question_length_invalid": "投票问题必须为 1 到 {max, number} 个字符。",
 	"polls.setting_exceeds_instance_limit": "此实例将该值限制为 {max}。请联系实例管理员提高上限。",
+	"polls.vote_change_not_allowed": "此投票的选择为最终结果，无法更改。",
 	"premium_and_plans.animated_avatars_require_premium": "动态头像需要 Plutonium 会员。",
 	"premium_and_plans.banners_require_premium": "横幅需要 Plutonium 会员。",
 	"premium_and_plans.bio_requires_premium_for_length": "个人简介超过 {maxLength} 个字符需要 Plutonium 会员。",

@@ -400,6 +400,7 @@ const ERROR_I18N_CS_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "Tato zpráva neobsahuje anketu.",
 	"polls.question_length_invalid": "Otázka ankety musí mít 1 až {max, number} znaků.",
 	"polls.setting_exceeds_instance_limit": "Tato instance omezuje hodnotu na {max}. Požádejte správce instance o zvýšení limitu.",
+	"polls.vote_change_not_allowed": "Hlasy v této anketě jsou konečné a nelze je změnit.",
 	"premium_and_plans.animated_avatars_require_premium": "Animované avatary vyžadují tarif Plutonium.",
 	"premium_and_plans.banners_require_premium": "Bannery vyžadují tarif Plutonium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Bio delší než {maxLength} znaků vyžaduje tarif Plutonium.",

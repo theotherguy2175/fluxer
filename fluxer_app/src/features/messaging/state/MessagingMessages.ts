@@ -789,7 +789,9 @@ class Messages {
 	handlePollUpdate(action: {channelId: string; messageId: string; poll: PollResponse}): boolean {
 		const existing = ChannelMessages.get(action.channelId);
 		if (!existing) return false;
-		const updated = existing.update(action.messageId, (message) => message.withUpdates({poll: action.poll}));
+		const updated = existing.update(action.messageId, (message) =>
+			message.withUpdates({poll: action.poll}, {mergePoll: false}),
+		);
 		this.commitMessages(updated);
 		this.notifyChange();
 		return true;

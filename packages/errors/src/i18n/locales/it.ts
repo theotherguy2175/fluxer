@@ -400,6 +400,7 @@ const ERROR_I18N_IT_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "Questo messaggio non contiene un sondaggio.",
 	"polls.question_length_invalid": "La domanda di un sondaggio deve avere tra 1 e {max, number} caratteri.",
 	"polls.setting_exceeds_instance_limit": "Questa istanza limita il valore a {max}. Chiedi a un amministratore dell’istanza di alzare il limite.",
+	"polls.vote_change_not_allowed": "I voti di questo sondaggio sono definitivi e non possono essere modificati.",
 	"premium_and_plans.animated_avatars_require_premium": "Gli avatar animati richiedono Premium.",
 	"premium_and_plans.banners_require_premium": "I banner richiedono Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Una biografia più lunga di {maxLength} caratteri richiede Premium.",

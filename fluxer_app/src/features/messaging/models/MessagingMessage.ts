@@ -307,7 +307,13 @@ export class Message {
 		return MessageReactions.getMessageReactions(this.id);
 	}
 
-	withUpdates(updates: Partial<WireMessage>): Message {
+	/**
+	 * `mergePoll` (default true) applies the broadcast rule: an incoming poll
+	 * keeps this record's me_voted flags, because gateway MESSAGE_UPDATEs are
+	 * built without a viewer. Local vote changes and per-viewer API responses
+	 * already carry the truth and must pass `mergePoll: false`.
+	 */
+	withUpdates(updates: Partial<WireMessage>, options: {mergePoll?: boolean} = {}): Message {
 		if ('reactions' in updates) {
 			MessageReactions.replaceMessageReactions(this.id, updates.reactions ?? []);
 		}
@@ -337,7 +343,12 @@ export class Message {
 				referenced_message: updates.referenced_message ?? this.referencedMessage?.toJSON(),
 				message_snapshots: updates.message_snapshots ?? this.messageSnapshots,
 				call: updates.call ?? this.call,
-				poll: 'poll' in updates ? mergePollUpdate(this.poll, updates.poll ?? null) : this.poll,
+				poll:
+					'poll' in updates
+						? options.mergePoll === false
+							? (updates.poll ?? null)
+							: mergePollUpdate(this.poll, updates.poll ?? null)
+						: this.poll,
 				state: updates.state ?? this.state,
 				nonce: updates.nonce ?? this.nonce,
 				blocked: updates.blocked ?? this.blocked,
@@ -351,7 +362,7 @@ export class Message {
 	withPollVote(answerId: number, add: boolean, me: boolean): Message {
 		if (!this.poll) return this;
 		const next = applyPollVote(this.poll, answerId, add, me);
-		return next === this.poll ? this : this.withUpdates({poll: next});
+		return next === this.poll ? this : this.withUpdates({poll: next}, {mergePoll: false});
 	}
 
 	withReaction(emoji: ReactionEmoji, add = true, me = false): Message {

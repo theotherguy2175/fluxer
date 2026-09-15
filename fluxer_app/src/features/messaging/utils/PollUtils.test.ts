@@ -13,6 +13,7 @@ function makePoll(overrides: Partial<PollResponse> = {}): PollResponse {
 		],
 		expires_at: '2026-09-16T12:00:00.000Z',
 		allow_multiselect: false,
+		allow_vote_change: true,
 		layout_type: 1,
 		results: {
 			is_finalized: false,

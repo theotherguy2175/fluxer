@@ -1182,11 +1182,11 @@ msgstr "{count, plural, one {#개 커뮤니티가 플럭스 캐패시터 오작�
 msgid "{count, plural, one {# connection} other {# connections}}"
 msgstr "{count, plural, one {연결 #개} other {연결 #개}}"
 
-#: src/features/channel/components/MessagePoll.tsx:102
+#: src/features/channel/components/MessagePoll.tsx:106
 msgid "{count, plural, one {# day left} other {# days left}}"
 msgstr "{count, plural, one {# day left} other {# days left}}"
 
-#: src/features/messaging/components/CreatePollModal.tsx:100
+#: src/features/messaging/components/CreatePollModal.tsx:108
 msgid "{count, plural, one {# day} other {# days}}"
 msgstr "{count, plural, one {# day} other {# days}}"
 
@@ -1196,11 +1196,11 @@ msgstr "{count, plural, one {# day} other {# days}}"
 msgid "{count, plural, one {# gift} other {# gifts}}"
 msgstr "{count, plural, one {#개 선물} other {#개 선물}}"
 
-#: src/features/channel/components/MessagePoll.tsx:106
+#: src/features/channel/components/MessagePoll.tsx:110
 msgid "{count, plural, one {# hour left} other {# hours left}}"
 msgstr "{count, plural, one {# hour left} other {# hours left}}"
 
-#: src/features/messaging/components/CreatePollModal.tsx:101
+#: src/features/messaging/components/CreatePollModal.tsx:109
 msgid "{count, plural, one {# hour} other {# hours}}"
 msgstr "{count, plural, one {# hour} other {# hours}}"
 
@@ -1217,7 +1217,7 @@ msgstr "{count, plural, one {#개 항목} other {#개 항목}}"
 msgid "{count, plural, one {# member} other {# members}}"
 msgstr "{count, plural, one {#명} other {#명}}"
 
-#: src/features/channel/components/MessagePoll.tsx:109
+#: src/features/channel/components/MessagePoll.tsx:113
 msgid "{count, plural, one {# minute left} other {# minutes left}}"
 msgstr "{count, plural, one {# minute left} other {# minutes left}}"
 
@@ -1262,13 +1262,13 @@ msgstr "{count, plural, one {#초} other {#초}}"
 msgid "{count, plural, one {# suggestion available} other {# suggestions available}}"
 msgstr "{count, plural, other {추천 검색어 #개 사용 가능}}"
 
-#: src/features/channel/components/MessagePoll.tsx:197
+#: src/features/channel/components/MessagePoll.tsx:205
 #: src/features/channel/components/PollResultMessage.tsx:80
 #: src/features/channel/components/PollResultMessage.tsx:88
 msgid "{count, plural, one {# vote} other {# votes}}"
 msgstr "{count, plural, one {# vote} other {# votes}}"
 
-#: src/features/messaging/components/CreatePollModal.tsx:99
+#: src/features/messaging/components/CreatePollModal.tsx:107
 msgid "{count, plural, one {# week} other {# weeks}}"
 msgstr "{count, plural, one {# week} other {# weeks}}"
 
@@ -4030,6 +4030,11 @@ msgstr "카메라 허용"
 #: src/features/guild/components/modals/guild_tabs/guild_overview_tab/sections/TextChannelNamesSection.tsx:16
 msgid "Allow capital letters and spaces in text channel names. Off restricts names to lowercase with hyphens and underscores."
 msgstr "텍스트 채널 이름에 대문자와 공백을 허용합니다. 이 설정을 끄면 이름이 하이픈과 밑줄이 있는 소문자로 제한됩니다."
+
+#. Toggle in the poll composer. When on, voters may withdraw or switch their vote while the poll is open.
+#: src/features/messaging/components/CreatePollModal.tsx:69
+msgid "Allow changing votes"
+msgstr "Allow changing votes"
 
 #. Toggle label that allows DMs from members of this community.
 #: src/features/ui/action_menu/items/BulkSettingsMenuItems.tsx:73
@@ -14547,7 +14552,7 @@ msgid "End grace period now?"
 msgstr "유예 기간을 지금 종료할까요?"
 
 #. Button in a poll footer that closes the poll early. Shown to the author and moderators.
-#: src/features/channel/components/MessagePoll.tsx:41
+#: src/features/channel/components/MessagePoll.tsx:45
 msgid "End poll"
 msgstr "End poll"
 
@@ -14572,7 +14577,7 @@ msgid "Endangers minors or hosts child-exploitation content."
 msgstr "미성년자를 위험에 빠뜨리거나 아동 착취 콘텐츠를 호스팅합니다."
 
 #. Button label while a request to end a poll is in flight.
-#: src/features/channel/components/MessagePoll.tsx:45
+#: src/features/channel/components/MessagePoll.tsx:49
 msgid "Ending…"
 msgstr "Ending…"
 
@@ -17861,7 +17866,7 @@ msgid "Hide Visionary ID badge ({premiumLifetimeSequenceLabel})"
 msgstr "Visionary ID 배지 숨기기({premiumLifetimeSequenceLabel})"
 
 #. Button in a poll footer that hides the results again so the member can vote without bias.
-#: src/features/channel/components/MessagePoll.tsx:57
+#: src/features/channel/components/MessagePoll.tsx:61
 msgid "Hide votes"
 msgstr "Hide votes"
 
@@ -23028,7 +23033,7 @@ msgstr "애니메이션 사용 안 함"
 msgid "Never automatically"
 msgstr "자동으로 안 함"
 
-#: src/features/messaging/components/CreatePollModal.tsx:386
+#: src/features/messaging/components/CreatePollModal.tsx:406
 #: src/features/voice/components/SoundboardSoundModal.tsx:578
 msgid "Never mind"
 msgstr "Never mind"
@@ -23865,7 +23870,7 @@ msgid "No-op in-app reports"
 msgstr "앱 내 신고 무효화"
 
 #. Empty state of the popout listing who voted for a poll answer.
-#: src/features/channel/components/MessagePoll.tsx:65
+#: src/features/channel/components/MessagePoll.tsx:69
 msgid "Nobody has picked this yet."
 msgstr "Nobody has picked this yet."
 
@@ -26081,7 +26086,7 @@ msgid "Polish"
 msgstr "폴란드어"
 
 #. Status shown in a poll footer once voting has closed.
-#: src/features/channel/components/MessagePoll.tsx:37
+#: src/features/channel/components/MessagePoll.tsx:41
 msgid "Poll ended"
 msgstr "Poll ended"
 
@@ -26091,7 +26096,7 @@ msgid "Poll ended early"
 msgstr "Poll ended early"
 
 #. Title of the error dialog shown when ending a poll early fails.
-#: src/features/channel/components/MessagePoll.tsx:73
+#: src/features/channel/components/MessagePoll.tsx:77
 msgid "Poll not ended"
 msgstr "Poll not ended"
 
@@ -26111,7 +26116,7 @@ msgid "Polls are turned off for this instance. Ask an instance admin to enable t
 msgstr "Polls are turned off for this instance. Ask an instance admin to enable them."
 
 #. Validation error under the custom duration field. {min} and {max} are whole numbers of hours.
-#: src/features/messaging/components/CreatePollModal.tsx:70
+#: src/features/messaging/components/CreatePollModal.tsx:78
 msgid "Polls can stay open between {min} and {max} hours."
 msgstr "Polls can stay open between {min} and {max} hours."
 
@@ -26173,7 +26178,7 @@ msgid "Position"
 msgstr "위치"
 
 #. Submit button of the poll composer.
-#: src/features/messaging/components/CreatePollModal.tsx:69
+#: src/features/messaging/components/CreatePollModal.tsx:77
 msgid "Post poll"
 msgstr "Post poll"
 
@@ -27883,7 +27888,7 @@ msgid "Remove translator"
 msgstr "번역기 삭제"
 
 #. Button in a poll footer that withdraws the current member’s vote.
-#: src/features/channel/components/MessagePoll.tsx:49
+#: src/features/channel/components/MessagePoll.tsx:53
 msgid "Remove vote"
 msgstr "Remove vote"
 
@@ -31855,7 +31860,7 @@ msgid "Show unread indicator on muted channels"
 msgstr "음소거한 채널에 읽지 않은 메시지 표시"
 
 #. Button in a poll footer that reveals per-answer results before the member has voted.
-#: src/features/channel/components/MessagePoll.tsx:53
+#: src/features/channel/components/MessagePoll.tsx:57
 msgid "Show votes"
 msgstr "Show votes"
 
@@ -34719,12 +34724,12 @@ msgid "The phone check is set aside. One email step is left."
 msgstr "휴대폰 인증은 보류되었습니다. 이메일 인증 단계가 하나 남았습니다."
 
 #. Error shown when ending a poll early fails.
-#: src/features/channel/components/MessagePoll.tsx:81
+#: src/features/channel/components/MessagePoll.tsx:85
 msgid "The poll could not be ended."
 msgstr "The poll could not be ended."
 
 #. Error shown at the bottom of the poll composer when the request fails.
-#: src/features/messaging/components/CreatePollModal.tsx:74
+#: src/features/messaging/components/CreatePollModal.tsx:82
 msgid "The poll could not be posted. Try again."
 msgstr "The poll could not be posted. Try again."
 
@@ -39630,14 +39635,19 @@ msgid "Volume up"
 msgstr "볼륨 높이기"
 
 #. Title of the error dialog shown when voting on a poll fails.
-#: src/features/channel/components/MessagePoll.tsx:69
+#: src/features/channel/components/MessagePoll.tsx:73
 msgid "Vote not saved"
 msgstr "Vote not saved"
 
 #. Heading of the popout listing who voted for a poll answer. {answer} is the answer text.
-#: src/features/channel/components/MessagePoll.tsx:61
+#: src/features/channel/components/MessagePoll.tsx:65
 msgid "Voted for {answer}"
 msgstr "Voted for {answer}"
+
+#. Hint under a poll question when the author disabled changing votes.
+#: src/features/channel/components/MessagePoll.tsx:37
+msgid "Votes are final"
+msgstr "Votes are final"
 
 #. Description text in the message delete too quick modal. Keep the tone plain and specific.
 #: src/features/messaging/components/alerts/MessageDeleteTooQuickModal.tsx:12
@@ -40218,6 +40228,11 @@ msgstr "첨부 파일 만료가 비활성화되어 있으면 첨부 파일은 �
 #: src/features/channel/components/active_now/ActiveNowSidebar.tsx:21
 msgid "When friends are active in voice channels, their activity will appear here."
 msgstr "친구가 음성 채널에서 활동하면 여기에 표시됩니다."
+
+#. Description under the Allow changing votes toggle in the poll composer.
+#: src/features/messaging/components/CreatePollModal.tsx:73
+msgid "When off, a vote is final once cast."
+msgstr "When off, a vote is final once cast."
 
 #: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:311
 msgid "When off, every poll posted here is single-choice."
@@ -41818,7 +41833,7 @@ msgid "Your video encoder stopped encoding frames, so your screen share was stop
 msgstr "비디오 인코더에서 프레임을 더 이상 인코딩하지 않아 화면 공유가 중지되었습니다. 다시 공유해 보세요."
 
 #. Error shown when voting on a poll fails.
-#: src/features/channel/components/MessagePoll.tsx:77
+#: src/features/channel/components/MessagePoll.tsx:81
 msgid "Your vote could not be saved. Try again."
 msgstr "Your vote could not be saved. Try again."
 

@@ -400,6 +400,7 @@ const ERROR_I18N_RO_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "Acest mesaj nu conține un sondaj.",
 	"polls.question_length_invalid": "Întrebarea unui sondaj trebuie să aibă între 1 și {max, number} caractere.",
 	"polls.setting_exceeds_instance_limit": "Această instanță limitează valoarea la {max}. Cere unui administrator al instanței să mărească limita.",
+	"polls.vote_change_not_allowed": "Voturile din acest sondaj sunt definitive și nu pot fi modificate.",
 	"premium_and_plans.animated_avatars_require_premium": "Avatarele animate necesită Plutonium.",
 	"premium_and_plans.banners_require_premium": "Bannerele necesită Plutonium.",
 	"premium_and_plans.bio_requires_premium_for_length": "O biografie mai lungă de {maxLength} caractere necesită Plutonium.",

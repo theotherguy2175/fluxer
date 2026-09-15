@@ -400,6 +400,7 @@ const ERROR_I18N_EN_GB_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "This message has no poll.",
 	"polls.question_length_invalid": "Poll questions must be between 1 and {max, number} characters.",
 	"polls.setting_exceeds_instance_limit": "This instance limits this to {max}. Ask an instance admin to raise the limit.",
+	"polls.vote_change_not_allowed": "Votes on this poll are final and cannot be changed.",
 	"premium_and_plans.animated_avatars_require_premium": "Animated avatars require Premium.",
 	"premium_and_plans.banners_require_premium": "Banners require Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "A bio longer than {maxLength} characters requires Premium.",

@@ -593,6 +593,7 @@ export const ERROR_I18N_MESSAGES = {
 	'polls.answer_not_found': 'That answer is not part of this poll.',
 	'polls.already_finalized': 'This poll has already ended.',
 	'polls.multiselect_not_allowed': 'This poll only allows one answer per person.',
+	'polls.vote_change_not_allowed': 'Votes on this poll are final and cannot be changed.',
 	'polls.setting_exceeds_instance_limit':
 		'This instance limits this to {max}. Ask an instance admin to raise the limit.',
 } as const;

@@ -1182,11 +1182,11 @@ msgstr "{count, plural, one {# zajednica privremeno nije dostupna zbog kvara na 
 msgid "{count, plural, one {# connection} other {# connections}}"
 msgstr "{count, plural, one {# veza} few {# veze} other {# veza}}"
 
-#: src/features/channel/components/MessagePoll.tsx:102
+#: src/features/channel/components/MessagePoll.tsx:106
 msgid "{count, plural, one {# day left} other {# days left}}"
 msgstr "{count, plural, one {# day left} other {# days left}}"
 
-#: src/features/messaging/components/CreatePollModal.tsx:100
+#: src/features/messaging/components/CreatePollModal.tsx:108
 msgid "{count, plural, one {# day} other {# days}}"
 msgstr "{count, plural, one {# day} other {# days}}"
 
@@ -1196,11 +1196,11 @@ msgstr "{count, plural, one {# day} other {# days}}"
 msgid "{count, plural, one {# gift} other {# gifts}}"
 msgstr "{count, plural, one {# poklon} few {# poklona} other {# poklona}}"
 
-#: src/features/channel/components/MessagePoll.tsx:106
+#: src/features/channel/components/MessagePoll.tsx:110
 msgid "{count, plural, one {# hour left} other {# hours left}}"
 msgstr "{count, plural, one {# hour left} other {# hours left}}"
 
-#: src/features/messaging/components/CreatePollModal.tsx:101
+#: src/features/messaging/components/CreatePollModal.tsx:109
 msgid "{count, plural, one {# hour} other {# hours}}"
 msgstr "{count, plural, one {# hour} other {# hours}}"
 
@@ -1217,7 +1217,7 @@ msgstr "{count, plural, one {# stavka} few {# stavke} other {# stavki}}"
 msgid "{count, plural, one {# member} other {# members}}"
 msgstr "{count, plural, one {# član} few {# člana} other {# članova}}"
 
-#: src/features/channel/components/MessagePoll.tsx:109
+#: src/features/channel/components/MessagePoll.tsx:113
 msgid "{count, plural, one {# minute left} other {# minutes left}}"
 msgstr "{count, plural, one {# minute left} other {# minutes left}}"
 
@@ -1262,13 +1262,13 @@ msgstr "{count, plural, one {# sekunda} few {# sekunde} other {# sekundi}}"
 msgid "{count, plural, one {# suggestion available} other {# suggestions available}}"
 msgstr "{count, plural, one {Dostupan je # prijedlog} few {Dostupna su # prijedloga} other {Dostupno je # prijedloga}}"
 
-#: src/features/channel/components/MessagePoll.tsx:197
+#: src/features/channel/components/MessagePoll.tsx:205
 #: src/features/channel/components/PollResultMessage.tsx:80
 #: src/features/channel/components/PollResultMessage.tsx:88
 msgid "{count, plural, one {# vote} other {# votes}}"
 msgstr "{count, plural, one {# vote} other {# votes}}"
 
-#: src/features/messaging/components/CreatePollModal.tsx:99
+#: src/features/messaging/components/CreatePollModal.tsx:107
 msgid "{count, plural, one {# week} other {# weeks}}"
 msgstr "{count, plural, one {# week} other {# weeks}}"
 
@@ -4030,6 +4030,11 @@ msgstr "Dopusti pristup kameri"
 #: src/features/guild/components/modals/guild_tabs/guild_overview_tab/sections/TextChannelNamesSection.tsx:16
 msgid "Allow capital letters and spaces in text channel names. Off restricts names to lowercase with hyphens and underscores."
 msgstr "Dopusti velika slova i razmake u nazivima tekstualnih kanala. Isključeno ograničava nazive na mala slova s crticama i podvlakama."
+
+#. Toggle in the poll composer. When on, voters may withdraw or switch their vote while the poll is open.
+#: src/features/messaging/components/CreatePollModal.tsx:69
+msgid "Allow changing votes"
+msgstr "Allow changing votes"
 
 #. Toggle label that allows DMs from members of this community.
 #: src/features/ui/action_menu/items/BulkSettingsMenuItems.tsx:73
@@ -14547,7 +14552,7 @@ msgid "End grace period now?"
 msgstr "Završiti poček sada?"
 
 #. Button in a poll footer that closes the poll early. Shown to the author and moderators.
-#: src/features/channel/components/MessagePoll.tsx:41
+#: src/features/channel/components/MessagePoll.tsx:45
 msgid "End poll"
 msgstr "End poll"
 
@@ -14572,7 +14577,7 @@ msgid "Endangers minors or hosts child-exploitation content."
 msgstr "Ugrožava maloljetnike ili sadrži materijal iskorištavanja djece."
 
 #. Button label while a request to end a poll is in flight.
-#: src/features/channel/components/MessagePoll.tsx:45
+#: src/features/channel/components/MessagePoll.tsx:49
 msgid "Ending…"
 msgstr "Ending…"
 
@@ -17861,7 +17866,7 @@ msgid "Hide Visionary ID badge ({premiumLifetimeSequenceLabel})"
 msgstr "Sakrij značku Visionary ID ({premiumLifetimeSequenceLabel})"
 
 #. Button in a poll footer that hides the results again so the member can vote without bias.
-#: src/features/channel/components/MessagePoll.tsx:57
+#: src/features/channel/components/MessagePoll.tsx:61
 msgid "Hide votes"
 msgstr "Hide votes"
 
@@ -23028,7 +23033,7 @@ msgstr "Nikad ne animiraj"
 msgid "Never automatically"
 msgstr "Nikad automatski"
 
-#: src/features/messaging/components/CreatePollModal.tsx:386
+#: src/features/messaging/components/CreatePollModal.tsx:406
 #: src/features/voice/components/SoundboardSoundModal.tsx:578
 msgid "Never mind"
 msgstr "Never mind"
@@ -23865,7 +23870,7 @@ msgid "No-op in-app reports"
 msgstr "Prijave u aplikaciji bez učinka"
 
 #. Empty state of the popout listing who voted for a poll answer.
-#: src/features/channel/components/MessagePoll.tsx:65
+#: src/features/channel/components/MessagePoll.tsx:69
 msgid "Nobody has picked this yet."
 msgstr "Nobody has picked this yet."
 
@@ -26081,7 +26086,7 @@ msgid "Polish"
 msgstr "Poljski"
 
 #. Status shown in a poll footer once voting has closed.
-#: src/features/channel/components/MessagePoll.tsx:37
+#: src/features/channel/components/MessagePoll.tsx:41
 msgid "Poll ended"
 msgstr "Poll ended"
 
@@ -26091,7 +26096,7 @@ msgid "Poll ended early"
 msgstr "Poll ended early"
 
 #. Title of the error dialog shown when ending a poll early fails.
-#: src/features/channel/components/MessagePoll.tsx:73
+#: src/features/channel/components/MessagePoll.tsx:77
 msgid "Poll not ended"
 msgstr "Poll not ended"
 
@@ -26111,7 +26116,7 @@ msgid "Polls are turned off for this instance. Ask an instance admin to enable t
 msgstr "Polls are turned off for this instance. Ask an instance admin to enable them."
 
 #. Validation error under the custom duration field. {min} and {max} are whole numbers of hours.
-#: src/features/messaging/components/CreatePollModal.tsx:70
+#: src/features/messaging/components/CreatePollModal.tsx:78
 msgid "Polls can stay open between {min} and {max} hours."
 msgstr "Polls can stay open between {min} and {max} hours."
 
@@ -26173,7 +26178,7 @@ msgid "Position"
 msgstr "Položaj"
 
 #. Submit button of the poll composer.
-#: src/features/messaging/components/CreatePollModal.tsx:69
+#: src/features/messaging/components/CreatePollModal.tsx:77
 msgid "Post poll"
 msgstr "Post poll"
 
@@ -27883,7 +27888,7 @@ msgid "Remove translator"
 msgstr "Ukloni prevoditelja"
 
 #. Button in a poll footer that withdraws the current member’s vote.
-#: src/features/channel/components/MessagePoll.tsx:49
+#: src/features/channel/components/MessagePoll.tsx:53
 msgid "Remove vote"
 msgstr "Remove vote"
 
@@ -31855,7 +31860,7 @@ msgid "Show unread indicator on muted channels"
 msgstr "Prikaži indikator nepročitanih poruka na utišanim kanalima"
 
 #. Button in a poll footer that reveals per-answer results before the member has voted.
-#: src/features/channel/components/MessagePoll.tsx:53
+#: src/features/channel/components/MessagePoll.tsx:57
 msgid "Show votes"
 msgstr "Show votes"
 
@@ -34719,12 +34724,12 @@ msgid "The phone check is set aside. One email step is left."
 msgstr "Telefonska provjera je odgođena. Ostao je još jedan korak s e-poštom."
 
 #. Error shown when ending a poll early fails.
-#: src/features/channel/components/MessagePoll.tsx:81
+#: src/features/channel/components/MessagePoll.tsx:85
 msgid "The poll could not be ended."
 msgstr "The poll could not be ended."
 
 #. Error shown at the bottom of the poll composer when the request fails.
-#: src/features/messaging/components/CreatePollModal.tsx:74
+#: src/features/messaging/components/CreatePollModal.tsx:82
 msgid "The poll could not be posted. Try again."
 msgstr "The poll could not be posted. Try again."
 
@@ -39630,14 +39635,19 @@ msgid "Volume up"
 msgstr "Povećaj glasnoću"
 
 #. Title of the error dialog shown when voting on a poll fails.
-#: src/features/channel/components/MessagePoll.tsx:69
+#: src/features/channel/components/MessagePoll.tsx:73
 msgid "Vote not saved"
 msgstr "Vote not saved"
 
 #. Heading of the popout listing who voted for a poll answer. {answer} is the answer text.
-#: src/features/channel/components/MessagePoll.tsx:61
+#: src/features/channel/components/MessagePoll.tsx:65
 msgid "Voted for {answer}"
 msgstr "Voted for {answer}"
+
+#. Hint under a poll question when the author disabled changing votes.
+#: src/features/channel/components/MessagePoll.tsx:37
+msgid "Votes are final"
+msgstr "Votes are final"
 
 #. Description text in the message delete too quick modal. Keep the tone plain and specific.
 #: src/features/messaging/components/alerts/MessageDeleteTooQuickModal.tsx:12
@@ -40218,6 +40228,11 @@ msgstr "Kada je istek privitaka onemogućen, privici ostaju dostupni dok se ruč
 #: src/features/channel/components/active_now/ActiveNowSidebar.tsx:21
 msgid "When friends are active in voice channels, their activity will appear here."
 msgstr "Kada su prijatelji aktivni u glasovnim kanalima, njihova će se aktivnost prikazati ovdje."
+
+#. Description under the Allow changing votes toggle in the poll composer.
+#: src/features/messaging/components/CreatePollModal.tsx:73
+msgid "When off, a vote is final once cast."
+msgstr "When off, a vote is final once cast."
 
 #: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:311
 msgid "When off, every poll posted here is single-choice."
@@ -41818,7 +41833,7 @@ msgid "Your video encoder stopped encoding frames, so your screen share was stop
 msgstr "Vaš video enkoder prestao je kodirati sličice, stoga je dijeljenje zaslona zaustavljeno. Pokušajte ponovno dijeliti."
 
 #. Error shown when voting on a poll fails.
-#: src/features/channel/components/MessagePoll.tsx:77
+#: src/features/channel/components/MessagePoll.tsx:81
 msgid "Your vote could not be saved. Try again."
 msgstr "Your vote could not be saved. Try again."
 

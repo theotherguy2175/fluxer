@@ -396,6 +396,7 @@
 	"polls.not_found": "Denne besked indeholder ingen afstemning.",
 	"polls.question_length_invalid": "Et afstemningsspørgsmål skal være mellem 1 og {max, number} tegn langt.",
 	"polls.setting_exceeds_instance_limit": "Denne instans begrænser værdien til {max}. Bed en instansadministrator om at hæve grænsen.",
+	"polls.vote_change_not_allowed": "Stemmer i denne afstemning er endelige og kan ikke ændres.",
 	"premium_and_plans.animated_avatars_require_premium": "Animerede avatarer kræver et Premium-abonnement.",
 	"premium_and_plans.banners_require_premium": "Bannere kræver et Premium-abonnement.",
 	"premium_and_plans.bio_requires_premium_for_length": "En biografi længere end {maxLength} tegn kræver et Premium-abonnement.",

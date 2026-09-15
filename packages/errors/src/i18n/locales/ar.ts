@@ -400,6 +400,7 @@ const ERROR_I18N_AR_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "لا تحتوي هذه الرسالة على استطلاع.",
 	"polls.question_length_invalid": "يجب أن يتراوح طول سؤال الاستطلاع بين 1 و{max, number} حرفًا.",
 	"polls.setting_exceeds_instance_limit": "يحدّ هذا الخادم المُستضاف هذه القيمة بـ {max}. اطلب من مسؤول الخادم رفع الحد.",
+	"polls.vote_change_not_allowed": "الأصوات في هذا الاستطلاع نهائية ولا يمكن تغييرها.",
 	"premium_and_plans.animated_avatars_require_premium": "الصور الرمزية المتحركة تتطلب Premium.",
 	"premium_and_plans.banners_require_premium": "اللافتات تتطلب Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "السيرة الذاتية التي تزيد عن {maxLength} حرفًا تتطلب Premium.",

@@ -400,6 +400,7 @@ const ERROR_I18N_SV_SE_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "Det här meddelandet har ingen omröstning.",
 	"polls.question_length_invalid": "En omröstningsfråga måste vara mellan 1 och {max, number} tecken lång.",
 	"polls.setting_exceeds_instance_limit": "Den här instansen begränsar värdet till {max}. Be en instansadministratör höja gränsen.",
+	"polls.vote_change_not_allowed": "Röster i den här omröstningen är slutgiltiga och kan inte ändras.",
 	"premium_and_plans.animated_avatars_require_premium": "Animerade avatarer kräver Premium.",
 	"premium_and_plans.banners_require_premium": "Bannrar kräver Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "En presentation som är längre än {maxLength} tecken kräver Premium.",

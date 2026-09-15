@@ -400,6 +400,7 @@ const ERROR_I18N_RU_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "В этом сообщении нет опроса.",
 	"polls.question_length_invalid": "Вопрос опроса должен содержать от 1 до {max, number} символов.",
 	"polls.setting_exceeds_instance_limit": "Этот инстанс ограничивает значение до {max}. Попросите администратора инстанса повысить лимит.",
+	"polls.vote_change_not_allowed": "Голоса в этом опросе окончательны и не могут быть изменены.",
 	"premium_and_plans.animated_avatars_require_premium": "Для анимированных аватаров нужен Plutonium.",
 	"premium_and_plans.banners_require_premium": "Для баннеров нужен Plutonium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Для биографии длиннее {maxLength} символов нужен Plutonium.",

@@ -400,6 +400,7 @@ const ERROR_I18N_UK_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "У цьому повідомленні немає опитування.",
 	"polls.question_length_invalid": "Запитання опитування має містити від 1 до {max, number} символів.",
 	"polls.setting_exceeds_instance_limit": "Цей інстанс обмежує значення до {max}. Попросіть адміністратора інстансу підвищити ліміт.",
+	"polls.vote_change_not_allowed": "Голоси в цьому опитуванні остаточні, їх не можна змінити.",
 	"premium_and_plans.animated_avatars_require_premium": "Анімовані аватари потребують Преміум-підписки.",
 	"premium_and_plans.banners_require_premium": "Банери потребують Преміум-підписки.",
 	"premium_and_plans.bio_requires_premium_for_length": "Біо, що перевищує {maxLength} символів, потребує Преміум-підписки.",

@@ -400,6 +400,7 @@ const ERROR_I18N_HU_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "Ebben az üzenetben nincs szavazás.",
 	"polls.question_length_invalid": "A szavazás kérdésének 1 és {max, number} karakter közöttinek kell lennie.",
 	"polls.setting_exceeds_instance_limit": "Ez a példány {max} értékre korlátozza ezt. Kérj meg egy példányadminisztrátort a korlát emelésére.",
+	"polls.vote_change_not_allowed": "Ebben a szavazásban a szavazatok véglegesek, nem módosíthatók.",
 	"premium_and_plans.animated_avatars_require_premium": "Az animált profilképekhez prémiumcsomag szükséges.",
 	"premium_and_plans.banners_require_premium": "A borítóképekhez prémiumcsomag szükséges.",
 	"premium_and_plans.bio_requires_premium_for_length": "A {maxLength} karakternél hosszabb bemutatkozáshoz prémiumcsomag szükséges.",

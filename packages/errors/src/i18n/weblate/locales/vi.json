@@ -396,6 +396,7 @@
 	"polls.not_found": "Tin nhắn này không có cuộc bình chọn.",
 	"polls.question_length_invalid": "Câu hỏi của cuộc bình chọn phải dài từ 1 đến {max, number} ký tự.",
 	"polls.setting_exceeds_instance_limit": "Phiên bản này giới hạn giá trị ở {max}. Hãy đề nghị quản trị viên phiên bản nâng giới hạn.",
+	"polls.vote_change_not_allowed": "Phiếu bầu trong cuộc bình chọn này là cuối cùng và không thể thay đổi.",
 	"premium_and_plans.animated_avatars_require_premium": "Ảnh đại diện động yêu cầu gói Premium.",
 	"premium_and_plans.banners_require_premium": "Ảnh bìa yêu cầu gói Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Tiểu sử dài hơn {maxLength} ký tự yêu cầu gói Premium.",

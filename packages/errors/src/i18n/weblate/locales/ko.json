@@ -396,6 +396,7 @@
 	"polls.not_found": "이 메시지에는 투표가 없습니다.",
 	"polls.question_length_invalid": "투표 질문은 1~{max, number}자여야 합니다.",
 	"polls.setting_exceeds_instance_limit": "이 인스턴스는 이 값을 {max}(으)로 제한합니다. 인스턴스 관리자에게 한도 상향을 요청하세요.",
+	"polls.vote_change_not_allowed": "이 투표의 표는 최종이며 변경할 수 없습니다.",
 	"premium_and_plans.animated_avatars_require_premium": "움직이는 아바타는 Plutonium이 필요해요.",
 	"premium_and_plans.banners_require_premium": "배너는 Plutonium이 필요해요.",
 	"premium_and_plans.bio_requires_premium_for_length": "{maxLength}자가 넘는 소개글을 쓰려면 Plutonium이 필요해요.",

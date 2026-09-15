@@ -400,6 +400,7 @@ const ERROR_I18N_TR_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "Bu mesajda anket yok.",
 	"polls.question_length_invalid": "Anket sorusu 1 ile {max, number} karakter arasında olmalıdır.",
 	"polls.setting_exceeds_instance_limit": "Bu örnek bu değeri {max} ile sınırlıyor. Sınırı yükseltmesi için bir örnek yöneticisine başvurun.",
+	"polls.vote_change_not_allowed": "Bu anketteki oylar kesindir ve değiştirilemez.",
 	"premium_and_plans.animated_avatars_require_premium": "Hareketli avatarlar için Premium gerekli.",
 	"premium_and_plans.banners_require_premium": "Banner'lar için Premium gerekli.",
 	"premium_and_plans.bio_requires_premium_for_length": "Biyografin {maxLength} karakterden uzunsa Premium gerekli.",

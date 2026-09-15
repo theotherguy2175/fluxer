@@ -400,6 +400,7 @@ const ERROR_I18N_ES_ES_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "Este mensaje no tiene ninguna encuesta.",
 	"polls.question_length_invalid": "La pregunta de una encuesta debe tener entre 1 y {max, number} caracteres.",
 	"polls.setting_exceeds_instance_limit": "Esta instancia limita este valor a {max}. Pide a un administrador de la instancia que suba el límite.",
+	"polls.vote_change_not_allowed": "Los votos de esta encuesta son definitivos y no se pueden cambiar.",
 	"premium_and_plans.animated_avatars_require_premium": "Los avatares animados requieren Plutonium.",
 	"premium_and_plans.banners_require_premium": "Los banners requieren Plutonium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Una biografía de más de {maxLength} caracteres requiere Plutonium.",

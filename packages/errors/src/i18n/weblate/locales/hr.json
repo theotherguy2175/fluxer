@@ -396,6 +396,7 @@
 	"polls.not_found": "Ova poruka ne sadrži anketu.",
 	"polls.question_length_invalid": "Pitanje ankete mora imati između 1 i {max, number} znakova.",
 	"polls.setting_exceeds_instance_limit": "Ova instanca ograničava vrijednost na {max}. Zamolite administratora instance da poveća ograničenje.",
+	"polls.vote_change_not_allowed": "Glasovi u ovoj anketi konačni su i ne mogu se mijenjati.",
 	"premium_and_plans.animated_avatars_require_premium": "Animirani avatari zahtijevaju pretplatu na Plutonium.",
 	"premium_and_plans.banners_require_premium": "Banneri zahtijevaju pretplatu na Plutonium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Opis profila duži od {maxLength} znakova zahtijeva pretplatu na Plutonium.",

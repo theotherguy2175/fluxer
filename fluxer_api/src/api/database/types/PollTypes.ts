@@ -22,6 +22,7 @@ export interface MessagePollRow {
 	question_text: string;
 	answers: Array<MessagePollAnswerItem>;
 	allow_multiselect: boolean;
+	allow_vote_change: Nullish<boolean>;
 	layout_type: number;
 	expires_at: Date;
 	finalized_at: Nullish<Date>;
@@ -37,6 +38,7 @@ export const MESSAGE_POLL_COLUMNS = [
 	'question_text',
 	'answers',
 	'allow_multiselect',
+	'allow_vote_change',
 	'layout_type',
 	'expires_at',
 	'finalized_at',

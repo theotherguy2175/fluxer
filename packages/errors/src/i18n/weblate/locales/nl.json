@@ -396,6 +396,7 @@
 	"polls.not_found": "Dit bericht bevat geen poll.",
 	"polls.question_length_invalid": "Een pollvraag moet tussen 1 en {max, number} tekens lang zijn.",
 	"polls.setting_exceeds_instance_limit": "Deze instantie beperkt dit tot {max}. Vraag een instantiebeheerder om de limiet te verhogen.",
+	"polls.vote_change_not_allowed": "Stemmen in deze poll zijn definitief en kunnen niet worden gewijzigd.",
 	"premium_and_plans.animated_avatars_require_premium": "Premium is vereist voor geanimeerde avatars.",
 	"premium_and_plans.banners_require_premium": "Premium is vereist voor banners.",
 	"premium_and_plans.bio_requires_premium_for_length": "Een bio langer dan {maxLength} tekens vereist Premium.",

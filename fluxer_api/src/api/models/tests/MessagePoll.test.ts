@@ -16,6 +16,7 @@ function makePoll(overrides: Partial<ConstructorParameters<typeof MessagePoll>[0
 			{answer_id: 2, text: 'Sushi', emoji_id: null, emoji_name: null, emoji_animated: null},
 		],
 		allow_multiselect: false,
+		allow_vote_change: true,
 		layout_type: 1,
 		expires_at: new Date('2026-09-16T12:00:00Z'),
 		finalized_at: null,

@@ -18,22 +18,21 @@ import {MessagePollAuthService} from '@app/api/channel/services/poll/MessagePoll
 import {MessagePollRepository} from '@app/api/channel/services/poll/MessagePollRepository';
 import {buildPollResponse} from '@app/api/channel/services/poll/MessagePollResponseBuilder';
 import type {GuildPollSettingsRow, MessagePollAnswerItem} from '@app/api/database/types/PollTypes';
-import type {IGuildRepositoryAggregate} from '@app/api/guild/repositories/IGuildRepositoryAggregate';
 import type {GuildAuditLogService} from '@app/api/guild/GuildAuditLogService';
+import type {IGuildRepositoryAggregate} from '@app/api/guild/repositories/IGuildRepositoryAggregate';
 import type {IGatewayService} from '@app/api/infrastructure/IGatewayService';
 import type {ISnowflakeService} from '@app/api/infrastructure/ISnowflakeService';
 import type {UserCacheService} from '@app/api/infrastructure/UserCacheService';
+import {Logger} from '@app/api/Logger';
 import type {LimitConfigService} from '@app/api/limits/LimitConfigService';
 import {resolveLimitSafe} from '@app/api/limits/LimitConfigUtils';
 import {createLimitMatchContext} from '@app/api/limits/LimitMatchContextBuilder';
-import {Logger} from '@app/api/Logger';
+import type {RequestCache} from '@app/api/middleware/RequestCacheMiddleware';
 import {createRequestCache} from '@app/api/middleware/RequestCacheMiddleware';
 import type {Channel} from '@app/api/models/Channel';
 import {MessagePoll} from '@app/api/models/MessagePoll';
-import type {RequestCache} from '@app/api/middleware/RequestCacheMiddleware';
 import type {IUserRepository} from '@app/api/user/IUserRepository';
 import {requirePermission} from '@app/api/utils/PermissionUtils';
-import {snowflakeToDate} from '@fluxer/snowflake/src/Snowflake';
 import {AuditLogActionType} from '@fluxer/constants/src/AuditLogActionType';
 import {MessageReferenceTypes, MessageTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {
@@ -51,7 +50,6 @@ import {UnknownMessageError} from '@fluxer/errors/src/domains/channel/UnknownMes
 import {FeatureTemporarilyDisabledError} from '@fluxer/errors/src/domains/core/FeatureTemporarilyDisabledError';
 import {InputValidationError} from '@fluxer/errors/src/domains/core/InputValidationError';
 import {MissingPermissionsError} from '@fluxer/errors/src/domains/core/MissingPermissionsError';
-import {isValidSingleUnicodeEmoji} from '@fluxer/schema/src/primitives/EmojiValidators';
 import type {
 	GuildPollSettingsResponse,
 	GuildPollSettingsUpdateRequest,
@@ -59,6 +57,8 @@ import type {
 	PollCreateRequest,
 	PollResponse,
 } from '@fluxer/schema/src/domains/message/PollSchemas';
+import {isValidSingleUnicodeEmoji} from '@fluxer/schema/src/primitives/EmojiValidators';
+import {snowflakeToDate} from '@fluxer/snowflake/src/Snowflake';
 
 const HOUR_MS = 60 * 60 * 1000;
 const EXPIRY_LOOKBACK_DAYS = 3;
@@ -86,6 +86,7 @@ export interface PreparedPoll {
 	questionText: string;
 	answers: Array<MessagePollAnswerItem>;
 	allowMultiselect: boolean;
+	allowVoteChange: boolean;
 	expiresAt: Date;
 }
 
@@ -124,7 +125,13 @@ export class MessagePollService extends MessageInteractionBase {
 				POLL_DEFAULT_MAX_QUESTION_LENGTH,
 				'guild',
 			),
-			maxAnswerLength: resolveLimitSafe(snapshot, ctx, 'max_poll_answer_length', POLL_DEFAULT_MAX_ANSWER_LENGTH, 'guild'),
+			maxAnswerLength: resolveLimitSafe(
+				snapshot,
+				ctx,
+				'max_poll_answer_length',
+				POLL_DEFAULT_MAX_ANSWER_LENGTH,
+				'guild',
+			),
 			maxDurationHours: resolveLimitSafe(
 				snapshot,
 				ctx,
@@ -140,7 +147,10 @@ export class MessagePollService extends MessageInteractionBase {
 		const settings = guildId ? await this.repository.getSettings(guildId) : null;
 		const cap = (value: number | null | undefined, ceiling: number): number =>
 			value == null ? ceiling : Math.max(1, Math.min(value, ceiling));
-		const maxDurationHours = Math.max(POLL_MIN_DURATION_HOURS, cap(settings?.max_duration_hours, instance.maxDurationHours));
+		const maxDurationHours = Math.max(
+			POLL_MIN_DURATION_HOURS,
+			cap(settings?.max_duration_hours, instance.maxDurationHours),
+		);
 		return {
 			instanceEnabled: instance.enabled,
 			enabled: instance.enabled && (settings?.enabled ?? true),
@@ -224,7 +234,11 @@ export class MessagePollService extends MessageInteractionBase {
 	 * effective limits. Called by MessageSendService before the message is
 	 * persisted; returns the normalised poll ready for createPollForMessage.
 	 */
-	async prepare(params: {authChannel: AuthenticatedChannel; poll: PollCreateRequest; now?: Date}): Promise<PreparedPoll> {
+	async prepare(params: {
+		authChannel: AuthenticatedChannel;
+		poll: PollCreateRequest;
+		now?: Date;
+	}): Promise<PreparedPoll> {
 		const {authChannel, poll} = params;
 		const now = params.now ?? new Date();
 		const {channel, guild} = authChannel;
@@ -274,6 +288,7 @@ export class MessagePollService extends MessageInteractionBase {
 			questionText,
 			answers,
 			allowMultiselect,
+			allowVoteChange: poll.allow_vote_change ?? true,
 			expiresAt: new Date(now.getTime() + poll.duration_hours * HOUR_MS),
 		};
 	}
@@ -318,6 +333,7 @@ export class MessagePollService extends MessageInteractionBase {
 			question_text: params.prepared.questionText,
 			answers: params.prepared.answers,
 			allow_multiselect: params.prepared.allowMultiselect,
+			allow_vote_change: params.prepared.allowVoteChange,
 			layout_type: PollLayoutTypes.DEFAULT,
 			expires_at: params.prepared.expiresAt,
 			finalized_at: null,
@@ -390,10 +406,20 @@ export class MessagePollService extends MessageInteractionBase {
 		}
 		const existing = (await this.repository.listVotes(poll.messageId)).filter((vote) => vote.user_id === params.userId);
 		if (existing.some((vote) => vote.answer_id === params.answerId)) return;
+		if (!poll.allowVoteChange && !poll.allowMultiselect && existing.length > 0) {
+			throw InputValidationError.fromCode('answer_id', ValidationErrorCodes.POLL_VOTE_CHANGE_NOT_ALLOWED);
+		}
 		if (!poll.allowMultiselect) {
 			for (const vote of existing) {
 				await this.repository.removeVote(poll.messageId, vote.answer_id, params.userId);
-				await this.dispatchVote('MESSAGE_POLL_VOTE_REMOVE', channel, poll, params.userId, vote.answer_id, params.sessionId);
+				await this.dispatchVote(
+					'MESSAGE_POLL_VOTE_REMOVE',
+					channel,
+					poll,
+					params.userId,
+					vote.answer_id,
+					params.sessionId,
+				);
 			}
 		}
 		await this.repository.addVote(poll.messageId, params.answerId, params.userId, new Date());
@@ -422,8 +448,18 @@ export class MessagePollService extends MessageInteractionBase {
 		}
 		const votes = await this.repository.listVotesForAnswer(poll.messageId, params.answerId);
 		if (!votes.some((vote) => vote.user_id === params.userId)) return;
+		if (!poll.allowVoteChange) {
+			throw InputValidationError.fromCode('answer_id', ValidationErrorCodes.POLL_VOTE_CHANGE_NOT_ALLOWED);
+		}
 		await this.repository.removeVote(poll.messageId, params.answerId, params.userId);
-		await this.dispatchVote('MESSAGE_POLL_VOTE_REMOVE', channel, poll, params.userId, params.answerId, params.sessionId);
+		await this.dispatchVote(
+			'MESSAGE_POLL_VOTE_REMOVE',
+			channel,
+			poll,
+			params.userId,
+			params.answerId,
+			params.sessionId,
+		);
 	}
 
 	async listVoters(params: {
@@ -507,7 +543,12 @@ export class MessagePollService extends MessageInteractionBase {
 				throw new MissingPermissionsError();
 			}
 		}
-		const finalized = await this.finalize({poll, channel, requestCache: params.requestCache, actorUserId: params.userId});
+		const finalized = await this.finalize({
+			poll,
+			channel,
+			requestCache: params.requestCache,
+			actorUserId: params.userId,
+		});
 		if (!isAuthor && poll.guildId) {
 			await this.recordAuditLog({
 				guildId: poll.guildId,
@@ -602,6 +643,7 @@ export class MessagePollService extends MessageInteractionBase {
 								question_text: '',
 								answers: [],
 								allow_multiselect: false,
+								allow_vote_change: true,
 								layout_type: PollLayoutTypes.DEFAULT,
 								expires_at: row.expires_at,
 								finalized_at: null,

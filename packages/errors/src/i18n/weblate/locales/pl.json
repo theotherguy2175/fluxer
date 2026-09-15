@@ -396,6 +396,7 @@
 	"polls.not_found": "Ta wiadomość nie zawiera ankiety.",
 	"polls.question_length_invalid": "Pytanie ankiety musi mieć od 1 do {max, number} znaków.",
 	"polls.setting_exceeds_instance_limit": "Ta instancja ogranicza tę wartość do {max}. Poproś administratora instancji o podniesienie limitu.",
+	"polls.vote_change_not_allowed": "Głosy w tej ankiecie są ostateczne i nie można ich zmienić.",
 	"premium_and_plans.animated_avatars_require_premium": "Animowane awatary wymagają Premium.",
 	"premium_and_plans.banners_require_premium": "Banery wymagają Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Biogram dłuższy niż {maxLength} znaków wymaga Premium.",

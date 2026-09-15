@@ -400,6 +400,7 @@ const ERROR_I18N_ZH_TW_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "這則訊息沒有投票。",
 	"polls.question_length_invalid": "投票問題必須為 1 到 {max, number} 個字元。",
 	"polls.setting_exceeds_instance_limit": "此實例將該值限制為 {max}。請聯絡實例管理員提高上限。",
+	"polls.vote_change_not_allowed": "此投票的選擇為最終結果，無法更改。",
 	"premium_and_plans.animated_avatars_require_premium": "動態頭像需要進階方案。",
 	"premium_and_plans.banners_require_premium": "橫幅需要進階方案。",
 	"premium_and_plans.bio_requires_premium_for_length": "超過 {maxLength} 個字元的個人簡介需要進階方案。",

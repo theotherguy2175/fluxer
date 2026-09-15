@@ -396,6 +396,7 @@
 	"polls.not_found": "Αυτό το μήνυμα δεν περιέχει δημοσκόπηση.",
 	"polls.question_length_invalid": "Η ερώτηση μιας δημοσκόπησης πρέπει να έχει από 1 έως {max, number} χαρακτήρες.",
 	"polls.setting_exceeds_instance_limit": "Αυτή η εγκατάσταση περιορίζει την τιμή σε {max}. Ζητήστε από έναν διαχειριστή της εγκατάστασης να αυξήσει το όριο.",
+	"polls.vote_change_not_allowed": "Οι ψήφοι σε αυτή τη δημοσκόπηση είναι οριστικές και δεν αλλάζουν.",
 	"premium_and_plans.animated_avatars_require_premium": "Τα κινούμενα avatar απαιτούν Premium.",
 	"premium_and_plans.banners_require_premium": "Τα banner απαιτούν Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Ένα βιογραφικό μεγαλύτερο από {maxLength} χαρακτήρες απαιτεί Premium.",

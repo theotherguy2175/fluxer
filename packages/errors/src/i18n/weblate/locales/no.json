@@ -396,6 +396,7 @@
 	"polls.not_found": "Denne meldingen inneholder ingen avstemning.",
 	"polls.question_length_invalid": "Et avstemningsspørsmål må være mellom 1 og {max, number} tegn langt.",
 	"polls.setting_exceeds_instance_limit": "Denne instansen begrenser verdien til {max}. Be en instansadministrator om å heve grensen.",
+	"polls.vote_change_not_allowed": "Stemmer i denne avstemningen er endelige og kan ikke endres.",
 	"premium_and_plans.animated_avatars_require_premium": "Animerte avatarer krever Premium.",
 	"premium_and_plans.banners_require_premium": "Bannere krever Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "En bio på mer enn {maxLength} tegn krever Premium.",

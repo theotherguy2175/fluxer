@@ -69,6 +69,10 @@ export const PollCreateRequest = z.object({
 		.max(POLL_MAX_DURATION_HOURS_CEILING)
 		.describe('How long the poll stays open, in hours'),
 	allow_multiselect: z.boolean().optional().describe('Whether a member may pick more than one answer'),
+	allow_vote_change: z
+		.boolean()
+		.optional()
+		.describe('Whether members may withdraw or change a vote once cast (default true)'),
 	layout_type: z.literal(PollLayoutTypes.DEFAULT).optional().describe('Poll layout (only DEFAULT exists)'),
 });
 
@@ -113,6 +117,7 @@ export const PollResponse = z.object({
 	answers: z.array(PollAnswerResponse),
 	expires_at: z.string().datetime(),
 	allow_multiselect: z.boolean(),
+	allow_vote_change: z.boolean(),
 	layout_type: z.literal(PollLayoutTypes.DEFAULT),
 	results: PollResultsResponse,
 });

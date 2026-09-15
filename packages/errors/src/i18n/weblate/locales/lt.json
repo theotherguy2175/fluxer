@@ -396,6 +396,7 @@
 	"polls.not_found": "Šioje žinutėje nėra apklausos.",
 	"polls.question_length_invalid": "Apklausos klausimas turi būti nuo 1 iki {max, number} simbolių ilgio.",
 	"polls.setting_exceeds_instance_limit": "Ši instancija riboja reikšmę iki {max}. Paprašykite instancijos administratoriaus padidinti ribą.",
+	"polls.vote_change_not_allowed": "Balsai šioje apklausoje yra galutiniai ir jų keisti negalima.",
 	"premium_and_plans.animated_avatars_require_premium": "Animuotiems avatarams reikia Premium.",
 	"premium_and_plans.banners_require_premium": "Baneriams reikia Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Biografijai, ilgesnei nei {maxLength} simbolių, reikia Premium.",

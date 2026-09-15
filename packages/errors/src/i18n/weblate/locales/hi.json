@@ -396,6 +396,7 @@
 	"polls.not_found": "इस संदेश में कोई पोल नहीं है।",
 	"polls.question_length_invalid": "पोल का प्रश्न 1 से {max, number} अक्षरों के बीच होना चाहिए।",
 	"polls.setting_exceeds_instance_limit": "यह इंस्टेंस इसे {max} तक सीमित करता है। सीमा बढ़ाने के लिए इंस्टेंस व्यवस्थापक से कहें।",
+	"polls.vote_change_not_allowed": "इस पोल में दिए गए वोट अंतिम हैं और बदले नहीं जा सकते।",
 	"premium_and_plans.animated_avatars_require_premium": "एनिमेटेड अवतार के लिए प्रीमियम ज़रूरी है।",
 	"premium_and_plans.banners_require_premium": "बैनर के लिए प्रीमियम ज़रूरी है।",
 	"premium_and_plans.bio_requires_premium_for_length": "{maxLength} कैरेक्टर से लंबे बायो के लिए प्रीमियम ज़रूरी है।",

@@ -1,4 +1,4 @@
-# Fluxer + Soundboard (fork)
+# Fluxer + Soundboard + Polls (fork)
 
 
 This is a fork of [fluxerapp/fluxer](https://github.com/fluxerapp/fluxer) that

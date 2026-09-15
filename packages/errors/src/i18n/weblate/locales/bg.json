@@ -396,6 +396,7 @@
 	"polls.not_found": "Това съобщение не съдържа анкета.",
 	"polls.question_length_invalid": "Въпросът на анкетата трябва да е между 1 и {max, number} знака.",
 	"polls.setting_exceeds_instance_limit": "Тази инстанция ограничава стойността до {max}. Помолете администратор на инстанцията да увеличи лимита.",
+	"polls.vote_change_not_allowed": "Гласовете в тази анкета са окончателни и не могат да бъдат променяни.",
 	"premium_and_plans.animated_avatars_require_premium": "Анимираните аватари изискват Premium.",
 	"premium_and_plans.banners_require_premium": "Банерите изискват Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Биография с повече от {maxLength} знака изисква Premium.",

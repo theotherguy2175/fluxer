@@ -396,6 +396,7 @@
 	"polls.not_found": "このメッセージには投票がありません。",
 	"polls.question_length_invalid": "投票の質問は 1〜{max, number} 文字にしてください。",
 	"polls.setting_exceeds_instance_limit": "このインスタンスでは上限が {max} に設定されています。引き上げるにはインスタンス管理者に依頼してください。",
+	"polls.vote_change_not_allowed": "この投票の票は確定済みで、変更できません。",
 	"premium_and_plans.animated_avatars_require_premium": "アニメーションアバターにはPlutoniumが必要です。",
 	"premium_and_plans.banners_require_premium": "バナーにはPlutoniumが必要です。",
 	"premium_and_plans.bio_requires_premium_for_length": "{maxLength}文字を超える自己紹介にはPlutoniumが必要です。",

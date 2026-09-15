@@ -16,6 +16,7 @@ export class MessagePoll {
 	readonly questionText: string;
 	readonly answers: ReadonlyArray<MessagePollAnswerItem>;
 	readonly allowMultiselect: boolean;
+	readonly allowVoteChange: boolean;
 	readonly layoutType: number;
 	readonly expiresAt: Date;
 	readonly finalizedAt: Date | null;
@@ -30,6 +31,7 @@ export class MessagePoll {
 		this.questionText = row.question_text;
 		this.answers = row.answers ?? [];
 		this.allowMultiselect = row.allow_multiselect ?? false;
+		this.allowVoteChange = row.allow_vote_change ?? true;
 		this.layoutType = row.layout_type;
 		this.expiresAt = row.expires_at;
 		this.finalizedAt = row.finalized_at ?? null;
@@ -66,6 +68,7 @@ export class MessagePoll {
 			question_text: this.questionText,
 			answers: [...this.answers],
 			allow_multiselect: this.allowMultiselect,
+			allow_vote_change: this.allowVoteChange,
 			layout_type: this.layoutType,
 			expires_at: this.expiresAt,
 			finalized_at: this.finalizedAt,
@@ -95,6 +98,7 @@ export class MessagePoll {
 			answers: this.toAnswerResponses(),
 			expires_at: this.expiresAt.toISOString(),
 			allow_multiselect: this.allowMultiselect,
+			allow_vote_change: this.allowVoteChange,
 			layout_type: 1,
 			results,
 		};

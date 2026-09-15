@@ -400,6 +400,7 @@ const ERROR_I18N_FR_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "Ce message ne contient pas de sondage.",
 	"polls.question_length_invalid": "La question d’un sondage doit contenir entre 1 et {max, number} caractères.",
 	"polls.setting_exceeds_instance_limit": "Cette instance limite cette valeur à {max}. Demandez à un administrateur de l’instance de relever la limite.",
+	"polls.vote_change_not_allowed": "Les votes de ce sondage sont définitifs et ne peuvent pas être modifiés.",
 	"premium_and_plans.animated_avatars_require_premium": "Les avatars animés nécessitent une formule Plutonium.",
 	"premium_and_plans.banners_require_premium": "Les bannières nécessitent une formule Plutonium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Une bio de plus de {maxLength} caractères nécessite une formule Plutonium.",

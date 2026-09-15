@@ -555,5 +555,6 @@ export const ErrorCodeToI18nKey = {
 	[ValidationErrorCodes.POLL_ANSWER_NOT_FOUND]: 'polls.answer_not_found',
 	[ValidationErrorCodes.POLL_ALREADY_FINALIZED]: 'polls.already_finalized',
 	[ValidationErrorCodes.POLL_MULTISELECT_NOT_ALLOWED]: 'polls.multiselect_not_allowed',
+	[ValidationErrorCodes.POLL_VOTE_CHANGE_NOT_ALLOWED]: 'polls.vote_change_not_allowed',
 	[ValidationErrorCodes.POLL_SETTING_EXCEEDS_INSTANCE_LIMIT]: 'polls.setting_exceeds_instance_limit',
 } as const satisfies Record<AllErrorCodes, ErrorI18nKey>;

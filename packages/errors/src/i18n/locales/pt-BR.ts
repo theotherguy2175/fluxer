@@ -400,6 +400,7 @@ const ERROR_I18N_PT_BR_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "Esta mensagem não tem enquete.",
 	"polls.question_length_invalid": "A pergunta de uma enquete precisa ter entre 1 e {max, number} caracteres.",
 	"polls.setting_exceeds_instance_limit": "Esta instância limita este valor a {max}. Peça a um administrador da instância para aumentar o limite.",
+	"polls.vote_change_not_allowed": "Os votos desta enquete são definitivos e não podem ser alterados.",
 	"premium_and_plans.animated_avatars_require_premium": "Avatares animados exigem o plano Premium.",
 	"premium_and_plans.banners_require_premium": "Banners exigem o plano Premium.",
 	"premium_and_plans.bio_requires_premium_for_length": "Uma biografia com mais de {maxLength} caracteres requer o plano Premium.",

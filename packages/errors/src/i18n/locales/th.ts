@@ -400,6 +400,7 @@ const ERROR_I18N_TH_MESSAGES = defineErrorI18nLocaleMessages({
 	"polls.not_found": "ข้อความนี้ไม่มีโพล",
 	"polls.question_length_invalid": "คำถามของโพลต้องมีความยาว 1 ถึง {max, number} อักขระ",
 	"polls.setting_exceeds_instance_limit": "อินสแตนซ์นี้จำกัดค่านี้ไว้ที่ {max} โปรดขอให้ผู้ดูแลอินสแตนซ์เพิ่มขีดจำกัด",
+	"polls.vote_change_not_allowed": "การโหวตในโพลนี้ถือเป็นที่สิ้นสุดและไม่สามารถเปลี่ยนแปลงได้",
 	"premium_and_plans.animated_avatars_require_premium": "รูปโปรไฟล์แบบเคลื่อนไหวต้องใช้ Premium",
 	"premium_and_plans.banners_require_premium": "แบนเนอร์ต้องใช้ Premium",
 	"premium_and_plans.bio_requires_premium_for_length": "ประวัติส่วนตัวที่ยาวเกิน {maxLength} ตัวอักษรต้องใช้ Premium",
