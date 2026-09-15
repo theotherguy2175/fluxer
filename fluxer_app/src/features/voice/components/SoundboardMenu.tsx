@@ -15,6 +15,8 @@ import {GuildSettingsModal} from '@app/features/guild/components/modals/GuildSet
 import {GuildIcon} from '@app/features/guild/components/popouts/GuildIcon';
 import GuildSettingsModalState from '@app/features/guild/state/GuildSettingsModal';
 import Guilds from '@app/features/guild/state/Guilds';
+import type {KeyCombo} from '@app/features/input/state/InputKeybind';
+import {formatKeyCombo} from '@app/features/input/utils/KeybindUtils';
 import {openFilePicker} from '@app/features/messaging/utils/FilePickerUtils';
 import {formatFileSize} from '@app/features/messaging/utils/FileUtils';
 import Permission from '@app/features/permissions/state/Permission';
@@ -24,16 +26,26 @@ import {modal} from '@app/features/ui/commands/ModalCommands';
 import {Input} from '@app/features/ui/components/form/FormInput';
 import {Slider} from '@app/features/ui/components/Slider';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
+import {SoundboardHotkeyModal} from '@app/features/voice/components/SoundboardHotkeyModal';
 import styles from '@app/features/voice/components/SoundboardMenu.module.css';
 import {SoundboardSoundModal} from '@app/features/voice/components/SoundboardSoundModal';
 import SoundboardPlaybackEngine from '@app/features/voice/engine/SoundboardPlaybackEngine';
+import SoundboardHotkeys from '@app/features/voice/state/SoundboardHotkeys';
 import VoiceSettings from '@app/features/voice/state/VoiceSettings';
+import {subscribeToSoundboardHotkeyPlays} from '@app/features/voice/utils/SoundboardHotkeyListener';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {SOUNDBOARD_DEFAULT_MAX_DURATION_MS, SOUNDBOARD_MAX_BYTES} from '@fluxer/constants/src/SoundboardConstants';
 import type {GuildSoundboardSoundResponse} from '@fluxer/schema/src/domains/guild/GuildSoundboardSchemas';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
-import {GearSixIcon, MagnifyingGlassIcon, PlusIcon, SpeakerHighIcon, StarIcon} from '@phosphor-icons/react';
+import {
+	GearSixIcon,
+	KeyboardIcon,
+	MagnifyingGlassIcon,
+	PlusIcon,
+	SpeakerHighIcon,
+	StarIcon,
+} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
@@ -78,6 +90,15 @@ const MY_VOLUME_DESCRIPTOR = msg({
 	comment:
 		'Accessible label of the slider in the soundboard menu that sets how loud soundboard sounds play for this member on this device.',
 });
+const SET_HOTKEY_DESCRIPTOR = msg({
+	message: 'Set hotkey',
+	comment: 'Tooltip on the keyboard button of a soundboard sound tile; opens the personal hotkey modal.',
+});
+const EDIT_HOTKEY_DESCRIPTOR = msg({
+	message: 'Hotkey: {combo}',
+	comment:
+		'Tooltip on the keyboard button of a soundboard sound tile that already has a hotkey. {combo} is the key combination.',
+});
 const MANAGE_DESCRIPTOR = msg({
 	message: 'Manage soundboard',
 	comment: 'Accessible label for the settings button in the voice soundboard popover.',
@@ -117,14 +138,26 @@ interface SoundboardMenuProps {
 interface SoundTileProps {
 	sound: GuildSoundboardSoundResponse;
 	favorited: boolean;
+	hotkey: KeyCombo | null;
 	flashNonce: number;
 	onPlay: () => void;
 	onPreview: () => void;
 	onToggleFavorite: () => void;
+	onSetHotkey: () => void;
 }
 
-const SoundTile: React.FC<SoundTileProps> = ({sound, favorited, flashNonce, onPlay, onPreview, onToggleFavorite}) => {
+const SoundTile: React.FC<SoundTileProps> = ({
+	sound,
+	favorited,
+	hotkey,
+	flashNonce,
+	onPlay,
+	onPreview,
+	onToggleFavorite,
+	onSetHotkey,
+}) => {
 	const {i18n} = useLingui();
+	const hotkeyText = hotkey ? formatKeyCombo(i18n, hotkey) : null;
 	return (
 		<div className={styles.tile} data-flx="voice.soundboard-menu.tile">
 			<button
@@ -149,6 +182,11 @@ const SoundTile: React.FC<SoundTileProps> = ({sound, favorited, flashNonce, onPl
 				<span className={styles.tileName} data-flx="voice.soundboard-menu.tile-name">
 					{sound.name}
 				</span>
+				{hotkeyText && (
+					<kbd className={styles.tileHotkey} data-flx="voice.soundboard-menu.tile-hotkey">
+						{hotkeyText}
+					</kbd>
+				)}
 			</button>
 			<Tooltip
 				text={i18n._(PREVIEW_SOUND_DESCRIPTOR)}
@@ -169,6 +207,30 @@ const SoundTile: React.FC<SoundTileProps> = ({sound, favorited, flashNonce, onPl
 				</button>
 			</Tooltip>
 			<div className={styles.tileActions} data-flx="voice.soundboard-menu.tile-actions">
+				<Tooltip
+					text={hotkeyText ? i18n._(EDIT_HOTKEY_DESCRIPTOR, {combo: hotkeyText}) : i18n._(SET_HOTKEY_DESCRIPTOR)}
+					position="top"
+					data-flx="voice.soundboard-menu.tile-hotkey-tooltip"
+				>
+					<button
+						type="button"
+						className={clsx(styles.tileActionButton, hotkeyText && styles.tileActionButtonActive)}
+						onClick={(event) => {
+							event.stopPropagation();
+							onSetHotkey();
+						}}
+						aria-label={
+							hotkeyText ? i18n._(EDIT_HOTKEY_DESCRIPTOR, {combo: hotkeyText}) : i18n._(SET_HOTKEY_DESCRIPTOR)
+						}
+						data-flx="voice.soundboard-menu.tile-hotkey-button"
+					>
+						<KeyboardIcon
+							size={13}
+							weight={hotkeyText ? 'fill' : 'regular'}
+							data-flx="voice.soundboard-menu.tile-hotkey-icon"
+						/>
+					</button>
+				</Tooltip>
 				<Tooltip
 					text={i18n._(favorited ? REMOVE_FAVORITE_DESCRIPTOR : ADD_FAVORITE_DESCRIPTOR)}
 					position="top"
@@ -226,6 +288,8 @@ export const SoundboardMenu: React.FC<SoundboardMenuProps> = observer(({guildId,
 				setSounds(library.sounds);
 				setMaxDurationMs(library.maxDurationMs);
 				setRestartOnRepeat(library.restartOnRepeat);
+				// Only against the server's list — the local cache can be empty before it arrives.
+				SoundboardHotkeys.prune(guildId, new Set(library.sounds.map((s) => s.id)));
 			})
 			.catch((error) => logger.error('Failed to fetch soundboard sounds', error));
 		return () => {
@@ -238,23 +302,37 @@ export const SoundboardMenu: React.FC<SoundboardMenuProps> = observer(({guildId,
 	const canAdd = Permission.can(Permissions.CREATE_EXPRESSIONS, {guildId});
 	const canManage = canAdd || Permission.can(Permissions.MANAGE_EXPRESSIONS, {guildId});
 
+	const flash = useCallback((soundId: string) => {
+		const nonce = (flashNonceRef.current += 1);
+		setPlayFlashes((prev) => ({...prev, [soundId]: nonce}));
+		window.setTimeout(() => {
+			setPlayFlashes((prev) => {
+				if (prev[soundId] !== nonce) return prev;
+				const next = {...prev};
+				delete next[soundId];
+				return next;
+			});
+		}, PLAY_FLASH_MS);
+	}, []);
+
 	const play = useCallback(
 		(soundId: string) => {
 			void GuildSoundboardCommands.play(channelId, soundId).catch((error) =>
 				logger.error('Failed to play soundboard sound', error),
 			);
-			const nonce = (flashNonceRef.current += 1);
-			setPlayFlashes((prev) => ({...prev, [soundId]: nonce}));
-			window.setTimeout(() => {
-				setPlayFlashes((prev) => {
-					if (prev[soundId] !== nonce) return prev;
-					const next = {...prev};
-					delete next[soundId];
-					return next;
-				});
-			}, PLAY_FLASH_MS);
+			flash(soundId);
 		},
-		[channelId],
+		[channelId, flash],
+	);
+
+	useEffect(() => subscribeToSoundboardHotkeyPlays(flash), [flash]);
+
+	const openHotkeyModal = useCallback(
+		(sound: GuildSoundboardSoundResponse) => {
+			onClose();
+			ModalCommands.push(modal(() => <SoundboardHotkeyModal guildId={guildId} sound={sound} />));
+		},
+		[guildId, onClose],
 	);
 
 	const preview = useCallback(
@@ -382,7 +460,9 @@ export const SoundboardMenu: React.FC<SoundboardMenuProps> = observer(({guildId,
 									flashNonce={playFlashes[sound.id] ?? 0}
 									onPlay={() => play(sound.id)}
 									onPreview={() => preview(sound)}
+									hotkey={SoundboardHotkeys.getCombo(sound.id)}
 									onToggleFavorite={() => toggleFavorite(sound.id)}
+									onSetHotkey={() => openHotkeyModal(sound)}
 								/>
 							))}
 						</div>
@@ -411,7 +491,9 @@ export const SoundboardMenu: React.FC<SoundboardMenuProps> = observer(({guildId,
 									flashNonce={playFlashes[sound.id] ?? 0}
 									onPlay={() => play(sound.id)}
 									onPreview={() => preview(sound)}
+									hotkey={SoundboardHotkeys.getCombo(sound.id)}
 									onToggleFavorite={() => toggleFavorite(sound.id)}
+									onSetHotkey={() => openHotkeyModal(sound)}
 								/>
 							))}
 							{canAdd && !q && (

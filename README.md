@@ -26,6 +26,13 @@ upstream `main`.
 - **Soundboard button in the voice bar**: plays the clip for everyone in the
   channel (each client plays it locally in sync — nothing is mixed into LiveKit,
   so it works with voice/video exactly as before)
+- **Personal hotkeys**: hover a sound in the soundboard menu → keyboard icon →
+  record a key or chord. Per user, per device, in-app only (fires while Fluxer
+  is focused and you're in one of that community's voice channels); Fluxer's own
+  shortcuts always win and the picker warns about conflicts
+- **Volume, two ways**: each sound has a community-set level up to 200%, and
+  every member has their own soundboard slider (0–200%) in the menu that scales
+  all sounds without touching voice volume
 - New permission **Use Soundboard** (bit 42) to play sounds, granted to
   `@everyone` on new communities by default. Uploading and editing your own
   sounds needs **Create Expressions**; editing or deleting anyone's needs

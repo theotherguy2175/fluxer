@@ -3509,7 +3509,7 @@ msgid "Add some CSS before sharing."
 msgstr "Adicione um pouco de CSS antes de compartilhar."
 
 #. Tile in the voice soundboard popover to upload a new sound.
-#: src/features/voice/components/SoundboardMenu.tsx:72
+#: src/features/voice/components/SoundboardMenu.tsx:84
 msgid "Add Sound"
 msgstr "Add Sound"
 
@@ -3543,7 +3543,7 @@ msgstr "Adicionar ao dicionário"
 #. Action label that pins the current channel, DM, or attachment to the favorites list.
 #. Tooltip on the star button of a soundboard sound tile.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:322
-#: src/features/voice/components/SoundboardMenu.tsx:52
+#: src/features/voice/components/SoundboardMenu.tsx:64
 msgid "Add to favorites"
 msgstr "Adicionar aos favoritos"
 
@@ -4205,6 +4205,10 @@ msgstr "Redirecionamentos permitidos"
 msgid "Allowed up to {count, plural, one {# connection} other {# connections}} per member"
 msgstr "Permitiu até {count, plural, one {# conexão} other {# conexões}} por membro"
 
+#: src/features/voice/components/SoundboardHotkeyModal.tsx:122
+msgid "Already bound to \"{soundConflictName}\" in this community. Pick a different key."
+msgstr "Already bound to \"{soundConflictName}\" in this community. Pick a different key."
+
 #. Title of the error modal shown when the channel or category no longer exists.
 #: src/features/app/components/alerts/ChannelDeleteFailedModal.tsx:30
 msgid "Already deleted"
@@ -4229,6 +4233,14 @@ msgstr "Já resgatado"
 #: src/features/app/components/dialogs/components/plutonium/utils/PremiumActionErrorModal.tsx:28
 msgid "Already set to cancel"
 msgstr "Cancelamento já agendado"
+
+#: src/features/voice/components/SoundboardHotkeyModal.tsx:114
+msgid "Already used by one of your custom Fluxer shortcuts. Pick a different key."
+msgstr "Already used by one of your custom Fluxer shortcuts. Pick a different key."
+
+#: src/features/voice/components/SoundboardHotkeyModal.tsx:112
+msgid "Already used by the Fluxer shortcut \"{fluxerConflict}\". Pick a different key."
+msgstr "Already used by the Fluxer shortcut \"{fluxerConflict}\". Pick a different key."
 
 #. Toggle-switch label in the moderator delete-message confirmation dialog. When enabled, the message is reported (category: other) before being deleted. {productName} is the product name (e.g., Fluxer).
 #: src/features/messaging/commands/MessageCommands.tsx:84
@@ -15766,7 +15778,7 @@ msgstr "Favoritos"
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:258
 #: src/features/user/components/settings_utils/section_registry/AppearanceSections.ts:426
-#: src/features/voice/components/SoundboardMenu.tsx:48
+#: src/features/voice/components/SoundboardMenu.tsx:60
 msgid "Favorites"
 msgstr "Favoritos"
 
@@ -15961,7 +15973,7 @@ msgid "Find the emoji of your dreams"
 msgstr "Encontre o emoji dos seus sonhos"
 
 #. Placeholder in the voice soundboard popover search box.
-#: src/features/voice/components/SoundboardMenu.tsx:44
+#: src/features/voice/components/SoundboardMenu.tsx:56
 msgid "Find the perfect sound"
 msgstr "Find the perfect sound"
 
@@ -17981,10 +17993,17 @@ msgstr "Tela inicial"
 msgid "Host"
 msgstr "Host"
 
+#. Label of the shortcut recorder in the soundboard hotkey modal.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/user/components/settings_utils/search_index/KeybindsIndex.ts:34
+#: src/features/voice/components/SoundboardHotkeyModal.tsx:26
 msgid "Hotkey"
 msgstr "Atalho"
+
+#. Tooltip on the keyboard button of a soundboard sound tile that already has a hotkey. {combo} is the key combination.
+#: src/features/voice/components/SoundboardMenu.tsx:97
+msgid "Hotkey: {combo}"
+msgstr "Hotkey: {combo}"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/user/components/settings_utils/search_index/KeybindsIndex.ts:22
@@ -20788,7 +20807,7 @@ msgid "Manage roles"
 msgstr "Gerenciar cargos"
 
 #. Accessible label for the settings button in the voice soundboard popover.
-#: src/features/voice/components/SoundboardMenu.tsx:81
+#: src/features/voice/components/SoundboardMenu.tsx:102
 msgid "Manage soundboard"
 msgstr "Manage soundboard"
 
@@ -23034,6 +23053,7 @@ msgid "Never automatically"
 msgstr "Nunca automaticamente"
 
 #: src/features/messaging/components/CreatePollModal.tsx:406
+#: src/features/voice/components/SoundboardHotkeyModal.tsx:153
 #: src/features/voice/components/SoundboardSoundModal.tsx:579
 msgid "Never mind"
 msgstr "Never mind"
@@ -23743,12 +23763,12 @@ msgid "No soundboard slots available"
 msgstr "No soundboard slots available"
 
 #. Empty state in the voice soundboard popover.
-#: src/features/voice/components/SoundboardMenu.tsx:64
+#: src/features/voice/components/SoundboardMenu.tsx:76
 msgid "No soundboard sounds yet"
 msgstr "No soundboard sounds yet"
 
 #. Empty state in the voice soundboard popover when a search returns nothing.
-#: src/features/voice/components/SoundboardMenu.tsx:68
+#: src/features/voice/components/SoundboardMenu.tsx:80
 msgid "No sounds match your search"
 msgstr "No sounds match your search"
 
@@ -24432,6 +24452,10 @@ msgstr "Apenas membros Visionary podem participar desta comunidade. Seu acesso p
 #: src/features/channel/components/UserMessage.tsx:441
 msgid "Only you can see this message. <0>Dismiss</0>"
 msgstr "Só você pode ver esta mensagem. <0>Dispensar</0>"
+
+#: src/features/voice/components/SoundboardHotkeyModal.tsx:127
+msgid "Only you get this hotkey, on this device. It plays the sound for everyone while you're in one of this community's voice channels and Fluxer is the focused window. Single keys pause while you're typing in a text box; combinations with Ctrl, Alt or ⌘ always work."
+msgstr "Only you get this hotkey, on this device. It plays the sound for everyone while you're in one of this community's voice channels and Fluxer is the focused window. Single keys pause while you're typing in a text box; combinations with Ctrl, Alt or ⌘ always work."
 
 #. Short label in the index. Keep it concise.
 #: src/features/user/components/modals/tabs/component_gallery_tab/index.tsx:43
@@ -26363,7 +26387,7 @@ msgid "Preview"
 msgstr "Prévia"
 
 #. Tooltip on the speaker button that plays a soundboard sound locally without sending it to the call.
-#: src/features/voice/components/SoundboardMenu.tsx:60
+#: src/features/voice/components/SoundboardMenu.tsx:72
 msgid "Preview (only you hear this)"
 msgstr "Preview (only you hear this)"
 
@@ -27763,7 +27787,7 @@ msgstr "Remover do dicionário"
 #. Action label that unpins the current channel, DM, or attachment from the favorites list.
 #. Tooltip on the star button of a favorited soundboard sound tile.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:326
-#: src/features/voice/components/SoundboardMenu.tsx:56
+#: src/features/voice/components/SoundboardMenu.tsx:68
 msgid "Remove from favorites"
 msgstr "Remover dos favoritos"
 
@@ -27790,6 +27814,10 @@ msgstr "Desativar sempre no topo"
 #: src/features/ui/action_menu/items/MediaMenuData.tsx:173
 msgid "Remove from URL-only GIF favorites"
 msgstr "Remover dos GIFs favoritos salvos por URL"
+
+#: src/features/voice/components/SoundboardHotkeyModal.tsx:144
+msgid "Remove hotkey"
+msgstr "Remove hotkey"
 
 #: src/features/channel/components/modals/EditGroupBottomSheet.tsx:338
 #: src/features/channel/components/modals/EditGroupModal.tsx:293
@@ -29439,6 +29467,7 @@ msgstr "Saturação"
 #: src/features/user/components/modals/CustomStatusBottomSheet.tsx:297
 #: src/features/user/components/modals/NoteEditSheet.tsx:48
 #: src/features/user/components/modals/tabs/chat_settings_tab/AddCustomSearchEngineModal.tsx:96
+#: src/features/voice/components/SoundboardHotkeyModal.tsx:161
 #: src/features/voice/components/SoundboardSoundModal.tsx:588
 msgid "Save"
 msgstr "Salvar"
@@ -30857,6 +30886,11 @@ msgstr "Filtro de conteúdo explícito definido como {0}."
 #: src/features/user/components/modals/tabs/components/EntranceSoundSection.tsx:108
 msgid "Set here"
 msgstr "Definido aqui"
+
+#. Tooltip on the keyboard button of a soundboard sound tile; opens the personal hotkey modal.
+#: src/features/voice/components/SoundboardMenu.tsx:93
+msgid "Set hotkey"
+msgstr "Set hotkey"
 
 #: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:404
 msgid "Set how long soundboard sounds can be, how many this community can hold, and how repeated sounds behave. Requires Manage Community."
@@ -32649,6 +32683,11 @@ msgstr "Efeito sonoro"
 msgid "Sound for this scope"
 msgstr "Som para este escopo"
 
+#. Title of the modal where a member binds a personal keyboard shortcut to a soundboard sound.
+#: src/features/voice/components/SoundboardHotkeyModal.tsx:22
+msgid "Sound hotkey"
+msgstr "Sound hotkey"
+
 #. Field label for a soundboard sound name.
 #. Placeholder for the soundboard sound name field.
 #: src/features/voice/components/SoundboardSoundModal.tsx:53
@@ -32708,13 +32747,13 @@ msgstr "Soundboard sounds"
 #. Body of the unsupported-file error. {maxSize} is a formatted file size.
 #. Error modal body. {maxSize} is a formatted file size.
 #: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:65
-#: src/features/voice/components/SoundboardMenu.tsx:86
+#: src/features/voice/components/SoundboardMenu.tsx:107
 #: src/features/voice/components/SoundboardSoundModal.tsx:81
 msgid "Soundboard sounds must be MP3, OGG, M4A, or WAV audio under {maxSize}."
 msgstr "Soundboard sounds must be MP3, OGG, M4A, or WAV audio under {maxSize}."
 
 #. Accessible label of the slider in the soundboard menu that sets how loud soundboard sounds play for this member on this device.
-#: src/features/voice/components/SoundboardMenu.tsx:76
+#: src/features/voice/components/SoundboardMenu.tsx:88
 msgid "Soundboard volume (only you)"
 msgstr "Soundboard volume (only you)"
 
@@ -37529,7 +37568,7 @@ msgstr "Alterações não salvas"
 #. Title of the error modal shown when an unsupported soundboard file type is selected.
 #. Title of the error shown when a chosen soundboard file is the wrong type or too large.
 #: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:61
-#: src/features/voice/components/SoundboardMenu.tsx:85
+#: src/features/voice/components/SoundboardMenu.tsx:106
 #: src/features/voice/components/SoundboardSoundModal.tsx:77
 msgid "Unsupported audio file"
 msgstr "Unsupported audio file"
@@ -38027,6 +38066,10 @@ msgstr "Use uma janela específica para definir a data de corte do histórico de
 #: src/features/auth/components/modals/required_action/RequiredActionDescriptors.ts:256
 msgid "Use a different email address and verify it with a code."
 msgstr "Use um endereço de e-mail diferente e verifique-o com um código."
+
+#: src/features/voice/components/SoundboardHotkeyModal.tsx:102
+msgid "Use a key or key combination. Plain left/right click and gamepad buttons can't be hotkeys."
+msgstr "Use a key or key combination. Plain left/right click and gamepad buttons can't be hotkeys."
 
 #. Developer tools debug menu label. Internal-only surface for developers; translators may keep this terse.
 #: src/features/channel/components/channel_header_components/developer_tools/NagbarControls.ts:9

@@ -145,6 +145,22 @@
 	line-height: 1.2;
 }
 
+.tileHotkey {
+	flex: none;
+	max-width: 40%;
+	padding: 0.0625rem 0.3125rem;
+	border-radius: 0.25rem;
+	border: 0.0625rem solid var(--background-modifier-accent);
+	background-color: var(--background-tertiary);
+	color: var(--text-primary-muted);
+	font-family: inherit;
+	font-size: 0.6875rem;
+	line-height: 1.2;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
 .tilePreviewButton {
 	position: absolute;
 	top: 50%;
