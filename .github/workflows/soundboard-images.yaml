@@ -20,7 +20,7 @@ name: soundboard images
 
 on:
   push:
-    branches: [feature/soundboard]
+    branches: [main]
     paths-ignore: ["**.md", "fluxer_docs/**", "fluxer_marketing/**"]
   workflow_dispatch:
     inputs:

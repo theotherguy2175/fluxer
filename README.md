@@ -6,7 +6,7 @@ voice channel can trigger them so everyone in the channel hears it. Upstream
 declined to merge it, so it lives here as a maintained patch on top of
 upstream `main`.
 
-- Branch: **`feature/soundboard`** (`main` here is a plain mirror of upstream)
+- Branch: **`main`** — upstream `main` plus the soundboard commits on top
 - Images: `ghcr.io/theotherguy2175/fluxer-{api,gateway,media-proxy,app-proxy-self-hosted}`
 - Everything else in a Fluxer deployment is unchanged and keeps using upstream's images
 - Upstream's own README continues below this section
@@ -37,7 +37,7 @@ compose stack. Three steps:
 cd <your fluxer directory>          # the one holding docker-compose.yml and .env
 
 # 1. add the overlay file next to docker-compose.yml
-curl -fsSLO https://raw.githubusercontent.com/theotherguy2175/fluxer/feature/soundboard/deploy/self-hosting/docker-compose.soundboard.yml
+curl -fsSLO https://raw.githubusercontent.com/theotherguy2175/fluxer/main/deploy/self-hosting/docker-compose.soundboard.yml
 
 # 2. enable it in .env (append it after any overlay you already list)
 #    COMPOSE_FILE=docker-compose.yml:docker-compose.soundboard.yml
@@ -53,7 +53,7 @@ Then, **once**, grant *Use Soundboard* to `@everyone` on communities that alread
 existed (new communities get it automatically):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/theotherguy2175/fluxer/feature/soundboard/fluxer_api/scripts/backfill-use-soundboard-permission.sql \
+curl -fsSL https://raw.githubusercontent.com/theotherguy2175/fluxer/main/fluxer_api/scripts/backfill-use-soundboard-permission.sql \
   | docker compose exec -T postgres psql -U fluxer -d fluxer
 docker compose restart api gateway     # drop cached role permissions
 ```
@@ -74,7 +74,7 @@ Two optional `.env` knobs, both default to a published build:
 commit in its tag, and the seven upstream images you run alongside it should be
 from around the same date. Running `v1` (upstream's moving tag) for the rest is
 what we do ourselves; if upstream ever changes an internal NATS contract,
-rebuild from a fresh rebase (see below) rather than pinning the seven back.
+rebuild from a fresh upstream merge (see below) rather than pinning the seven back.
 
 ## Run it: new install
 
@@ -92,16 +92,16 @@ With kustomize, swap the four images and leave the rest:
 images:
   - name: ghcr.io/fluxerapp/fluxer-api
     newName: ghcr.io/theotherguy2175/fluxer-api
-    newTag: sb-20260915-a1d6808
+    newTag: sb-20260915-fa1cf92
   - name: ghcr.io/fluxerapp/fluxer-gateway
     newName: ghcr.io/theotherguy2175/fluxer-gateway
-    newTag: sb-20260915-a1d6808
+    newTag: sb-20260915-fa1cf92
   - name: ghcr.io/fluxerapp/fluxer-media-proxy
     newName: ghcr.io/theotherguy2175/fluxer-media-proxy
-    newTag: sb-20260915-a1d6808
+    newTag: sb-20260915-fa1cf92
   - name: ghcr.io/fluxerapp/fluxer-app-proxy-self-hosted
     newName: ghcr.io/theotherguy2175/fluxer-app-proxy-self-hosted
-    newTag: sb-20260915-a1d6808
+    newTag: sb-20260915-fa1cf92
 ```
 
 Bump all four together; they're built from one commit. Run the same backfill SQL
@@ -119,7 +119,7 @@ The images are built from **upstream's unmodified Dockerfiles** — the fork
 changes source, not packaging. Two ways:
 
 **GitHub Actions** (`.github/workflows/soundboard-images.yaml`): runs on every
-push to `feature/soundboard` and on *Run workflow*. Builds `linux/amd64` +
+push to `main` and on *Run workflow*. Builds `linux/amd64` +
 `linux/arm64` on native runners, merges a manifest per image, and pushes to
 `ghcr.io/<repo owner>/…` with tags `sb-<YYYYMMDD>-<sha7>` and `soundboard`.
 If you fork this fork, it works unchanged with no secrets — but GHCR packages
@@ -143,21 +143,22 @@ Apple Silicon machine works via emulation but takes ~10 minutes each for
 
 ## Keeping up with upstream
 
-`feature/soundboard` is one commit rebased onto upstream `main`. To take new
-upstream changes:
+`main` here is upstream `main` plus the soundboard commits. Bring in upstream
+changes with a merge (not a rebase — `main` is public, and rewriting it would
+break everyone who cloned it):
 
 ```sh
 git remote add upstream https://github.com/fluxerapp/fluxer.git   # once
 git config rerere.enabled true                                     # once; replays past conflict resolutions
 git fetch upstream
-git checkout feature/soundboard
-git rebase upstream/main
+git checkout main
+git merge upstream/main
 # resolve conflicts if any, then:
 pnpm install --frozen-lockfile
 (cd fluxer_api && pnpm typecheck)
 (cd fluxer_app && pnpm typecheck)
 (cd fluxer_app && pnpm vitest run src/features/guild/utils/guild_tabs/audit_log)
-git push --force-with-lease origin feature/soundboard              # triggers the image build
+git push origin main                                               # triggers the image build
 ```
 
 Files the soundboard touches that upstream also edits regularly (so conflicts
@@ -166,6 +167,9 @@ tend to land here): `fluxer_api/src/api/middleware/ServiceSingletons.ts`,
 `packages/schema/src/primitives/AuditLogValidators.ts`, the audit-log presenter
 map, and the entrance-sound service the soundboard reuses. Everything else the
 feature adds is in new files under `*/soundboard/`.
+
+To see the soundboard as a single patch against upstream at any time:
+`git diff upstream/main...main -- . ':!README.md' ':!deploy/self-hosting/docker-compose.soundboard.yml' ':!tools/soundboard' ':!.github/workflows/soundboard-images.yaml'`
 
 ## Layout of the change
 
