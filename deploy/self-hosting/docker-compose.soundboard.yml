@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
+# Soundboard overlay. Swaps the four images that carry the soundboard
+# changes for builds from github.com/theotherguy2175/fluxer (branch
+# feature/soundboard); everything else keeps running upstream's images.
+#
+# Enable it by adding this file to COMPOSE_FILE in .env, after the base file
+# and after docker-compose.proxy.yml if you use that:
+#
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.soundboard.yml
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.proxy.yml:docker-compose.soundboard.yml
+#
+# Optional, both default to a published build:
+#   SOUNDBOARD_REGISTRY=ghcr.io/theotherguy2175    where the four images live
+#   SOUNDBOARD_IMAGE_TAG=soundboard                 'soundboard' = latest build, or a pinned sb-<date>-<sha7>
+#
+# Then: docker compose pull && docker compose up -d
+# Existing communities also need the one-time permission backfill; see the
+# "Soundboard" section of README.md.
+services:
+  api:
+    image: ${SOUNDBOARD_REGISTRY:-ghcr.io/theotherguy2175}/fluxer-api:${SOUNDBOARD_IMAGE_TAG:-soundboard}
+  worker:
+    image: ${SOUNDBOARD_REGISTRY:-ghcr.io/theotherguy2175}/fluxer-api:${SOUNDBOARD_IMAGE_TAG:-soundboard}
+  gateway:
+    image: ${SOUNDBOARD_REGISTRY:-ghcr.io/theotherguy2175}/fluxer-gateway:${SOUNDBOARD_IMAGE_TAG:-soundboard}
+  media-proxy:
+    image: ${SOUNDBOARD_REGISTRY:-ghcr.io/theotherguy2175}/fluxer-media-proxy:${SOUNDBOARD_IMAGE_TAG:-soundboard}
+  app-proxy:
+    image: ${SOUNDBOARD_REGISTRY:-ghcr.io/theotherguy2175}/fluxer-app-proxy-self-hosted:${SOUNDBOARD_IMAGE_TAG:-soundboard}

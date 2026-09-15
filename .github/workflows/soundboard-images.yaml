@@ -1,15 +1,21 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Fork-only workflow (theotherguy2175/fluxer). Builds the four images that
-# carry soundboard changes and pushes them to the casteel Gitea registry,
-# where the k8s cluster pulls from without a pull secret.
+# Builds the four images that carry the soundboard changes and publishes them
+# to GHCR under this repository's owner (ghcr.io/<owner>/fluxer-*). The other
+# seven Fluxer images are unchanged by this fork; use upstream's.
 #
-# Upstream's _build-image.yaml is not reusable here: it mints a fluxerapp
-# GitHub App token for version resolution and release publishing, which
-# this fork does not have. This is the minimum needed to get images out.
+# Upstream's _build-image.yaml is not reusable in a fork: it mints a fluxerapp
+# GitHub App token for version resolution and release publishing. This is the
+# minimum equivalent: same Dockerfiles, same build args, amd64 + arm64 on
+# native runners, one multi-arch manifest per image.
 #
-# Tags: <image>:sb-<YYYYMMDD>-<sha7> (immutable) and <image>:soundboard (moving).
-# amd64 only: casteel-cluster is all amd64.
+# Tags per image:
+#   sb-<YYYYMMDD>-<sha7>   immutable, one per build
+#   soundboard             moving, always the latest build of the branch
+#
+# One-time setup after the first run: GHCR packages created by a workflow
+# start private. Make each of the four public in GitHub -> Packages ->
+# <image> -> Package settings -> Change visibility, or add an imagePullSecret.
 name: soundboard images
 
 on:
@@ -17,14 +23,24 @@ on:
     branches: [feature/soundboard]
     paths-ignore: ["**.md", "fluxer_docs/**", "fluxer_marketing/**"]
   workflow_dispatch:
+    inputs:
+      extra-tag:
+        description: "Additional tag to apply to every image (e.g. a release name)"
+        type: string
+        required: false
+        default: ""
 
 concurrency:
   group: soundboard-images-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  packages: write
+
 env:
-  REGISTRY: git.casteel.pw
-  OWNER: ccasteel
+  REGISTRY: ghcr.io
+  IMAGES: fluxer-api fluxer-gateway fluxer-media-proxy fluxer-app-proxy-self-hosted
 
 jobs:
   meta:
@@ -32,69 +48,101 @@ jobs:
     outputs:
       tag: ${{ steps.vars.outputs.tag }}
       date: ${{ steps.vars.outputs.date }}
+      owner: ${{ steps.vars.outputs.owner }}
     steps:
       - uses: actions/checkout@v4
       - id: vars
         run: |
           echo "tag=sb-$(date -u +%Y%m%d)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           echo "date=$(TZ=UTC git log -1 --no-show-signature --pretty=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+          echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
 
   build:
     needs: meta
-    runs-on: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - image: fluxer-api
+        platform: [amd64, arm64]
+        image:
+          - name: fluxer-api
             dockerfile: fluxer_api/Dockerfile
-          - image: fluxer-gateway
+          - name: fluxer-gateway
             dockerfile: fluxer_gateway/Dockerfile
-          - image: fluxer-media-proxy
+          - name: fluxer-media-proxy
             dockerfile: fluxer_media_proxy/Dockerfile
-          - image: fluxer-app-proxy-self-hosted
+          - name: fluxer-app-proxy-self-hosted
             dockerfile: fluxer_app_proxy/Dockerfile
-            # mirrors build-app-proxy-self-hosted.yaml; assets build inline
-            # via the Dockerfile's default APP_ASSETS_REF=app-assets stage
+            # mirrors build-app-proxy-self-hosted.yaml; the frontend assets
+            # build inline via the Dockerfile's default APP_ASSETS_REF stage
             extra-args: |
               FLUXER_APP_PROXY_TIME_FREEZE_ENABLED=false
               APP_ASSETS_PLATFORM=linux/amd64
+        include:
+          - platform: amd64
+            runner: ubuntu-24.04
+          - platform: arm64
+            runner: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
-          username: ${{ env.OWNER }}
-          password: ${{ secrets.GITEA_REGISTRY_TOKEN }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: ${{ matrix.image.dockerfile }}
           push: true
           provenance: false
-          platforms: linux/amd64
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}:${{ needs.meta.outputs.tag }}
-            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}:soundboard
+          platforms: linux/${{ matrix.platform }}
+          tags: ${{ env.REGISTRY }}/${{ needs.meta.outputs.owner }}/${{ matrix.image.name }}:${{ needs.meta.outputs.tag }}-${{ matrix.platform }}
           build-args: |
             BUILD_VERSION=${{ needs.meta.outputs.tag }}
             SOURCE_SHA=${{ github.sha }}
             SOURCE_DATE=${{ needs.meta.outputs.date }}
-            ${{ matrix.extra-args }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}:buildcache
-          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.OWNER }}/${{ matrix.image }}:buildcache,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true
+            ${{ matrix.image.extra-args }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ needs.meta.outputs.owner }}/${{ matrix.image.name }}:buildcache-${{ matrix.platform }}
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ needs.meta.outputs.owner }}/${{ matrix.image.name }}:buildcache-${{ matrix.platform }},mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true
         env:
           DOCKER_BUILD_SUMMARY: false
           DOCKER_BUILD_RECORD_UPLOAD: false
 
-  summary:
+  merge:
+    name: merge multi-arch manifests
     needs: [meta, build]
     runs-on: ubuntu-24.04
     steps:
-      - run: |
-          echo "### soundboard images \`${{ needs.meta.outputs.tag }}\`" >> "$GITHUB_STEP_SUMMARY"
-          for i in fluxer-api fluxer-gateway fluxer-media-proxy fluxer-app-proxy-self-hosted; do
-            echo "- \`${{ env.REGISTRY }}/${{ env.OWNER }}/$i:${{ needs.meta.outputs.tag }}\`" >> "$GITHUB_STEP_SUMMARY"
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: create manifests
+        env:
+          OWNER: ${{ needs.meta.outputs.owner }}
+          TAG: ${{ needs.meta.outputs.tag }}
+          EXTRA_TAG: ${{ inputs.extra-tag }}
+        run: |
+          for image in $IMAGES; do
+            repo="$REGISTRY/$OWNER/$image"
+            tags=(-t "$repo:$TAG" -t "$repo:soundboard")
+            [ -n "$EXTRA_TAG" ] && tags+=(-t "$repo:$EXTRA_TAG")
+            docker buildx imagetools create "${tags[@]}" "$repo:$TAG-amd64" "$repo:$TAG-arm64"
+            docker buildx imagetools inspect "$repo:$TAG" | head -20
           done
+      - name: summary
+        env:
+          OWNER: ${{ needs.meta.outputs.owner }}
+          TAG: ${{ needs.meta.outputs.tag }}
+        run: |
+          {
+            echo "### soundboard images \`$TAG\` (linux/amd64, linux/arm64)"
+            for image in $IMAGES; do echo "- \`$REGISTRY/$OWNER/$image:$TAG\`"; done
+            echo
+            echo "Compose: set \`SOUNDBOARD_IMAGE_TAG=$TAG\` in .env (or leave it on \`soundboard\`)."
+          } >> "$GITHUB_STEP_SUMMARY"
