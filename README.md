@@ -1,5 +1,9 @@
 # Fluxer + Soundboard (fork)
 
+<p align="center">
+  <img src="./fluxer_static/marketing/screenshots/soundboard.png" alt="Fluxer app showcase" width="900">
+</p>
+
 This is a fork of [fluxerapp/fluxer](https://github.com/fluxerapp/fluxer) that
 adds a **community soundboard**: members upload short clips, and anyone in a
 voice channel can trigger them so everyone in the channel hears it. Upstream
