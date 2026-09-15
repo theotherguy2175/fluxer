@@ -20,7 +20,9 @@ name: soundboard images
 
 on:
   push:
-    branches: [main]
+    # main moves the :soundboard tag; feature branches only get their
+    # immutable sb-<date>-<sha7> tag plus a moving branch-<name> tag.
+    branches: [main, "feature/**"]
     paths-ignore: ["**.md", "fluxer_docs/**", "fluxer_marketing/**"]
   workflow_dispatch:
     inputs:
@@ -49,6 +51,7 @@ jobs:
       tag: ${{ steps.vars.outputs.tag }}
       date: ${{ steps.vars.outputs.date }}
       owner: ${{ steps.vars.outputs.owner }}
+      moving: ${{ steps.vars.outputs.moving }}
     steps:
       - uses: actions/checkout@v4
       - id: vars
@@ -56,6 +59,11 @@ jobs:
           echo "tag=sb-$(date -u +%Y%m%d)-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
           echo "date=$(TZ=UTC git log -1 --no-show-signature --pretty=%cd --date=format-local:%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
           echo "owner=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_OUTPUT"
+          if [ "$GITHUB_REF_NAME" = "main" ]; then
+            echo "moving=soundboard" >> "$GITHUB_OUTPUT"
+          else
+            echo "moving=branch-$(echo "$GITHUB_REF_NAME" | tr -c 'A-Za-z0-9._-\n' '-' | sed 's/^feature-//')" >> "$GITHUB_OUTPUT"
+          fi
 
   build:
     needs: meta
@@ -126,11 +134,12 @@ jobs:
         env:
           OWNER: ${{ needs.meta.outputs.owner }}
           TAG: ${{ needs.meta.outputs.tag }}
+          MOVING: ${{ needs.meta.outputs.moving }}
           EXTRA_TAG: ${{ inputs.extra-tag }}
         run: |
           for image in $IMAGES; do
             repo="$REGISTRY/$OWNER/$image"
-            tags=(-t "$repo:$TAG" -t "$repo:soundboard")
+            tags=(-t "$repo:$TAG" -t "$repo:$MOVING")
             [ -n "$EXTRA_TAG" ] && tags+=(-t "$repo:$EXTRA_TAG")
             docker buildx imagetools create "${tags[@]}" "$repo:$TAG-amd64" "$repo:$TAG-arm64"
             docker buildx imagetools inspect "$repo:$TAG" | head -20
