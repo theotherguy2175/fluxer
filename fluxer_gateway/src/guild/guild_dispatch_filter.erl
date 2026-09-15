@@ -101,6 +101,8 @@ is_channel_scoped_event(message_delete) -> true;
 is_channel_scoped_event(message_delete_bulk) -> true;
 is_channel_scoped_event(message_reaction_add) -> true;
 is_channel_scoped_event(message_reaction_remove) -> true;
+is_channel_scoped_event(message_poll_vote_add) -> true;
+is_channel_scoped_event(message_poll_vote_remove) -> true;
 is_channel_scoped_event(message_reaction_remove_all) -> true;
 is_channel_scoped_event(message_reaction_remove_emoji) -> true;
 is_channel_scoped_event(typing_start) -> true;
@@ -181,6 +183,8 @@ is_message_access_filtered_event(message_update) -> true;
 is_message_access_filtered_event(message_delete) -> true;
 is_message_access_filtered_event(message_reaction_add) -> true;
 is_message_access_filtered_event(message_reaction_remove) -> true;
+is_message_access_filtered_event(message_poll_vote_add) -> true;
+is_message_access_filtered_event(message_poll_vote_remove) -> true;
 is_message_access_filtered_event(message_reaction_remove_all) -> true;
 is_message_access_filtered_event(message_reaction_remove_emoji) -> true;
 is_message_access_filtered_event(_) -> false.

@@ -152,6 +152,14 @@ export const GuildRateLimitConfigs = {
 		bucket: 'guild:soundboard_sound:mutate::guild_id',
 		config: {limit: 20, windowMs: ms('1 minute')},
 	} as RouteRateLimitConfig,
+	GUILD_POLL_SETTINGS_GET: {
+		bucket: 'guild:poll_settings:get::guild_id',
+		config: {limit: 60, windowMs: ms('10 seconds')},
+	} as RouteRateLimitConfig,
+	GUILD_POLL_SETTINGS_UPDATE: {
+		bucket: 'guild:poll_settings:update::guild_id',
+		config: {limit: 20, windowMs: ms('1 minute')},
+	} as RouteRateLimitConfig,
 	GUILD_STICKERS_LIST: {
 		bucket: 'guild:sticker:list::guild_id',
 		config: {limit: 60, windowMs: ms('10 seconds')},

@@ -12,6 +12,7 @@ import {MessageInteractionService} from '@app/api/channel/services/MessageIntera
 import {MessageService} from '@app/api/channel/services/MessageService';
 import {MessagePersistenceService} from '@app/api/channel/services/message/MessagePersistenceService';
 import {UserMessageDeletionService} from '@app/api/channel/services/message/UserMessageDeletionService';
+import {MessagePollService} from '@app/api/channel/services/poll/MessagePollService';
 import type {IFavoriteMemeRepository} from '@app/api/favorite_meme/IFavoriteMemeRepository';
 import type {GuildAuditLogService} from '@app/api/guild/GuildAuditLogService';
 import type {IGuildRepositoryAggregate} from '@app/api/guild/repositories/IGuildRepositoryAggregate';
@@ -45,6 +46,7 @@ export class ChannelService {
 	public readonly channelData: ChannelDataService;
 	public readonly messages: MessageService;
 	public readonly interactions: MessageInteractionService;
+	public readonly polls: MessagePollService;
 	public readonly attachments: AttachmentUploadService;
 	public readonly groupDms: GroupDmOperationsService;
 	public readonly calls: CallService;
@@ -153,6 +155,19 @@ export class ChannelService {
 			guildAuditLogService,
 			limitConfigService,
 		);
+		this.polls = new MessagePollService(
+			gatewayService,
+			channelRepository,
+			userRepository,
+			guildRepository,
+			userCacheService,
+			snowflakeService,
+			limitConfigService,
+			guildAuditLogService,
+			messagePersistenceService,
+			this.messages.dispatch,
+		);
+		this.messages.send.setPollService(this.polls);
 		this.attachments = new AttachmentUploadService(
 			channelRepository,
 			userRepository,

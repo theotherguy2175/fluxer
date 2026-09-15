@@ -61,6 +61,7 @@ function registerCronJobs(cron: CronScheduler): void {
 	}
 	cron.upsert('processInactivityDeletions', 'processInactivityDeletions', {}, '0 0 */6 * * *', {ledger: false});
 	cron.upsert('expireAttachments', 'expireAttachments', {}, '0 0 */12 * * *', {ledger: false});
+	cron.upsert('expirePolls', 'expirePolls', {}, '0 * * * * *', {ledger: false});
 	cron.upsert('prunePostgresKvTtl', 'prunePostgresKvTtl', {}, '0 */5 * * * *', {ledger: false});
 	cron.upsert('syncDiscoveryIndex', 'syncDiscoveryIndex', {}, '0 */15 * * * *', {ledger: false});
 	if (Config.blocklistFeeds.enabled) {

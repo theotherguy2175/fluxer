@@ -43,6 +43,7 @@ export const AuditLogActionTypeSchema = createInt32EnumType(
 		[AuditLogActionType.SOUNDBOARD_SOUND_CREATE, 'SOUNDBOARD_SOUND_CREATE', 'Soundboard sound was created'],
 		[AuditLogActionType.SOUNDBOARD_SOUND_UPDATE, 'SOUNDBOARD_SOUND_UPDATE', 'Soundboard sound was updated'],
 		[AuditLogActionType.SOUNDBOARD_SOUND_DELETE, 'SOUNDBOARD_SOUND_DELETE', 'Soundboard sound was deleted'],
+		[AuditLogActionType.POLL_END, 'POLL_END', 'Poll was ended early'],
 	],
 	'The type of action that occurred',
 	'AuditLogActionType',

@@ -8,16 +8,18 @@ import type {MessageDispatchService} from '@app/api/channel/services/message/Mes
 import {isOperationDisabled, purgeMessageAttachments} from '@app/api/channel/services/message/MessageHelpers';
 import type {MessageSearchService} from '@app/api/channel/services/message/MessageSearchService';
 import type {MessageValidationService} from '@app/api/channel/services/message/MessageValidationService';
+import {MessagePollRepository} from '@app/api/channel/services/poll/MessagePollRepository';
 import type {GuildAuditLogService} from '@app/api/guild/GuildAuditLogService';
 import type {IPurgeQueue} from '@app/api/infrastructure/CachePurgeQueue';
 import type {IGatewayService} from '@app/api/infrastructure/IGatewayService';
 import type {IStorageService} from '@app/api/infrastructure/IStorageService';
+import {Logger} from '@app/api/Logger';
 import type {RequestCache} from '@app/api/middleware/RequestCacheMiddleware';
 import type {Channel} from '@app/api/models/Channel';
 import type {Message} from '@app/api/models/Message';
 import type {Webhook} from '@app/api/models/Webhook';
 import {AuditLogActionType} from '@fluxer/constants/src/AuditLogActionType';
-import {ChannelTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
+import {ChannelTypes, MessageFlags, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {GuildOperations} from '@fluxer/constants/src/GuildConstants';
 import {ValidationErrorCodes} from '@fluxer/constants/src/ValidationErrorCodes';
 import {InvalidChannelTypeError} from '@fluxer/errors/src/domains/channel/InvalidChannelTypeError';
@@ -83,6 +85,12 @@ export class MessageDeleteService {
 			message.authorId || createUserID(0n),
 			message.pinnedTimestamp || undefined,
 		);
+		if ((message.flags & MessageFlags.HAS_POLL) !== 0) {
+			void new MessagePollRepository()
+				.getPoll(messageId)
+				.then((poll) => (poll ? new MessagePollRepository().deletePoll(poll) : undefined))
+				.catch((error) => Logger.warn({error, messageId: messageId.toString()}, 'Failed to delete poll rows'));
+		}
 		await this.deps.dispatchService.dispatchMessageDelete({channel, messageId, message});
 		if (message.pinnedTimestamp) {
 			await this.deps.dispatchService.dispatchEvent({
@@ -133,6 +141,12 @@ export class MessageDeleteService {
 			message.authorId || createUserID(0n),
 			message.pinnedTimestamp || undefined,
 		);
+		if ((message.flags & MessageFlags.HAS_POLL) !== 0) {
+			void new MessagePollRepository()
+				.getPoll(messageId)
+				.then((poll) => (poll ? new MessagePollRepository().deletePoll(poll) : undefined))
+				.catch((error) => Logger.warn({error, messageId: messageId.toString()}, 'Failed to delete poll rows'));
+		}
 		await this.deps.dispatchService.dispatchMessageDelete({channel, messageId, message});
 		if (message.pinnedTimestamp) {
 			await this.deps.dispatchService.dispatchEvent({

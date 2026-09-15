@@ -85,6 +85,10 @@ extract_session_id_if_needed(message_reaction_add, EventData) ->
     guild_dispatch_decorate:extract_and_remove_session_id(EventData);
 extract_session_id_if_needed(message_reaction_remove, EventData) ->
     guild_dispatch_decorate:extract_and_remove_session_id(EventData);
+extract_session_id_if_needed(message_poll_vote_add, EventData) ->
+    guild_dispatch_decorate:extract_and_remove_session_id(EventData);
+extract_session_id_if_needed(message_poll_vote_remove, EventData) ->
+    guild_dispatch_decorate:extract_and_remove_session_id(EventData);
 extract_session_id_if_needed(_, EventData) ->
     {undefined, EventData}.
 

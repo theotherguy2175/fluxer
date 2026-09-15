@@ -5,6 +5,7 @@ import type {Attachment} from '@app/api/models/Attachment';
 import type {Embed} from '@app/api/models/Embed';
 import type {Message} from '@app/api/models/Message';
 import type {MessageSnapshot} from '@app/api/models/MessageSnapshot';
+import {MessageFlags} from '@fluxer/constants/src/ChannelConstants';
 import type {SearchableMessage} from '@fluxer/schema/src/contracts/search/SearchDocumentTypes';
 import {snowflakeToDate} from '@fluxer/snowflake/src/Snowflake';
 
@@ -219,7 +220,7 @@ export function convertToSearchableMessage(message: Message, authorIsBot?: boole
 		mentionEveryone: message.mentionEveryone,
 		hasLink: acc.hasLink,
 		hasEmbed: acc.hasEmbed,
-		hasPoll: false,
+		hasPoll: (message.flags & MessageFlags.HAS_POLL) !== 0,
 		hasFile: acc.hasFile,
 		hasVideo: acc.hasVideo,
 		hasImage: acc.hasImage,

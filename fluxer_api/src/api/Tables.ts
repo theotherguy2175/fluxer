@@ -255,6 +255,16 @@ import {
 	type VisionarySlotRow,
 } from '@app/api/database/types/PaymentTypes';
 import {
+	GUILD_POLL_SETTINGS_COLUMNS,
+	type GuildPollSettingsRow,
+	MESSAGE_POLL_BY_EXPIRY_COLUMNS,
+	MESSAGE_POLL_COLUMNS,
+	MESSAGE_POLL_VOTE_COLUMNS,
+	type MessagePollByExpiryRow,
+	type MessagePollRow,
+	type MessagePollVoteRow,
+} from '@app/api/database/types/PollTypes';
+import {
 	DSA_REPORT_EMAIL_VERIFICATION_COLUMNS,
 	DSA_REPORT_TICKET_COLUMNS,
 	type DSAReportEmailVerificationRow,
@@ -561,6 +571,32 @@ export const GuildSoundboardSettings = defineTable<GuildSoundboardSettingsRow, '
 	name: 'guild_soundboard_settings',
 	columns: GUILD_SOUNDBOARD_SETTINGS_COLUMNS,
 	primaryKey: ['guild_id'],
+});
+export const GuildPollSettings = defineTable<GuildPollSettingsRow, 'guild_id'>({
+	name: 'guild_poll_settings',
+	columns: GUILD_POLL_SETTINGS_COLUMNS,
+	primaryKey: ['guild_id'],
+});
+export const MessagePolls = defineTable<MessagePollRow, 'message_id'>({
+	name: 'message_polls',
+	columns: MESSAGE_POLL_COLUMNS,
+	primaryKey: ['message_id'],
+});
+export const MessagePollVotes = defineTable<MessagePollVoteRow, 'message_id' | 'answer_id' | 'user_id', 'message_id'>({
+	name: 'message_poll_votes',
+	columns: MESSAGE_POLL_VOTE_COLUMNS,
+	primaryKey: ['message_id', 'answer_id', 'user_id'],
+	partitionKey: ['message_id'],
+});
+export const MessagePollsByExpiry = defineTable<
+	MessagePollByExpiryRow,
+	'expiry_bucket' | 'expires_at' | 'message_id',
+	'expiry_bucket'
+>({
+	name: 'message_polls_by_expiry',
+	columns: MESSAGE_POLL_BY_EXPIRY_COLUMNS,
+	primaryKey: ['expiry_bucket', 'expires_at', 'message_id'],
+	partitionKey: ['expiry_bucket'],
 });
 export const GuildRoles = defineTable<GuildRoleRow, 'guild_id' | 'role_id'>({
 	name: 'guild_roles',

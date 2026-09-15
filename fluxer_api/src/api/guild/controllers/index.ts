@@ -7,6 +7,7 @@ import {GuildDiscoveryController} from '@app/api/guild/controllers/GuildDiscover
 import {GuildEmojiController} from '@app/api/guild/controllers/GuildEmojiController';
 import {GuildMemberController} from '@app/api/guild/controllers/GuildMemberController';
 import {GuildMemberSearchController} from '@app/api/guild/controllers/GuildMemberSearchController';
+import {GuildPollSettingsController} from '@app/api/guild/controllers/GuildPollSettingsController';
 import {GuildRoleController} from '@app/api/guild/controllers/GuildRoleController';
 import {GuildStickerController} from '@app/api/guild/controllers/GuildStickerController';
 import {GuildSoundboardController} from '@app/api/guild/soundboard/GuildSoundboardController';
@@ -23,6 +24,7 @@ export function registerGuildControllers(app: HonoApp) {
 	GuildStickerController(app);
 	GuildSoundboardController(app);
 	GuildSoundboardPlayController(app);
+	GuildPollSettingsController(app);
 	GuildAuditLogController(app);
 	GuildDiscoveryController(app);
 }

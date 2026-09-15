@@ -31,6 +31,7 @@ import type {MessagePersistenceService} from '@app/api/channel/services/message/
 import type {MessageProcessingService} from '@app/api/channel/services/message/MessageProcessingService';
 import type {MessageSearchService} from '@app/api/channel/services/message/MessageSearchService';
 import type {MessageValidationService} from '@app/api/channel/services/message/MessageValidationService';
+import type {MessagePollService, PreparedPoll} from '@app/api/channel/services/poll/MessagePollService';
 import {SYSTEM_USER_ID} from '@app/api/constants/Core';
 import type {MessageAttachment, MessageReference} from '@app/api/database/types/MessageTypes';
 import type {IFavoriteMemeRepository} from '@app/api/favorite_meme/IFavoriteMemeRepository';
@@ -115,6 +116,13 @@ interface SendMentionData {
 }
 
 export class MessageSendService {
+	private pollService: MessagePollService | null = null;
+
+	/** Set by ChannelService once the poll service exists; polls are rejected until then. */
+	setPollService(pollService: MessagePollService): void {
+		this.pollService = pollService;
+	}
+
 	constructor(private readonly deps: MessageSendServiceDeps) {}
 
 	private cacheMentionChannels(params: {
@@ -945,6 +953,11 @@ export class MessageSendService {
 				});
 			}
 		}
+		let preparedPoll: PreparedPoll | null = null;
+		if (data.poll) {
+			if (!this.pollService) throw new FeatureTemporarilyDisabledError();
+			preparedPoll = await this.pollService.prepare({authChannel, poll: data.poll});
+		}
 		const dmRecipientId = this.getOneToOneDmRecipientId(channel, user.id);
 		let suppressDmRecipientDelivery = false;
 		if (dmRecipientId && !user.isBot) {
@@ -954,13 +967,22 @@ export class MessageSendService {
 			});
 			suppressDmRecipientDelivery = spamDecision.shouldSuppressRecipientDelivery;
 		}
+		if (preparedPoll && this.pollService) {
+			await this.pollService.createPollForMessage({
+				messageId,
+				channelId,
+				guildId: guild?.id ? createGuildID(BigInt(guild.id)) : null,
+				authorId: user.id,
+				prepared: preparedPoll,
+			});
+		}
 		const {message, enqueueDeferredEmbeds} = await this.deps.persistenceService.createMessage({
 			messageId,
 			channelId,
 			user,
 			type: this.getMessageTypeForRequest(data),
 			content: data.content,
-			flags: this.deps.validationService.calculateMessageFlags(data),
+			flags: this.deps.validationService.calculateMessageFlags(data) | (preparedPoll ? MessageFlags.HAS_POLL : 0),
 			embeds: data.embeds,
 			attachments: attachmentsToProcess,
 			attachmentUploadUserId: user.id,

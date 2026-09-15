@@ -3,6 +3,7 @@
 import type {ChannelID, GuildID, MessageID, UserID} from '@app/api/BrandedTypes';
 import {createUserID} from '@app/api/BrandedTypes';
 import {Config} from '@app/api/Config';
+import {attachPollsToResponses} from '@app/api/channel/services/poll/MessagePollResponseBuilder';
 import {throwForSvcErrorReply} from '@app/api/infrastructure/SvcErrorReply';
 import {Logger} from '@app/api/Logger';
 import type {Channel} from '@app/api/models/Channel';
@@ -110,7 +111,7 @@ export class MessageResponseDataService {
 			include_reactions: true,
 		});
 		if (typeof response === 'object' && 'FoundApiMany' in response) {
-			return response.FoundApiMany;
+			return attachPollsToResponses(response.FoundApiMany, params.userId);
 		}
 		throw new Error(`[message-response-service] unexpected ListResponses response: ${JSON.stringify(response)}`);
 	}
@@ -153,7 +154,7 @@ export class MessageResponseDataService {
 		});
 		if (response === 'NotFound') return null;
 		if (typeof response === 'object' && 'FoundApi' in response) {
-			return response.FoundApi;
+			return (await attachPollsToResponses([response.FoundApi], params.userId))[0];
 		}
 		throw new Error(`[message-response-service] unexpected GetResponseById response: ${JSON.stringify(response)}`);
 	}
@@ -182,7 +183,11 @@ export class MessageResponseDataService {
 			tts: params.tts,
 		});
 		if (typeof response === 'object' && 'FoundApi' in response) {
-			return response.FoundApi;
+			// Broadcast builds (includeReactions === false) fan out to every viewer, so
+			// per-viewer fields must not reflect the actor. Clients keep their own me_voted.
+			return (
+				await attachPollsToResponses([response.FoundApi], params.includeReactions === false ? null : params.userId)
+			)[0];
 		}
 		throw new Error(`[message-response-service] unexpected BuildResponse response: ${JSON.stringify(response)}`);
 	}
@@ -251,7 +256,7 @@ export class MessageResponseDataService {
 			}
 			responses.push(...response.FoundApiMany);
 		}
-		return responses;
+		return attachPollsToResponses(responses, params.userId);
 	}
 
 	async buildMessagesForChannels(params: {
