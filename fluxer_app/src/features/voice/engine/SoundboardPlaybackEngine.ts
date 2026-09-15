@@ -5,11 +5,13 @@ import StreamerMode from '@app/features/streamer_mode/state/StreamerMode';
 import Sound from '@app/features/ui/state/Sound';
 import {getEffectiveAudioState} from '@app/features/voice/engine/VoiceEffectiveAudioState';
 import VoiceSettings from '@app/features/voice/state/VoiceSettings';
+import {SOUNDBOARD_MAX_VOLUME} from '@fluxer/constants/src/SoundboardConstants';
 
 const logger = new Logger('SoundboardPlaybackEngine');
 
 const BUFFER_CACHE_LIMIT = 16;
 const MAX_MASTER_VOLUME_PERCENT = 200;
+const MAX_GAIN = 4;
 
 interface PlayParams {
 	hash: string;
@@ -110,7 +112,7 @@ class SoundboardPlaybackEngine {
 
 	async play(params: PlayParams): Promise<void> {
 		const {hash, url} = params;
-		const soundVolume = Math.max(0, Math.min(1, params.volume ?? 1));
+		const soundVolume = Math.max(0, Math.min(SOUNDBOARD_MAX_VOLUME, params.volume ?? 1));
 		if (getEffectiveAudioState().effectiveDeaf) return;
 		if (StreamerMode.shouldDisableSounds) return;
 		if (!Sound.getSoundEnabled()) return;
@@ -123,9 +125,13 @@ class SoundboardPlaybackEngine {
 		const buffer = await this.fetchAndDecode(url, hash);
 		if (!buffer) return;
 		const outputVolumePct = VoiceSettings.getOutputVolume();
+		// Chain: voice output volume × app sounds master × this member's soundboard
+		// slider × the sound's own volume (which may exceed 1). Hard-capped so a
+		// stack of boosts cannot blow out the output.
+		const soundboardVolume = VoiceSettings.getSoundboardVolume() / 100;
 		const gainValue = Math.max(
 			0,
-			Math.min(3, (outputVolumePct / 100) * this.getMasterVolumeMultiplier() * soundVolume),
+			Math.min(MAX_GAIN, (outputVolumePct / 100) * this.getMasterVolumeMultiplier() * soundboardVolume * soundVolume),
 		);
 		try {
 			const source = ctx.createBufferSource();

@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import AppStorage from '@app/features/platform/state/PersistentStorage';
+
+const SOUNDBOARD_USER_VOLUME_MAX = 200;
+
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {makePersistent} from '@app/features/platform/utils/MobXPersistence';
 import type {
@@ -373,6 +376,8 @@ class VoiceSettings {
 	videoDeviceId = 'default';
 	inputVolume = 100;
 	outputVolume = 100;
+	// This member's own soundboard level, 0–200 %, on top of the sound's volume.
+	soundboardVolume = 100;
 	echoCancellation = true;
 	noiseSuppression = DEFAULT_BROWSER_NOISE_SUPPRESSION;
 	autoGainControl = true;
@@ -454,6 +459,7 @@ class VoiceSettings {
 				getVideoDeviceId: false,
 				getInputVolume: false,
 				getOutputVolume: false,
+				getSoundboardVolume: false,
 				getEchoCancellation: false,
 				getNoiseSuppression: false,
 				getAutoGainControl: false,
@@ -567,6 +573,7 @@ class VoiceSettings {
 			'videoDeviceId',
 			'inputVolume',
 			'outputVolume',
+			'soundboardVolume',
 			'echoCancellation',
 			'noiseSuppression',
 			'autoGainControl',
@@ -752,6 +759,15 @@ class VoiceSettings {
 
 	getOutputVolume(): number {
 		return this.outputVolume;
+	}
+
+	getSoundboardVolume(): number {
+		return this.soundboardVolume;
+	}
+
+	setSoundboardVolume(value: number): void {
+		this.soundboardVolume = Math.max(0, Math.min(SOUNDBOARD_USER_VOLUME_MAX, Math.round(value)));
+		this.notifyListeners();
 	}
 
 	getEchoCancellation(): boolean {

@@ -22,10 +22,12 @@ import {Logger} from '@app/features/platform/utils/AppLogger';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
 import {Input} from '@app/features/ui/components/form/FormInput';
+import {Slider} from '@app/features/ui/components/Slider';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
 import styles from '@app/features/voice/components/SoundboardMenu.module.css';
 import {SoundboardSoundModal} from '@app/features/voice/components/SoundboardSoundModal';
 import SoundboardPlaybackEngine from '@app/features/voice/engine/SoundboardPlaybackEngine';
+import VoiceSettings from '@app/features/voice/state/VoiceSettings';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {SOUNDBOARD_DEFAULT_MAX_DURATION_MS, SOUNDBOARD_MAX_BYTES} from '@fluxer/constants/src/SoundboardConstants';
 import type {GuildSoundboardSoundResponse} from '@fluxer/schema/src/domains/guild/GuildSoundboardSchemas';
@@ -70,6 +72,11 @@ const NO_MATCHES_DESCRIPTOR = msg({
 const ADD_SOUND_DESCRIPTOR = msg({
 	message: 'Add Sound',
 	comment: 'Tile in the voice soundboard popover to upload a new sound.',
+});
+const MY_VOLUME_DESCRIPTOR = msg({
+	message: 'Soundboard volume (only you)',
+	comment:
+		'Accessible label of the slider in the soundboard menu that sets how loud soundboard sounds play for this member on this device.',
 });
 const MANAGE_DESCRIPTOR = msg({
 	message: 'Manage soundboard',
@@ -227,6 +234,7 @@ export const SoundboardMenu: React.FC<SoundboardMenuProps> = observer(({guildId,
 	}, [guildId]);
 	useEffect(() => subscribeToGuildSoundboardUpdates(guildId, setSounds), [guildId]);
 
+	const soundboardVolume = VoiceSettings.getSoundboardVolume();
 	const canAdd = Permission.can(Permissions.CREATE_EXPRESSIONS, {guildId});
 	const canManage = canAdd || Permission.can(Permissions.MANAGE_EXPRESSIONS, {guildId});
 
@@ -341,6 +349,22 @@ export const SoundboardMenu: React.FC<SoundboardMenuProps> = observer(({guildId,
 						<GearSixIcon size={18} data-flx="voice.soundboard-menu.gear-icon" />
 					</button>
 				)}
+			</div>
+			<div className={styles.volumeRow} data-flx="voice.soundboard-menu.volume-row">
+				<SpeakerHighIcon size={16} data-flx="voice.soundboard-menu.volume-icon" />
+				<Slider
+					value={soundboardVolume}
+					defaultValue={soundboardVolume}
+					factoryDefaultValue={100}
+					minValue={0}
+					maxValue={200}
+					step={1}
+					ariaLabel={i18n._(MY_VOLUME_DESCRIPTOR)}
+					onValueRender={(value) => `${Math.round(value)}%`}
+					onValueChange={(value) => VoiceSettings.setSoundboardVolume(value)}
+					asValueChanges={(value) => VoiceSettings.setSoundboardVolume(value)}
+					data-flx="voice.soundboard-menu.volume-slider"
+				/>
 			</div>
 			<div className={styles.body} data-flx="voice.soundboard-menu.body">
 				{favorites.length > 0 && (

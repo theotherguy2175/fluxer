@@ -29,6 +29,7 @@ import {SoundWaveform} from '@app/features/voice/components/SoundWaveform';
 import {encodeAudioBufferSliceToWav} from '@app/features/voice/utils/AudioWavEncode';
 import {
 	SOUNDBOARD_MAX_BYTES,
+	SOUNDBOARD_MAX_VOLUME,
 	SOUNDBOARD_MIN_DURATION_MS,
 	SOUNDBOARD_NAME_MAX_LENGTH,
 } from '@fluxer/constants/src/SoundboardConstants';
@@ -311,7 +312,7 @@ export const SoundboardSoundModal: React.FC<SoundboardSoundModalProps> = observe
 		if (saving) return;
 		setSaving(true);
 		try {
-			const volume = Math.max(0, Math.min(1, volumePercent / 100));
+			const volume = Math.max(0, Math.min(SOUNDBOARD_MAX_VOLUME, volumePercent / 100));
 			if (props.mode === 'create') {
 				const buffer = audioBuffer;
 				if (!buffer || !file) throw new Error('Audio not ready');
@@ -544,7 +545,7 @@ export const SoundboardSoundModal: React.FC<SoundboardSoundModalProps> = observe
 							defaultValue={volumePercent}
 							factoryDefaultValue={100}
 							minValue={0}
-							maxValue={100}
+							maxValue={SOUNDBOARD_MAX_VOLUME * 100}
 							step={1}
 							ariaLabel={i18n._(VOLUME_LABEL_DESCRIPTOR)}
 							onValueRender={formatPercent}

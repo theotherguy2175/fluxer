@@ -5,6 +5,7 @@ import {
 	SOUNDBOARD_MAX_BYTES,
 	SOUNDBOARD_MAX_DURATION_CEILING_MS,
 	SOUNDBOARD_MAX_SOUNDS_CEILING,
+	SOUNDBOARD_MAX_VOLUME,
 	SOUNDBOARD_MIN_DURATION_MS,
 	SOUNDBOARD_NAME_MAX_LENGTH,
 	SOUNDBOARD_SOUND_EXTENSIONS,
@@ -31,7 +32,12 @@ const EmojiIdField = SnowflakeType.nullish().describe('ID of a custom emoji from
 const EmojiNameField = createStringType(1, SOUNDBOARD_EMOJI_MAX_LENGTH)
 	.nullish()
 	.describe('Unicode emoji character (ignored when emoji_id is provided)');
-const VolumeField = z.number().min(0).max(1).optional().describe('Playback volume, 0 to 1 (default 1)');
+const VolumeField = z
+	.number()
+	.min(0)
+	.max(SOUNDBOARD_MAX_VOLUME)
+	.optional()
+	.describe('Playback volume as a multiplier, 0 to 2 (default 1; above 1 boosts the sound)');
 
 function hasValidEmoji(value: {emoji_id?: unknown; emoji_name?: unknown}): boolean {
 	if (value.emoji_id != null) return true;
@@ -73,7 +79,7 @@ export const GuildSoundboardSoundResponse = z.object({
 	emoji_id: SnowflakeStringType.nullable(),
 	emoji_name: z.string().nullable(),
 	emoji_animated: z.boolean(),
-	volume: z.number().min(0).max(1),
+	volume: z.number().min(0).max(SOUNDBOARD_MAX_VOLUME),
 	hash: z.string(),
 	extension: z.enum(SoundboardSoundExtensionValues),
 	content_type: z.string(),

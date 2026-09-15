@@ -256,3 +256,16 @@
 	font-size: 0.8125rem;
 	color: var(--text-primary-muted);
 }
+
+.volumeRow {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0 0.75rem 0.5rem;
+	color: var(--text-primary-muted);
+}
+
+.volumeRow > :last-child {
+	flex: 1;
+	min-width: 0;
+}

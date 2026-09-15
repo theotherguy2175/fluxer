@@ -5,6 +5,8 @@ export const SOUNDBOARD_MAX_BYTES = 512 * 1024;
 export const SOUNDBOARD_MIN_DURATION_MS = 100;
 export const SOUNDBOARD_NAME_MAX_LENGTH = 32;
 export const SOUNDBOARD_EMOJI_MAX_LENGTH = 32;
+// Per-sound playback volume, as a multiplier. 1 = as uploaded; up to 2 = +100%.
+export const SOUNDBOARD_MAX_VOLUME = 2;
 
 export const SOUNDBOARD_DEFAULT_MAX_DURATION_MS = 5000;
 export const SOUNDBOARD_MAX_DURATION_CEILING_MS = 30_000;

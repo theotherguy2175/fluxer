@@ -8,6 +8,7 @@ import {
 	SOUNDBOARD_DEFAULT_MAX_DURATION_MS,
 	SOUNDBOARD_DEFAULT_MAX_SOUNDS,
 	SOUNDBOARD_MAX_BYTES,
+	SOUNDBOARD_MAX_VOLUME,
 	SOUNDBOARD_MIN_DURATION_MS,
 	SOUNDBOARD_NAME_MAX_LENGTH,
 	SOUNDBOARD_SOUND_EXT_TO_MIME,
@@ -79,7 +80,7 @@ interface UpdateSoundboardSoundParams {
 
 function clampVolume(value: number | undefined, fallback: number): number {
 	if (value == null || !Number.isFinite(value)) return fallback;
-	return Math.min(1, Math.max(0, value));
+	return Math.min(SOUNDBOARD_MAX_VOLUME, Math.max(0, value));
 }
 
 export interface SoundboardSoundEntry {

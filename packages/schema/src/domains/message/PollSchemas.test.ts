@@ -51,3 +51,12 @@ describe('GuildPollSettingsUpdateRequest', () => {
 		expect(GuildPollSettingsUpdateRequest.safeParse({max_question_length: 1001}).success).toBe(false);
 	});
 });
+
+describe('soundboard volume bounds', () => {
+	it('allows boosting a sound up to 200%', async () => {
+		const {GuildSoundboardSoundUpdateRequest} = await import('@fluxer/schema/src/domains/guild/GuildSoundboardSchemas');
+		expect(GuildSoundboardSoundUpdateRequest.safeParse({volume: 1.5}).success).toBe(true);
+		expect(GuildSoundboardSoundUpdateRequest.safeParse({volume: 2}).success).toBe(true);
+		expect(GuildSoundboardSoundUpdateRequest.safeParse({volume: 2.01}).success).toBe(false);
+	});
+});
