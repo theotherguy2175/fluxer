@@ -40,6 +40,12 @@ import {
 	STICKER_MAX_SIZE,
 } from '@fluxer/constants/src/LimitConstants';
 import {
+	POLL_DEFAULT_MAX_ANSWER_LENGTH,
+	POLL_DEFAULT_MAX_ANSWERS,
+	POLL_DEFAULT_MAX_DURATION_HOURS,
+	POLL_DEFAULT_MAX_QUESTION_LENGTH,
+} from '@fluxer/constants/src/PollConstants';
+import {
 	SOUNDBOARD_DEFAULT_MAX_DURATION_MS,
 	SOUNDBOARD_DEFAULT_MAX_SOUNDS,
 } from '@fluxer/constants/src/SoundboardConstants';
@@ -54,6 +60,7 @@ export const DEFAULT_RESTRICTED_LIMITS: Record<LimitKey, number> = {
 	feature_early_access: 0,
 	feature_global_expressions: 0,
 	feature_guild_soundboard: 1,
+	feature_message_polls: 1,
 	feature_higher_video_quality: 0,
 	feature_per_guild_profiles: 0,
 	feature_voice_entrance_sounds: 0,
@@ -86,6 +93,10 @@ export const DEFAULT_RESTRICTED_LIMITS: Record<LimitKey, number> = {
 	max_relationships: MAX_RELATIONSHIPS,
 	max_soundboard_sound_duration_ms: SOUNDBOARD_DEFAULT_MAX_DURATION_MS,
 	max_soundboard_sounds_per_guild: SOUNDBOARD_DEFAULT_MAX_SOUNDS,
+	max_poll_answers: POLL_DEFAULT_MAX_ANSWERS,
+	max_poll_question_length: POLL_DEFAULT_MAX_QUESTION_LENGTH,
+	max_poll_answer_length: POLL_DEFAULT_MAX_ANSWER_LENGTH,
+	max_poll_duration_hours: POLL_DEFAULT_MAX_DURATION_HOURS,
 	max_users_per_message_reaction: MAX_USERS_PER_MESSAGE_REACTION,
 	max_voice_message_duration: MAX_VOICE_MESSAGE_DURATION,
 	max_webhooks_per_channel: MAX_WEBHOOKS_PER_CHANNEL,

@@ -111,8 +111,13 @@ know which messages need a poll lookup, mirroring `has_reaction`.
 4. Worker: `ExpirePolls`.
 5. Client: settings tab → composer modal → message renderer → gateway
    handlers → result message.
-6. i18n extract + locale seeding (see README: never skip this), backfill SQL
-   for `SEND_POLLS`, tests alongside the soundboard's.
+6. i18n: `pnpm lingui:extract` + seed the app catalogs; for the error
+   catalogs (`packages/errors`) **translate** the new keys — the integrity
+   test rejects English placeholders in non-English locales, and the compile
+   step bakes English in for anything untranslated, so there is no passing
+   "untranslated" state. (The soundboard's 9 error keys need the same; both
+   are done together here.) Backfill SQL for `SEND_POLLS`; tests alongside
+   the soundboard's.
 
 ## Deliberate non-goals for v1
 

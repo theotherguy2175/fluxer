@@ -44,6 +44,7 @@ export const MessageTypes = {
 	CHANNEL_PINNED_MESSAGE: 6,
 	USER_JOIN: 7,
 	REPLY: 19,
+	POLL_RESULT: 46,
 	CLIENT_SYSTEM: 99,
 } as const;
 
@@ -91,11 +92,13 @@ export const MessageFlags = {
 	SUPPRESS_EMBEDS: 1 << 2,
 	SUPPRESS_NOTIFICATIONS: 1 << 12,
 	VOICE_MESSAGE: 1 << 13,
+	HAS_POLL: 1 << 14,
 } as const;
 export const MessageFlagsDescriptions: Record<keyof typeof MessageFlags, string> = {
 	SUPPRESS_EMBEDS: 'Do not include embeds when serialising this message',
 	SUPPRESS_NOTIFICATIONS: 'This message will not trigger push or desktop notifications',
 	VOICE_MESSAGE: 'This message is a voice message',
+	HAS_POLL: 'This message carries a poll',
 };
 export const SENDABLE_MESSAGE_FLAGS =
 	MessageFlags.SUPPRESS_EMBEDS | MessageFlags.SUPPRESS_NOTIFICATIONS | MessageFlags.VOICE_MESSAGE;
@@ -172,6 +175,7 @@ export const Permissions = {
 	MODERATE_MEMBERS: 1n << 40n,
 	USE_SOUNDBOARD: 1n << 42n,
 	CREATE_EXPRESSIONS: 1n << 43n,
+	SEND_POLLS: 1n << 49n,
 	PIN_MESSAGES: 1n << 51n,
 	BYPASS_SLOWMODE: 1n << 52n,
 	UPDATE_RTC_REGION: 1n << 53n,
@@ -211,6 +215,7 @@ export const PermissionsDescriptions: Record<keyof typeof Permissions, string> =
 	USE_EXTERNAL_STICKERS: 'Allows using stickers from other guilds',
 	MODERATE_MEMBERS: 'Allows timing out users',
 	USE_SOUNDBOARD: 'Allows playing soundboard sounds in a voice channel',
+	SEND_POLLS: 'Allows creating polls in text channels',
 	CREATE_EXPRESSIONS: 'Allows creating guild expressions',
 	PIN_MESSAGES: 'Allows pinning messages',
 	BYPASS_SLOWMODE: 'Allows bypassing slowmode',
@@ -234,6 +239,7 @@ export const DEFAULT_PERMISSIONS =
 	Permissions.CHANGE_NICKNAME |
 	Permissions.USE_EXTERNAL_STICKERS |
 	Permissions.USE_SOUNDBOARD |
+	Permissions.SEND_POLLS |
 	Permissions.VIEW_CHANNEL_MEMBERS;
 export const ElevatedPermissions =
 	Permissions.KICK_MEMBERS |

@@ -584,6 +584,17 @@ export const ERROR_I18N_MESSAGES = {
 		'This instance limits this to {max}. Ask an instance admin to raise the limit.',
 	'soundboard_sounds.max_sounds_below_installed':
 		'This community already has {installed} sounds. Delete some before lowering the limit to {max}.',
+	'polls.question_length_invalid': 'Poll questions must be between 1 and {max, number} characters.',
+	'polls.answer_length_invalid': 'Poll answers must be between 1 and {max, number} characters.',
+	'polls.answer_count_invalid': 'Polls need between {min, number} and {max, number} answers.',
+	'polls.duration_invalid': 'Polls must stay open between {min, number} and {max, number} hours.',
+	'polls.invalid_emoji': 'Choose a custom emoji from this community or a single standard emoji.',
+	'polls.not_found': 'This message has no poll.',
+	'polls.answer_not_found': 'That answer is not part of this poll.',
+	'polls.already_finalized': 'This poll has already ended.',
+	'polls.multiselect_not_allowed': 'This poll only allows one answer per person.',
+	'polls.setting_exceeds_instance_limit':
+		'This instance limits this to {max}. Ask an instance admin to raise the limit.',
 } as const;
 
 export type ErrorI18nCatalog = typeof ERROR_I18N_MESSAGES;
