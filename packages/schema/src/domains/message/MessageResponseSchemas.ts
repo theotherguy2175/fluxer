@@ -18,6 +18,7 @@ import {
 	SnowflakeStringType,
 } from '@fluxer/schema/src/primitives/SchemaPrimitives';
 import {z} from 'zod';
+import {PollResponse} from '@fluxer/schema/src/domains/message/PollSchemas';
 
 export const MessageAttachmentResponse = z.object({
 	id: SnowflakeStringType.describe('The unique identifier for this attachment'),
@@ -154,6 +155,7 @@ const MessageBaseResponseSchema = z.object({
 	message_snapshots: z.array(MessageSnapshotResponse).nullish().describe('Snapshots of forwarded messages'),
 	nonce: z.string().nullish().describe('A client-provided value for message deduplication'),
 	call: MessageCallResponse.nullish().describe('Call information if this message represents a call'),
+	poll: PollResponse.nullish().describe('The poll attached to this message, if any'),
 });
 
 type MessageBaseResponse = z.infer<typeof MessageBaseResponseSchema>;

@@ -55,6 +55,7 @@ const MESSAGE_TYPE_DELETABLE = {
 	[MessageTypes.REPLY]: true,
 	[MessageTypes.CHANNEL_PINNED_MESSAGE]: true,
 	[MessageTypes.USER_JOIN]: true,
+	[MessageTypes.POLL_RESULT]: true,
 	[MessageTypes.RECIPIENT_ADD]: false,
 	[MessageTypes.RECIPIENT_REMOVE]: false,
 	[MessageTypes.CALL]: false,

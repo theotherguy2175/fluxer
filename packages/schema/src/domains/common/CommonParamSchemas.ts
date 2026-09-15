@@ -62,6 +62,12 @@ export type GuildIdUserIdRoleIdParam = z.infer<typeof GuildIdUserIdRoleIdParam>;
 
 export const ChannelIdMessageIdParam = ChannelIdParam.extend(MessageIdParam.shape);
 
+export const ChannelIdMessageIdAnswerIdParam = ChannelIdMessageIdParam.extend({
+	answer_id: z.coerce.number().int().min(1).describe('The poll answer ID'),
+});
+
+export type ChannelIdMessageIdAnswerIdParam = z.infer<typeof ChannelIdMessageIdAnswerIdParam>;
+
 export type ChannelIdMessageIdParam = z.infer<typeof ChannelIdMessageIdParam>;
 
 export const ChannelIdUserIdParam = ChannelIdParam.extend(UserIdParam.shape);
