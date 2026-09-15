@@ -20,7 +20,7 @@ msgid "... turn dense mode on. Nice!"
 msgstr "... activezi modul dens. Super!"
 
 #. Button or menu action label in the channel and chat user message. Keep it concise.
-#: src/features/channel/components/MessageAttachments.tsx:378
+#: src/features/channel/components/MessageAttachments.tsx:379
 #: src/features/channel/components/UserMessage.tsx:62
 msgid "(edited)"
 msgstr "(editat)"
@@ -131,7 +131,7 @@ msgstr "{actor} a adăugat emoji-ul {namedTarget}."
 msgid "{actor} added the soundboard sound {name}"
 msgstr "{actor} added the soundboard sound {name}"
 
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:808
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:814
 msgid "{actor} added the soundboard sound {namedTarget}."
 msgstr "{actor} added the soundboard sound {namedTarget}."
 
@@ -433,7 +433,7 @@ msgstr "{actor} a șters rolul {role}"
 msgid "{actor} deleted the soundboard sound {name}"
 msgstr "{actor} deleted the soundboard sound {name}"
 
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:820
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:826
 msgid "{actor} deleted the soundboard sound {namedTarget}."
 msgstr "{actor} deleted the soundboard sound {namedTarget}."
 
@@ -493,6 +493,16 @@ msgstr "{actor} s-a deconectat din {channel}"
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogMemberMessages.ts:402
 msgid "{actor} disconnected from voice"
 msgstr "{actor} s-a deconectat de la voce"
+
+#. Activity log summary for a poll that a moderator closed before its timer ran out. {actor} is the member who ended it, shown as a clickable user chip, or the word System.
+#: src/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardMessages.ts:60
+msgid "{actor} ended a poll early"
+msgstr "{actor} ended a poll early"
+
+#. placeholder {0}: channelNode ? <> in {channelNode}</> : null
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:808
+msgid "{actor} ended a poll early{0}."
+msgstr "{actor} ended a poll early{0}."
 
 #. Activity log summary for a role that was given to a member. {actor} is the member who gave the role, shown as a clickable user chip, or the word System. {target} is the member who got the role, shown as a clickable user chip. {role} is the role, shown as a role chip with its name.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogMemberMessages.ts:125
@@ -581,7 +591,7 @@ msgstr "{actor} s-a mutat într-un alt canal vocal"
 msgid "{actor} paused invites"
 msgstr "{actor} a întrerupt invitațiile"
 
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:826
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:832
 msgid "{actor} performed an audit action on {targetEntity}."
 msgstr "{actor} a efectuat o acțiune de audit asupra {targetEntity}."
 
@@ -967,7 +977,7 @@ msgstr "{actor} a actualizat rolurile lui {target}"
 msgid "{actor} updated the soundboard sound {name}"
 msgstr "{actor} updated the soundboard sound {name}"
 
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:814
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:820
 msgid "{actor} updated the soundboard sound {namedTarget}."
 msgstr "{actor} updated the soundboard sound {namedTarget}."
 
@@ -1172,11 +1182,27 @@ msgstr "{count, plural, one {# comunitate este temporar indisponibilă din cauza
 msgid "{count, plural, one {# connection} other {# connections}}"
 msgstr "{count, plural, one {# conexiune} few {# conexiuni} other {# de conexiuni}}"
 
+#: src/features/channel/components/MessagePoll.tsx:102
+msgid "{count, plural, one {# day left} other {# days left}}"
+msgstr "{count, plural, one {# day left} other {# days left}}"
+
+#: src/features/messaging/components/CreatePollModal.tsx:100
+msgid "{count, plural, one {# day} other {# days}}"
+msgstr "{count, plural, one {# day} other {# days}}"
+
 #. Developer tools debug menu label. Internal-only surface for developers; translators may keep this terse.
 #: src/features/channel/components/channel_header_components/developer_tools/AccountPremiumMenu.tsx:104
 #: src/features/channel/components/channel_header_components/developer_tools/DeveloperOptionLabels.ts:40
 msgid "{count, plural, one {# gift} other {# gifts}}"
 msgstr "{count, plural, one {# cadou} few {# cadouri} other {# de cadouri}}"
+
+#: src/features/channel/components/MessagePoll.tsx:106
+msgid "{count, plural, one {# hour left} other {# hours left}}"
+msgstr "{count, plural, one {# hour left} other {# hours left}}"
+
+#: src/features/messaging/components/CreatePollModal.tsx:101
+msgid "{count, plural, one {# hour} other {# hours}}"
+msgstr "{count, plural, one {# hour} other {# hours}}"
 
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabUtils.tsx:181
 msgid "{count, plural, one {# item} other {# items}}"
@@ -1190,6 +1216,10 @@ msgstr "{count, plural, one {# element} few {# elemente} other {# de elemente}}"
 #: src/features/user/components/modals/user_profile_modal/MutualGroupItem.tsx:26
 msgid "{count, plural, one {# member} other {# members}}"
 msgstr "{count, plural, one {# membru} few {# membri} other {# de membri}}"
+
+#: src/features/channel/components/MessagePoll.tsx:109
+msgid "{count, plural, one {# minute left} other {# minutes left}}"
+msgstr "{count, plural, one {# minute left} other {# minutes left}}"
 
 #. Activity log item that stands in for the permission names left out of a long list. It is the last item of a list joined with "and", for example "Send messages, Manage roles, and 3 more permissions". The app joins the list and adds the commas and the word for "and" in your language, so do not add them here. It counts the other permissions in the same list. It never means that permissions were added. {count} is an ICU plural with the number of permissions left out, and # shows that number.
 #: src/features/guild/utils/guild_tabs/audit_log/AuditLogSharedMessages.ts:30
@@ -1231,6 +1261,16 @@ msgstr "{count, plural, one {# secundă} few {# secunde} other {# de secunde}}"
 #: src/features/channel/components/message_search_bar/MessageSearchBar.tsx:69
 msgid "{count, plural, one {# suggestion available} other {# suggestions available}}"
 msgstr "{count, plural, one {# sugestie disponibilă} few {# sugestii disponibile} other {# de sugestii disponibile}}"
+
+#: src/features/channel/components/MessagePoll.tsx:197
+#: src/features/channel/components/PollResultMessage.tsx:80
+#: src/features/channel/components/PollResultMessage.tsx:88
+msgid "{count, plural, one {# vote} other {# votes}}"
+msgstr "{count, plural, one {# vote} other {# votes}}"
+
+#: src/features/messaging/components/CreatePollModal.tsx:99
+msgid "{count, plural, one {# week} other {# weeks}}"
+msgstr "{count, plural, one {# week} other {# weeks}}"
 
 #. Compact age label shown beside a list row (DM list, invite list). count is a number of days; the "d" is an abbreviation of "days". Keep it as short as possible; it sits in a narrow column.
 #: src/features/ui/utils/ShortRelativeTimeLabels.ts:26
@@ -2252,6 +2292,26 @@ msgstr "{username} a eliminat pe cineva din grup."
 msgid "{username} started a call."
 msgstr "{username} a inițiat un apel."
 
+#. placeholder {0}: outcome.winners.join(', ')
+#: src/features/channel/components/PollResultMessage.tsx:90
+msgid "{username}’s poll {pollLink} has ended in a tie between <0>{0}</0> ({votes})."
+msgstr "{username}’s poll {pollLink} has ended in a tie between <0>{0}</0> ({votes})."
+
+#. placeholder {0}: outcome.winners[0]
+#. placeholder {1}: outcome.percent
+#: src/features/channel/components/PollResultMessage.tsx:82
+msgid "{username}’s poll {pollLink} has ended. <0>{0}</0> won with {1}% of {votes}."
+msgstr "{username}’s poll {pollLink} has ended. <0>{0}</0> won with {1}% of {votes}."
+
+#: src/features/channel/components/PollResultMessage.tsx:75
+msgid "{username}’s poll {pollLink} has ended. Nobody voted."
+msgstr "{username}’s poll {pollLink} has ended. Nobody voted."
+
+#. Plain-text summary of a poll-result system message, used in notifications and channel previews. {username} is the poll author.
+#: src/features/messaging/utils/SystemMessageUtils.tsx:138
+msgid "{username}'s poll has ended"
+msgstr "{username}'s poll has ended"
+
 #. Short label in the channel and chat embed you tube. Keep it concise. Preserve {youtubeProviderName}; it is inserted by code.
 #: src/features/channel/components/embeds/media/EmbedYouTube.tsx:37
 msgid "{youtubeProviderName} video"
@@ -2348,8 +2408,8 @@ msgstr "<0>A activat</0> cerința de autentificare în doi pași."
 
 #. Attribution line on a forwarded message, above the forwarded content. sourceInfo is the icon and name of the community and channel the message came from.
 #. Attribution line on a forwarded message, above the forwarded content. sourceInfo is the icon and name of the conversation the message came from.
-#: src/features/channel/components/MessageAttachments.tsx:229
-#: src/features/channel/components/MessageAttachments.tsx:285
+#: src/features/channel/components/MessageAttachments.tsx:230
+#: src/features/channel/components/MessageAttachments.tsx:286
 msgid "<0>Forwarded from</0>{sourceInfo}"
 msgstr "<0>Redirecționat din</0>{sourceInfo}"
 
@@ -2778,6 +2838,7 @@ msgid "A new verification code has been sent."
 msgstr "A fost trimis un nou cod de verificare."
 
 #. Description for has:poll. Sentence case, no trailing punctuation.
+#: src/features/channel/components/PollResultMessage.tsx:59
 #: src/features/search/utils/SearchUtils.ts:53
 msgid "a poll"
 msgstr "un sondaj"
@@ -3128,12 +3189,12 @@ msgid "Activity"
 msgstr "Activitate"
 
 #. Page title of the activity-log tab in community settings (the user-facing name for the audit log).
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:109
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:110
 msgid "Activity log"
 msgstr "Jurnal de activitate"
 
 #. Community settings tab showing activity log entries and moderation history.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:68
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:74
 msgctxt "community-settings-tab"
 msgid "Activity log"
 msgstr "Jurnal de activitate"
@@ -3282,6 +3343,11 @@ msgstr "Adaugă o altă comandă rapidă personalizată"
 msgid "Add another reaction"
 msgstr "Adaugă altă reacție"
 
+#. Button that adds another poll answer field.
+#: src/features/messaging/components/CreatePollModal.tsx:46
+msgid "Add answer"
+msgstr "Add answer"
+
 #. Setup wizard body for Bluesky integration credentials.
 #: src/features/app/components/setup/SetupWizardSteps.tsx:966
 msgid "Add Bluesky OAuth client metadata and a signing key."
@@ -3364,7 +3430,7 @@ msgid "Add local files"
 msgstr "Adaugă fișiere locale"
 
 #. Permission description in the channel-scoped permissions editor for the Add Reactions permission. "New" reaction means starting a new reaction emoji on a message (not stacking onto an existing one).
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:275
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:279
 msgid "Add new reactions to messages in this channel."
 msgstr "Adaugă reacții noi la mesaje în acest canal."
 
@@ -3397,7 +3463,7 @@ msgid "Add reaction"
 msgstr "Adaugă o reacție"
 
 #. Permission name: allows adding reactions to messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:443
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:447
 msgid "Add reactions"
 msgstr "Adaugă reacții"
 
@@ -3677,7 +3743,7 @@ msgid "Adjust the overall zoom level of the app. Use {zoomIn} / {zoomOut} to adj
 msgstr "Ajustează nivelul general de zoom al aplicației. Folosește {zoomIn} / {zoomOut} pentru a ajusta rapid."
 
 #. Permission name: grants all permissions and bypasses restrictions.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:355
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:359
 msgid "Administrator"
 msgstr "Administrator"
 
@@ -3781,7 +3847,7 @@ msgstr "Comenzile de aliniere sunt disponibile doar pe ecrane mai late"
 #. Short label in the discovery category bottom sheet. Keep it concise.
 #. Tab label in the DM friends view showing all friends.
 #. Tab label in the mobile memes (saved media) picker. Shows all saved media regardless of type.
-#: src/features/app/config/AuditLogConstants.ts:175
+#: src/features/app/config/AuditLogConstants.ts:179
 #: src/features/channel/components/direct_message/DMFriendsView.tsx:41
 #: src/features/channel/components/guild_members_page/GuildMembersPageDescriptors.ts:10
 #: src/features/channel/components/MobileMemesPicker.tsx:42
@@ -3810,7 +3876,7 @@ msgid "All <0/>, forever. No billing, no renewals."
 msgstr "Toate <0/>, pentru totdeauna. Fără facturare, fără reînnoiri."
 
 #. Default option in the activity log "Filter by action" dropdown. Means no action-type filter is applied. Short standalone label.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:100
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:101
 msgid "All actions"
 msgstr "Toate acțiunile"
 
@@ -3899,7 +3965,7 @@ msgid "All time"
 msgstr "Oricând"
 
 #. Default option in the activity log "Filter by user" dropdown. Means no user filter is applied. Short standalone label.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:95
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:96
 msgid "All users"
 msgstr "Toți utilizatorii"
 
@@ -4028,6 +4094,19 @@ msgstr "Permite menționări pentru acest rol"
 msgid "Allow microphone"
 msgstr "Permite accesul la microfon"
 
+#. Toggle in the poll composer letting voters pick more than one answer.
+#: src/features/messaging/components/CreatePollModal.tsx:61
+msgid "Allow multiple answers"
+msgstr "Allow multiple answers"
+
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:209
+msgid "Allow polls in this community"
+msgstr "Allow polls in this community"
+
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:310
+msgid "Allow polls with multiple answers"
+msgstr "Allow polls with multiple answers"
+
 #. Settings search entry description. One-line summary of what the settings search entry controls.
 #: src/features/user/components/settings_utils/search_index/AccessibilityIndex.ts:217
 msgid "Allow pressing Escape to exit keyboard navigation mode"
@@ -4147,7 +4226,7 @@ msgid "Already set to cancel"
 msgstr "Anulare deja programată"
 
 #. Toggle-switch label in the moderator delete-message confirmation dialog. When enabled, the message is reported (category: other) before being deleted. {productName} is the product name (e.g., Fluxer).
-#: src/features/messaging/commands/MessageCommands.tsx:83
+#: src/features/messaging/commands/MessageCommands.tsx:84
 msgid "Also report this message to the {productName} Safety Team"
 msgstr "Raportează acest mesaj și echipei de siguranță {productName}"
 
@@ -4537,10 +4616,20 @@ msgstr "Altă încălcare clară a regulilor"
 msgid "Another round checkbox"
 msgstr "Încă o casetă de selectare rotundă"
 
+#. Placeholder of one poll answer field. {index} is its 1-based position.
+#: src/features/messaging/components/CreatePollModal.tsx:42
+msgid "Answer {index}"
+msgstr "Answer {index}"
+
 #. Keyboard shortcut action label shown in the shortcuts list and keybind editor. Keep short, sentence case.
 #: src/features/input/state/input_keybind/shared.ts:213
 msgid "Answer the incoming call"
 msgstr "Răspunde la apelul primit"
+
+#. Label above the list of poll answer fields.
+#: src/features/messaging/components/CreatePollModal.tsx:41
+msgid "Answers"
+msgstr "Answers"
 
 #: src/features/user/components/modals/tabs/keybinds_tab/shared.ts:10
 msgid "Any key"
@@ -4937,7 +5026,7 @@ msgid "At least one channel must have \"{viewChannelPermissionLabel}\" permissio
 msgstr "Cel puțin un canal trebuie să aibă permisiunea „{viewChannelPermissionLabel}” activată pentru {EVERYONE_MENTION} pentru ca URL-ul personalizat să funcționeze. În prezent, niciun canal nu este vizibil pentru {EVERYONE_MENTION}."
 
 #. Permission name: allows uploading files to messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:427
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:431
 msgid "Attach files"
 msgstr "Atașează fișiere"
 
@@ -5041,7 +5130,7 @@ msgid "Audio"
 msgstr "Audio"
 
 #. Permission category for voice, video, and streaming permissions.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:347
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:351
 msgid "Audio & video"
 msgstr "Audio și video"
 
@@ -5753,12 +5842,12 @@ msgid "Ban member"
 msgstr "Banează membrul"
 
 #. Permission name: allows banning members from a community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:379
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:383
 msgid "Ban members"
 msgstr "Banează membri"
 
 #. Permission description in the role/permission editor for the Ban Members permission. A ban keeps the member out until it is lifted, and the moderator chooses how much recent message history to delete.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:128
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:132
 msgid "Ban members from the community, with the option to delete their recent messages."
 msgstr "Banează membri din comunitate, cu opțiunea de a le șterge mesajele recente."
 
@@ -5831,7 +5920,7 @@ msgid "Banner preview"
 msgstr "Previzualizare banner"
 
 #. Community settings tab for banned users.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:98
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:104
 msgctxt "community-settings-tab"
 msgid "Bans"
 msgstr "Interdicții"
@@ -5851,12 +5940,12 @@ msgid "Basic text inputs"
 msgstr "Câmpuri text de bază"
 
 #. Permission description in the channel-scoped permissions editor for the Priority Speaker permission. "Push to talk (priority)" is the name of a keybind in the keybind settings, so match the wording used there.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:307
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:311
 msgid "Be heard over other members in this channel while holding the push to talk (priority) keybind."
 msgstr "Fii auzit peste ceilalți membri din acest canal în timp ce ții apăsată tasta pentru vorbire prioritară (push to talk)."
 
 #. Permission description in the role/permission editor for the Priority Speaker permission at community scope. "Push to talk (priority)" is the name of a keybind in the keybind settings, so match the wording used there.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:182
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:186
 msgid "Be heard over other members while holding the push to talk (priority) keybind."
 msgstr "Fii auzit peste ceilalți membri în timp ce ții apăsată tasta pentru vorbire prioritară (push to talk)."
 
@@ -6524,7 +6613,7 @@ msgid "Bypass mention suppression"
 msgstr "Ocolire suprimare mențiuni"
 
 #. Permission name: allows ignoring per-channel message rate limits.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:447
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:451
 msgid "Bypass slowmode"
 msgstr "Ocolire mod lent"
 
@@ -7099,7 +7188,7 @@ msgid "Change other members' nicknames."
 msgstr "Schimbă pseudonimele altor membri."
 
 #. Permission name: allows a member to edit their own nickname.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:387
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:391
 msgid "Change own nickname"
 msgstr "Schimbă-ți propriul pseudonim"
 
@@ -7160,12 +7249,12 @@ msgid "Change what users without \"{readMessageHistoryPermissionLabel}\" can see
 msgstr "Schimbă ce pot vedea utilizatorii fără „{readMessageHistoryPermissionLabel}”"
 
 #. Permission description in the role/permission editor for the Set Voice Region permission at community scope. The region is the geographic location of the voice server.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:196
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:200
 msgid "Change which voice region a voice channel uses."
 msgstr "Schimbă regiunea vocală pe care o folosește un canal vocal."
 
 #. Permission description in the channel-scoped permissions editor for the Set Voice Region permission. The region is the geographic location of the voice server.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:326
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:330
 msgid "Change which voice region this channel uses."
 msgstr "Schimbă regiunea vocală pe care o folosește acest canal."
 
@@ -7433,7 +7522,7 @@ msgstr "canal"
 #. Short label in the channel layout. Keep it concise.
 #. Short label in the channel source preview. Keep it concise.
 #. Slash-command argument type name, spoken by screen readers for an argument that takes a channel.
-#: src/features/app/config/AuditLogConstants.ts:195
+#: src/features/app/config/AuditLogConstants.ts:199
 #: src/features/channel/components/bottomsheets/channel_details_bottom_sheet/ChannelDetailsBottomSheetShared.ts:24
 #: src/features/channel/components/ChannelLayout.tsx:13
 #: src/features/channel/components/ChannelSourcePreview.tsx:28
@@ -7449,7 +7538,7 @@ msgid "Channel {id}"
 msgstr "Canal {id}"
 
 #. Permission category for viewing or entering channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:343
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:347
 msgid "Channel access"
 msgstr "Acces la canal"
 
@@ -7549,7 +7638,7 @@ msgid "Channel list typing indicators"
 msgstr "Indicatori de tastare în lista de canale"
 
 #. Permission category for managing channels and channel settings.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:351
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:355
 msgid "Channel management"
 msgstr "Gestionare canale"
 
@@ -7907,6 +7996,11 @@ msgstr "Alege o acțiune."
 msgid "Choose an emoji"
 msgstr "Alege un emoji"
 
+#. Accessible label of the emoji picker button next to a poll answer.
+#: src/features/messaging/components/CreatePollModal.tsx:51
+msgid "Choose an emoji for this answer"
+msgstr "Choose an emoji for this answer"
+
 #. Button or menu action label in the selections tab. Keep it concise.
 #: src/features/user/components/modals/tabs/component_gallery_tab/SelectionsTab.tsx:21
 msgid "Choose an option"
@@ -8044,6 +8138,10 @@ msgstr "Alege unde ar trebui să trimită {PRODUCT_NAME} textul evidențiat pent
 #: src/features/search/components/modals/SearchProviderPickerModal.tsx:95
 msgid "Choose where {PRODUCT_NAME} should send images for reverse image search. We'll remember your pick. You can change it or add your own provider later in {searchEnginesSettingsPath}."
 msgstr "Alege unde ar trebui să trimită {PRODUCT_NAME} imaginile pentru căutarea inversă a imaginilor. Îți vom reține alegerea. O poți schimba sau poți adăuga propriul furnizor mai târziu în {searchEnginesSettingsPath}."
+
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:199
+msgid "Choose whether members can create polls here and how big they can be. Each value is capped by the instance limit shown beside it. Requires Manage Community."
+msgstr "Choose whether members can create polls here and how big they can be. Each value is capped by the instance limit shown beside it. Requires Manage Community."
 
 #. Setup wizard media expiry step body.
 #: src/features/app/components/setup/SetupWizardSteps.tsx:221
@@ -8271,7 +8369,7 @@ msgstr "Șterge simulările atașamentelor"
 
 #. Accessible label for the button that clears the slash command being composed in the message box.
 #. Accessible label for the composer button that clears the slash command currently being composed.
-#: src/features/channel/components/LexicalChannelTextareaContent.tsx:136
+#: src/features/channel/components/LexicalChannelTextareaContent.tsx:138
 #: src/features/channel/components/SlashCommandParamBar.tsx:16
 msgid "Clear command"
 msgstr "Șterge comanda"
@@ -8935,10 +9033,10 @@ msgstr "Comunitățile cu peste 250 de persoane sunt forțate să utilizeze seta
 #. Developer / debug surface — keep terse and technical. Fallback label used in the IAR preview tool when no community context is supplied.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Short option type label in the OAuth bot invite destination selector.
-#: src/features/app/config/AuditLogConstants.ts:179
+#: src/features/app/config/AuditLogConstants.ts:183
 #: src/features/auth/components/pages/oauth_authorize_page/OAuthCommunityStep.tsx:48
 #: src/features/moderation/components/report_modal/IARModalPreview.tsx:16
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:269
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:284
 #: src/features/user/components/settings_utils/section_registry/PrivacySafetySections.ts:140
 msgid "Community"
 msgstr "Comunitate"
@@ -9129,7 +9227,7 @@ msgid "Community record"
 msgstr "Înregistrare comunitate"
 
 #. Root label for community settings modal and settings search paths.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:260
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:275
 msgid "Community settings"
 msgstr "Setări comunitate"
 
@@ -9157,7 +9255,7 @@ msgid "Community voice"
 msgstr "Voce în comunitate"
 
 #. Permission category for permissions that affect the whole community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:331
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:335
 msgid "Community-wide"
 msgstr "Întreaga comunitate"
 
@@ -9411,7 +9509,7 @@ msgstr "Conectează un microfon și încearcă din nou."
 
 #. Permission name: allows joining voice channels.
 #. Primary CTA in the mobile voice-channel lobby bottom sheet. Joins the voice channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:463
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:467
 #: src/features/voice/components/bottomsheets/VoiceLobbyBottomSheet.tsx:60
 msgid "Connect to voice"
 msgstr "Conectare la voce"
@@ -10135,6 +10233,11 @@ msgstr "Nu am putut încărca configurația instanței. Încearcă să reîncarc
 msgid "Could not load this page"
 msgstr "Pagina nu a putut fi încărcată"
 
+#. Title of the error dialog shown when saving community poll settings fails.
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:37
+msgid "Could not save poll settings"
+msgstr "Could not save poll settings"
+
 #. Body of the modal shown when a screen share attempt fails. Advises the user to try sharing the full screen.
 #: src/features/voice/components/alerts/ScreenShareFailedModal.tsx:12
 msgid "Could not start the screen share. The selected source may no longer be available or may have blocked capture. Try sharing your entire screen or monitor instead of a specific window."
@@ -10803,7 +10906,7 @@ msgid "Create DM"
 msgstr "Creează un DM"
 
 #. Permission name: allows uploading custom emoji and stickers.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:395
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:399
 msgid "Create emoji & stickers"
 msgstr "Creează emoji și stickere"
 
@@ -10830,7 +10933,7 @@ msgid "Create invite"
 msgstr "Creează invitație"
 
 #. Permission name: allows creating invite links.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:383
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:387
 msgid "Create invite links"
 msgstr "Creează linkuri de invitație"
 
@@ -10853,6 +10956,18 @@ msgstr "Creează un link nou"
 #: src/features/input/state/input_keybind/shared.ts:121
 msgid "Create or join a community"
 msgstr "Creează sau alătură-te unei comunități"
+
+#. Short label in the channel and chat textarea plus menu. Opens the poll composer. Keep it concise.
+#. Title of the dialog for composing a new poll.
+#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:35
+#: src/features/messaging/components/CreatePollModal.tsx:35
+msgid "Create poll"
+msgstr "Create poll"
+
+#. Permission description in the role/permission editor for the Send Polls permission.
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:108
+msgid "Create polls in text channels. Voting on polls only needs permission to read the channel."
+msgstr "Create polls in text channels. Voting on polls only needs permission to read the channel."
 
 #: src/features/guild/components/modals/guild_tabs/guild_roles_tab/MobileRoleList.tsx:48
 #: src/features/guild/components/modals/guild_tabs/guild_roles_tab/RoleSidebar.tsx:215
@@ -10894,7 +11009,7 @@ msgid "Create, edit, or delete roles below your highest role. Also allows editin
 msgstr "Creează, editează sau șterge roluri sub rolul tău cel mai înalt. Permite, de asemenea, editarea suprascrierilor de permisiuni ale canalului."
 
 #. Permission description in the channel-scoped permissions editor for the Manage Webhooks permission. Scoped to a single channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:211
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:215
 msgid "Create, edit, or delete webhooks for this channel."
 msgstr "Creează, editează sau șterge webhook-uri pentru acest canal."
 
@@ -11105,10 +11220,12 @@ msgstr "Afișat în prezent"
 msgid "Currently: {mutedText}"
 msgstr "Momentan: {mutedText}"
 
+#. Duration choice that reveals a field for typing a number of hours.
 #. Footer summary label for custom screen-share quality settings.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Streaming preset label in the stream settings menu. Lets user pick resolution and frame rate manually.
 #. Voice processing profile option label (mobile voice settings). User configures processing manually.
+#: src/features/messaging/components/CreatePollModal.tsx:56
 #: src/features/user/components/modals/tabs/notifications_tab/NotificationsTabSounds.tsx:186
 #: src/features/user/components/settings_utils/section_registry/AppearanceSections.ts:94
 #: src/features/voice/components/bottomsheets/VoiceSettingsBottomSheets.tsx:45
@@ -11332,7 +11449,7 @@ msgid "Customer portal"
 msgstr "Portal pentru clienți"
 
 #. Plus menu submenu label for visibility toggles on textarea adornment buttons.
-#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:39
+#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:48
 msgid "Customize"
 msgstr "Personalizează"
 
@@ -11563,17 +11680,17 @@ msgid "Deafen device"
 msgstr "Dezactivează sunetul dispozitivului"
 
 #. Permission name: allows moderators to deafen other voice participants.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:492
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:500
 msgid "Deafen members"
 msgstr "Dezactivează sunetul membrilor"
 
 #. Permission description in the channel-scoped permissions editor for the Deafen Members permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:317
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:321
 msgid "Deafen other members in this voice channel, so they cannot hear or speak."
 msgstr "Dezactivează sunetul altor membri din acest canal vocal, astfel încât să nu poată auzi sau vorbi."
 
 #. Permission description in the role/permission editor for the Deafen Members permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:192
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:196
 msgid "Deafen other members in voice channels, so they cannot hear or speak."
 msgstr "Dezactivează sunetul altor membri în canalele vocale, astfel încât să nu poată auzi sau vorbi."
 
@@ -11694,6 +11811,10 @@ msgstr "Implicit"
 msgid "Default camera"
 msgstr "Cameră implicită"
 
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:284
+msgid "Default duration (hours)"
+msgstr "Default duration (hours)"
+
 #. Short label in the channel and chat autocomplete emoji. Keep it concise.
 #: src/features/channel/components/AutocompleteEmoji.tsx:26
 #: src/features/emoji/components/bottomsheets/EmojiInfoBottomSheet.tsx:78
@@ -11790,7 +11911,7 @@ msgstr "Delaware"
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:216
 #: src/features/emoji/components/stickers/StickerGridItem.tsx:35
 #: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:87
-#: src/features/messaging/commands/MessageCommands.tsx:79
+#: src/features/messaging/commands/MessageCommands.tsx:80
 #: src/features/moderation/components/report_modal/IARModalCopy.ts:109
 #: src/features/platform/utils/DesktopLocaleBridge.ts:76
 #: src/features/theme_studio/sections/LibrarySection.tsx:514
@@ -11963,7 +12084,7 @@ msgid "Delete my messages"
 msgstr "Șterge-mi mesajele"
 
 #. Permission description in the channel-scoped permissions editor for the Manage Messages permission. Notes that pinning has its own permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:235
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:239
 msgid "Delete other members' messages in this channel. Pinning is controlled separately."
 msgstr "Șterge mesajele altor membri din acest canal. Fixarea este controlată separat."
 
@@ -12050,7 +12171,7 @@ msgid "Delete this message"
 msgstr "Șterge acest mesaj"
 
 #. Error message in the messaging commands. Keep the tone plain and specific.
-#: src/features/messaging/commands/MessageCommands.tsx:75
+#: src/features/messaging/commands/MessageCommands.tsx:76
 msgid "Delete this message? Can't be undone."
 msgstr "Ștergi acest mesaj? Acțiunea nu poate fi anulată."
 
@@ -12848,7 +12969,7 @@ msgid "Discovery"
 msgstr "Discovery"
 
 #. Community settings tab for public community discovery/listing.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:83
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:89
 msgctxt "community-settings-tab"
 msgid "Discovery"
 msgstr "Discovery"
@@ -13375,12 +13496,12 @@ msgid "Drag and drop emoji files here"
 msgstr "Trage și plasează fișierele emoji aici"
 
 #. Permission description in the role/permission editor for the Move Members permission. The target channel must already be accessible to the member being moved. This permission also covers forcing a member out of voice entirely.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:113
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:117
 msgid "Drag members between voice channels they can access, and disconnect them from voice."
 msgstr "Mută membrii între canalele vocale la care au acces și deconectează-i de la voce."
 
 #. Permission description in the channel-scoped permissions editor for the Move Members permission. The target channel must already be accessible to the member being moved. This permission also covers forcing a member out of voice entirely.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:321
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:325
 msgid "Drag members out of this voice channel into channels they can access, and disconnect them from voice."
 msgstr "Mută membrii din acest canal vocal în canale la care au acces și deconectează-i de la voce."
 
@@ -13489,6 +13610,11 @@ msgstr "Duplică canalul"
 #: src/features/ui/action_menu/RoleContextMenu.tsx:12
 msgid "Duplicate role"
 msgstr "Duplică rolul"
+
+#. Label above the poll duration choices.
+#: src/features/messaging/components/CreatePollModal.tsx:55
+msgid "Duration"
+msgstr "Duration"
 
 #. Field label in the voice connection status popout. Shows how long the current voice session has been connected.
 #: src/features/voice/components/voice_connection_status/shared.ts:74
@@ -13670,7 +13796,7 @@ msgid "Edit or delete emoji and stickers created by other members."
 msgstr "Editează sau șterge emoji și stickere create de alți membri."
 
 #. Permission description in the channel-scoped permissions editor for the Manage Permissions permission. "Overwrites" are per-channel permission overrides.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:206
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:210
 msgid "Edit overwrites for roles and members in this channel."
 msgstr "Editează suprascrierile pentru roluri și membri în acest canal."
 
@@ -13895,7 +14021,7 @@ msgid "Embed debugger form"
 msgstr "Formular pentru depanatorul de încorporări"
 
 #. Permission name: allows links to unfurl/embed in messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:423
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:427
 msgid "Embed links"
 msgstr "Încorporează linkuri"
 
@@ -13938,7 +14064,7 @@ msgstr "Încorporări reafișate"
 #. Collapsible group heading in the Theme Studio tokens list, for emoji tokens.
 #. Column header for the custom emoji image or glyph.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/app/config/AuditLogConstants.ts:199
+#: src/features/app/config/AuditLogConstants.ts:203
 #: src/features/emoji/components/emojis/EmojiListItem.tsx:337
 #: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:481
 #: src/features/theme_studio/sections/TokenGroups.ts:114
@@ -13947,7 +14073,7 @@ msgid "Emoji"
 msgstr "Emoji"
 
 #. Community settings tab for managing custom emoji uploaded to the community.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:38
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:40
 msgctxt "community-settings-tab"
 msgid "Emoji"
 msgstr "Emoji"
@@ -14420,6 +14546,11 @@ msgstr "Încheie perioada de grație"
 msgid "End grace period now?"
 msgstr "Închei perioada de grație acum?"
 
+#. Button in a poll footer that closes the poll early. Shown to the author and moderators.
+#: src/features/channel/components/MessagePoll.tsx:41
+msgid "End poll"
+msgstr "End poll"
+
 #. Voice control menu action to stop sharing the screen.
 #: src/features/voice/components/VoiceControlBar.tsx:112
 msgid "End screen share"
@@ -14439,6 +14570,11 @@ msgstr "Criptarea end-to-end nu este disponibilă, deoarece pe acest canal vocal
 #: src/features/moderation/components/report_modal/IARModalCopy.ts:229
 msgid "Endangers minors or hosts child-exploitation content."
 msgstr "Pune în pericol minori sau găzduiește conținut de exploatare a copiilor."
+
+#. Button label while a request to end a poll is in flight.
+#: src/features/channel/components/MessagePoll.tsx:45
+msgid "Ending…"
+msgstr "Ending…"
 
 #. Voice stats field label (mobile lobby). Shows the voice server endpoint hostname.
 #. Voice stats field label (mobile voice lobby). Shows the voice server endpoint hostname.
@@ -14543,6 +14679,11 @@ msgstr "Introdu un număr de telefon valid"
 #: src/features/channel/components/direct_message/AddFriendForm.tsx:32
 msgid "Enter a valid username ({exampleFluxerTagFull})."
 msgstr "Introdu un nume de utilizator valid ({exampleFluxerTagFull})."
+
+#. Validation error under a numeric poll setting. {min} and {max} are whole numbers.
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:41
+msgid "Enter a whole number between {min} and {max}."
+msgstr "Enter a whole number between {min} and {max}."
 
 #. Required-action modal body for entering a replacement email address.
 #: src/features/auth/components/modals/required_action/RequiredActionDescriptors.ts:371
@@ -15149,7 +15290,7 @@ msgstr "Ștergere expresii"
 
 #. Community settings sidebar category grouping the emoji and stickers tabs.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:265
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:280
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:137
 msgid "Expressions"
 msgstr "Expresii"
@@ -15733,7 +15874,7 @@ msgid "Filter by account creation date"
 msgstr "Filtrează după data creării contului"
 
 #. Label of the action-type filter dropdown in the activity log tab.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:121
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:122
 msgid "Filter by action"
 msgstr "Filtrează după acțiune"
 
@@ -15771,7 +15912,7 @@ msgstr "Filtrează după roluri"
 
 #. Label of the user filter dropdown in the activity log tab.
 #. Short label in the search user filter sheet. Keep it concise.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:117
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:118
 #: src/features/search/components/search/UserFilterSheet.tsx:25
 msgid "Filter by user"
 msgstr "Filtrează după utilizator"
@@ -16233,7 +16374,7 @@ msgstr "Redirecționează media"
 msgid "Forward message"
 msgstr "Redirecționează mesajul"
 
-#: src/features/channel/components/MessageAttachments.tsx:348
+#: src/features/channel/components/MessageAttachments.tsx:349
 msgid "Forwarded"
 msgstr "Redirecționat"
 
@@ -17719,6 +17860,11 @@ msgstr "Ascunde insigna cu ID-ul Visionary"
 msgid "Hide Visionary ID badge ({premiumLifetimeSequenceLabel})"
 msgstr "Ascunde insigna cu ID-ul Visionary ({premiumLifetimeSequenceLabel})"
 
+#. Button in a poll footer that hides the results again so the member can vote without bias.
+#: src/features/channel/components/MessagePoll.tsx:57
+msgid "Hide votes"
+msgstr "Hide votes"
+
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/user/components/settings_utils/search_index/DesktopSettingsIndex.ts:194
 msgid "Hide window"
@@ -17839,6 +17985,11 @@ msgstr "Comandă rapidă"
 #: src/features/user/components/settings_utils/search_index/KeybindsIndex.ts:22
 msgid "Hotkeys"
 msgstr "Comenzi rapide"
+
+#. Unit shown after the custom poll duration field.
+#: src/features/messaging/components/CreatePollModal.tsx:60
+msgid "hours"
+msgstr "hours"
 
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/user/components/settings_utils/search_index/ChatSettingsIndex.ts:315
@@ -18134,7 +18285,7 @@ msgid "Ignore the friend request from {displayName}?"
 msgstr "Ignori cererea de prietenie de la {displayName}?"
 
 #. Permission description in the channel-scoped permissions editor for the Bypass Slowmode permission. Slowmode is the per-channel cooldown between messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:280
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:284
 msgid "Ignore this channel's slowmode cooldown."
 msgstr "Ignoră pauza impusă de modul lent al acestui canal."
 
@@ -18762,7 +18913,9 @@ msgstr "Se instalează actualizarea pentru desktop {version}…"
 msgid "Installing desktop update…"
 msgstr "Se instalează actualizarea pentru desktop…"
 
+#. Small hint beside a community poll limit field showing the ceiling set by the instance. {max} is a number.
 #. Small hint next to a soundboard limit input showing the instance-wide ceiling set by the admin panel.
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:33
 #: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:107
 msgid "Instance limit: {max}"
 msgstr "Instance limit: {max}"
@@ -18789,7 +18942,7 @@ msgstr "Număr întreg"
 
 #. Community settings sidebar category grouping webhooks.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:273
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:288
 #: src/features/user/components/settings_utils/search_index/AuthorizedAppsIndex.ts:26
 msgid "Integrations"
 msgstr "Integrări"
@@ -18923,7 +19076,7 @@ msgstr "Invită"
 
 #. Audit log target-type filter label. Filters entries that target an invite link.
 #. Join source label on the community members page. Shown when the member joined via an invite link.
-#: src/features/app/config/AuditLogConstants.ts:211
+#: src/features/app/config/AuditLogConstants.ts:215
 #: src/features/channel/components/guild_members_page/MemberTableRow.tsx:43
 msgctxt "invite-noun"
 msgid "Invite"
@@ -19026,12 +19179,12 @@ msgid "Invite modal preview"
 msgstr "Previzualizare fereastră de invitație"
 
 #. Permission description in the channel-scoped permissions editor for the Create Invite Links permission. The invite drops the new member into this channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:221
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:225
 msgid "Invite new people to the community with a link to this channel."
 msgstr "Invită oameni noi în comunitate cu un link către acest canal."
 
 #. Permission description in the role/permission editor for the Create Invite Links permission. Covers links that let someone outside the community join it.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:118
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:122
 msgid "Invite new people to the community with an invite link."
 msgstr "Invită oameni noi în comunitate cu un link de invitație."
 
@@ -19126,7 +19279,7 @@ msgid "Invites"
 msgstr "Invitații"
 
 #. Community settings tab for invite link management.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:93
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:99
 msgctxt "community-settings-tab"
 msgid "Invites"
 msgstr "Invitații"
@@ -19347,7 +19500,7 @@ msgid "Join the call"
 msgstr "Alătură-te apelului"
 
 #. Permission description in the channel-scoped permissions editor for the Connect permission. "View channel" is another permission in this same editor, so match the wording used for its name. The placeholder renders the literal @everyone role name and must not be translated.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:285
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:289
 msgid "Join this voice channel and hear others. Denying it along with View channel for {everyoneMention} makes the channel private."
 msgstr "Alătură-te acestui canal vocal și ascultă-i pe ceilalți. Refuzarea acestuia, împreună cu Vizualizare canal, pentru {everyoneMention} face canalul privat."
 
@@ -19383,7 +19536,7 @@ msgid "Join voice channel"
 msgstr "Alătură-te canalului vocal"
 
 #. Permission description in the role/permission editor for the Connect permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:167
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:171
 msgid "Join voice channels and hear others."
 msgstr "Alătură-te canalelor vocale și ascultă-i pe ceilalți."
 
@@ -19662,7 +19815,7 @@ msgid "Kick member"
 msgstr "Elimină membrul"
 
 #. Permission name: allows removing members from a community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:375
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:379
 msgid "Kick members"
 msgstr "Elimină membri"
 
@@ -20567,17 +20720,17 @@ msgid "Manage blocked users"
 msgstr "Gestionează utilizatorii blocați"
 
 #. Channel-scoped permission name: allows editing this channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:504
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:512
 msgid "Manage channel"
 msgstr "Gestionează canalul"
 
 #. Permission name: allows creating, editing, or deleting channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:371
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:375
 msgid "Manage channels"
 msgstr "Gestionează canalele"
 
 #. Permission name: allows editing global community settings.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:363
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:367
 msgid "Manage community"
 msgstr "Gestionează comunitatea"
 
@@ -20587,7 +20740,7 @@ msgid "Manage community features"
 msgstr "Gestionează funcțiile comunității"
 
 #. Permission name: allows editing or deleting custom emoji and stickers.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:399
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:403
 msgid "Manage emoji & stickers"
 msgstr "Gestionează emoji și stickere"
 
@@ -20600,12 +20753,12 @@ msgid "Manage invite links for this channel."
 msgstr "Gestionează linkurile de invitație pentru acest canal."
 
 #. Permission name: allows deleting other members' messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:415
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:419
 msgid "Manage messages"
 msgstr "Gestionează mesajele"
 
 #. Permission name: allows changing other members' nicknames.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:391
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:395
 msgid "Manage nicknames"
 msgstr "Gestionează pseudonimele"
 
@@ -20615,7 +20768,7 @@ msgid "Manage payment methods"
 msgstr "Gestionează metodele de plată"
 
 #. Channel-scoped permission name: allows editing permission overwrites.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:508
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:516
 msgid "Manage permissions"
 msgstr "Gestionează permisiunile"
 
@@ -20625,7 +20778,7 @@ msgid "Manage purchased gift codes and gift URLs"
 msgstr "Gestionează codurile cadou și linkurile cadou cumpărate"
 
 #. Permission name: allows role management and permission overwrite editing.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:367
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:371
 msgid "Manage roles"
 msgstr "Gestionează rolurile"
 
@@ -20640,7 +20793,7 @@ msgid "Manage subscription"
 msgstr "Gestionează abonamentul"
 
 #. Permission name: allows creating, editing, or deleting webhooks.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:403
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:407
 msgid "Manage webhooks"
 msgstr "Gestionează webhook-urile"
 
@@ -20959,6 +21112,18 @@ msgstr "Conținut media matur"
 msgid "Max {maxSize}."
 msgstr "Maxim {maxSize}."
 
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:267
+msgid "Max answer length"
+msgstr "Max answer length"
+
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:216
+msgid "Max answers per poll"
+msgstr "Max answers per poll"
+
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:233
+msgid "Max duration (hours)"
+msgstr "Max duration (hours)"
+
 #: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:413
 msgid "Max duration (seconds)"
 msgstr "Max duration (seconds)"
@@ -20967,6 +21132,10 @@ msgstr "Max duration (seconds)"
 #: src/features/invite/components/modals/InviteModal.tsx:116
 msgid "Max number of uses"
 msgstr "Număr maxim de utilizări"
+
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:250
+msgid "Max question length"
+msgstr "Max question length"
 
 #: src/features/theme/components/modals/BackgroundImageGalleryModal.tsx:57
 msgid "Max size: {BACKGROUND_MEDIA_MAX_SIZE_LABEL}."
@@ -21137,7 +21306,7 @@ msgid "Medium size (default)"
 msgstr "Mărime medie (implicit)"
 
 #. Audit log target-type filter label. Filters entries that target a community member.
-#: src/features/app/config/AuditLogConstants.ts:183
+#: src/features/app/config/AuditLogConstants.ts:187
 msgid "Member"
 msgstr "Membru"
 
@@ -21240,7 +21409,7 @@ msgid "Members"
 msgstr "Membri"
 
 #. Community settings tab for managing community members.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:88
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:94
 msgctxt "community-settings-tab"
 msgid "Members"
 msgstr "Membri"
@@ -21268,6 +21437,10 @@ msgstr "Membrii cu roluri pot ocoli aceste verificări. Pentru spațiile publice
 #: src/features/guild/components/modals/guild_tabs/guild_roles_tab/RoleEditor.tsx:47
 msgid "Members with the \"{mentionEveryonePermissionLabel}\" permission can always mention roles, regardless of this setting."
 msgstr "Membrii cu permisiunea „{mentionEveryonePermissionLabel}” pot menționa oricând roluri, indiferent de această setare."
+
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:210
+msgid "Members with the Send Polls permission can post polls in text channels."
+msgstr "Members with the Send Polls permission can post polls in text channels."
 
 #. Short label in the guild audit log tab.renderers. Keep it concise.
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogTabRenderers.tsx:55
@@ -21320,7 +21493,7 @@ msgid "Mention everyone or any role (even if the role isn't set to be mentionabl
 msgstr "Menționează pe toată lumea sau orice rol (chiar dacă rolul nu este setat ca menționabil)."
 
 #. Permission description in the channel-scoped permissions editor for the Mention Everyone permission. Notes that this overrides the per-role "mentionable" flag.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:260
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:264
 msgid "Mention everyone or any role in this channel (even if the role isn't set to be mentionable)."
 msgstr "Menționează pe toată lumea sau orice rol din acest canal (chiar dacă rolul nu este setat ca fiind menționabil)."
 
@@ -21396,7 +21569,7 @@ msgstr "mesaj"
 
 #. Audit log target-type filter label. Filters entries that target an individual message.
 #. Short label in the inputs tab. Keep it concise.
-#: src/features/app/config/AuditLogConstants.ts:220
+#: src/features/app/config/AuditLogConstants.ts:224
 #: src/features/user/components/modals/tabs/component_gallery_tab/ComponentGalleryTabInputsTab.tsx:86
 msgid "Message"
 msgstr "Mesaj"
@@ -21486,7 +21659,7 @@ msgid "Message debug"
 msgstr "Depanare mesaj"
 
 #. Audit log entry label. A single message was deleted by a moderator.
-#: src/features/app/config/AuditLogConstants.ts:159
+#: src/features/app/config/AuditLogConstants.ts:163
 msgid "Message deleted"
 msgstr "Mesaj șters"
 
@@ -21589,7 +21762,7 @@ msgid "Message list for {channelName}"
 msgstr "Listă de mesaje pentru {channelName}"
 
 #. Audit log entry label. A message was pinned in a channel.
-#: src/features/app/config/AuditLogConstants.ts:167
+#: src/features/app/config/AuditLogConstants.ts:171
 msgid "Message pinned"
 msgstr "Mesaj fixat"
 
@@ -21648,7 +21821,7 @@ msgid "Message time"
 msgstr "Ora mesajului"
 
 #. Audit log entry label. A message was unpinned from a channel.
-#: src/features/app/config/AuditLogConstants.ts:171
+#: src/features/app/config/AuditLogConstants.ts:175
 msgid "Message unpinned"
 msgstr "Fixare mesaj anulată"
 
@@ -21682,12 +21855,12 @@ msgid "Messages"
 msgstr "Mesaje"
 
 #. Permission category for chat messages, uploads, embeds, reactions, and media.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:335
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:339
 msgid "Messages & media"
 msgstr "Mesaje și media"
 
 #. Audit log entry label. Multiple messages were bulk-deleted by a moderator.
-#: src/features/app/config/AuditLogConstants.ts:163
+#: src/features/app/config/AuditLogConstants.ts:167
 msgid "Messages deleted"
 msgstr "Mesaje șterse"
 
@@ -21975,18 +22148,18 @@ msgid "Mod"
 msgstr "Mod"
 
 #. Permission category for moderation actions against members or messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:339
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:343
 msgid "Moderation"
 msgstr "Moderare"
 
 #. Community settings tab for moderation and safety controls.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:63
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:69
 msgctxt "community-settings-tab"
 msgid "Moderation"
 msgstr "Moderare"
 
 #. Empty-state body in the activity log tab when there are no log entries to show.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:133
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:134
 msgid "Moderation actions and community changes will appear here."
 msgstr "Acțiunile de moderare și modificările comunității vor apărea aici."
 
@@ -22191,7 +22364,7 @@ msgid "Move item up"
 msgstr "Mută elementul în sus"
 
 #. Permission name: allows moving members between voice channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:496
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:504
 msgid "Move members"
 msgstr "Mută membri"
 
@@ -22420,7 +22593,7 @@ msgid "Mute favorites"
 msgstr "Pune favoritele pe silențios"
 
 #. Permission name: allows moderators to mute other voice participants.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:488
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:496
 msgid "Mute members"
 msgstr "Dezactivează microfonul membrilor"
 
@@ -22437,12 +22610,12 @@ msgid "Mute notifications"
 msgstr "Dezactivează notificările"
 
 #. Permission description in the channel-scoped permissions editor for the Mute Members permission. The mute applies for every listener, not only for the moderator.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:312
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:316
 msgid "Mute other members in this voice channel for everyone."
 msgstr "Dezactivează microfonul altor membri din acest canal vocal, pentru toată lumea."
 
 #. Permission description in the role/permission editor for the Mute Members permission at community scope. The mute applies for every listener, not only for the moderator.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:187
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:191
 msgid "Mute other members in voice channels for everyone."
 msgstr "Dezactivează microfonul altor membri în canalele vocale, pentru toată lumea."
 
@@ -22855,6 +23028,7 @@ msgstr "Nu anima niciodată"
 msgid "Never automatically"
 msgstr "Niciodată automat"
 
+#: src/features/messaging/components/CreatePollModal.tsx:386
 #: src/features/voice/components/SoundboardSoundModal.tsx:578
 msgid "Never mind"
 msgstr "Never mind"
@@ -23371,7 +23545,7 @@ msgid "No local files referenced"
 msgstr "Nicio referință la fișiere locale"
 
 #. Empty-state title in the activity log tab when there are no log entries to show.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:129
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:130
 msgid "No logs yet"
 msgstr "Încă nu există jurnale"
 
@@ -23473,7 +23647,7 @@ msgid "No reason provided"
 msgstr "Nu a fost furnizat niciun motiv"
 
 #. Fallback text in an expanded activity log entry when the moderator did not supply a reason.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:721
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:723
 msgid "No reason was provided."
 msgstr "Nu a fost furnizat niciun motiv."
 
@@ -23689,6 +23863,11 @@ msgstr "Niciun webhook"
 #: src/features/devtools/components/DeveloperOptionsToggleGroups.ts:144
 msgid "No-op in-app reports"
 msgstr "Rapoarte în aplicație fără efect"
+
+#. Empty state of the popout listing who voted for a poll answer.
+#: src/features/channel/components/MessagePoll.tsx:65
+msgid "Nobody has picked this yet."
+msgstr "Nobody has picked this yet."
 
 #. Empty-state text in the channel and chat message reactions sheet.
 #: src/features/channel/components/MessageReactionsSheet.tsx:53
@@ -25021,7 +25200,7 @@ msgid "Overview"
 msgstr "Prezentare generală"
 
 #. Community settings tab for basic server/community details.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:53
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:59
 msgctxt "community-settings-tab"
 msgid "Overview"
 msgstr "Prezentare generală"
@@ -25357,7 +25536,7 @@ msgstr "Pennsylvania"
 #: src/features/expressions/utils/UnicodeEmojis.ts:21
 #: src/features/search/state/QuickSwitcherResultConverters.ts:22
 #: src/features/search/utils/QuickSwitcherModalUtils.tsx:53
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:277
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:292
 msgid "People"
 msgstr "Persoane"
 
@@ -25666,7 +25845,7 @@ msgid "Pin message"
 msgstr "Fixare mesaj"
 
 #. Permission name: allows pinning messages in a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:419
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:423
 msgid "Pin messages"
 msgstr "Fixare mesaje"
 
@@ -25676,12 +25855,12 @@ msgid "Pin messages here for everyone to see."
 msgstr "Fixează mesaje aici pentru ca toată lumea să le vadă."
 
 #. Permission description in the channel-scoped permissions editor for the Pin Messages permission. Covers messages from anyone, not only their own.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:240
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:244
 msgid "Pin or unpin any message in this channel."
 msgstr "Fixează sau desfixează orice mesaj din acest canal."
 
 #. Permission description in the role/permission editor for the Pin Messages permission at community scope. Covers messages from anyone, not only their own.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:142
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:146
 msgid "Pin or unpin any message."
 msgstr "Fixează sau desfixează orice mesaj."
 
@@ -25825,7 +26004,7 @@ msgid "Play selection"
 msgstr "Redă selecția"
 
 #. Permission description in the role/permission editor for the Use Soundboard permission. Covers triggering soundboard sounds in voice; it does not cover adding or managing the sounds themselves.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:108
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:112
 msgid "Play sounds from this community’s soundboard while connected to a voice channel."
 msgstr "Play sounds from this community’s soundboard while connected to a voice channel."
 
@@ -25901,6 +26080,41 @@ msgstr "Polonia"
 msgid "Polish"
 msgstr "Poloneză"
 
+#. Status shown in a poll footer once voting has closed.
+#: src/features/channel/components/MessagePoll.tsx:37
+msgid "Poll ended"
+msgstr "Poll ended"
+
+#. Audit log entry label. A moderator closed a poll before its timer ran out.
+#: src/features/app/config/AuditLogConstants.ts:147
+msgid "Poll ended early"
+msgstr "Poll ended early"
+
+#. Title of the error dialog shown when ending a poll early fails.
+#: src/features/channel/components/MessagePoll.tsx:73
+msgid "Poll not ended"
+msgstr "Poll not ended"
+
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:162
+msgid "Poll settings could not be loaded."
+msgstr "Poll settings could not be loaded."
+
+#. Community settings tab for enabling polls and setting their size and duration limits.
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:196
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:50
+msgid "Polls"
+msgstr "Polls"
+
+#. Notice at the top of the community polls tab when the instance-wide polls toggle is off.
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:29
+msgid "Polls are turned off for this instance. Ask an instance admin to enable them."
+msgstr "Polls are turned off for this instance. Ask an instance admin to enable them."
+
+#. Validation error under the custom duration field. {min} and {max} are whole numbers of hours.
+#: src/features/messaging/components/CreatePollModal.tsx:70
+msgid "Polls can stay open between {min} and {max} hours."
+msgstr "Polls can stay open between {min} and {max} hours."
+
 #. Button label in a popped-out voice window titlebar that restores the content into the main app window.
 #. Button label on the popped-out overlay that closes the popout window and restores the view in the app.
 #: src/features/voice/components/popout/PopoutTitlebar.tsx:22
@@ -25957,6 +26171,11 @@ msgstr "Portugheză (Brazilia)"
 #: src/features/user/components/settings_utils/search_index/DesktopSettingsIndex.ts:102
 msgid "Position"
 msgstr "Poziție"
+
+#. Submit button of the poll composer.
+#: src/features/messaging/components/CreatePollModal.tsx:69
+msgid "Post poll"
+msgstr "Post poll"
 
 #: src/features/input/utils/KeybindUtils.ts:105
 msgctxt "keyboard-key-name"
@@ -26298,7 +26517,7 @@ msgid "Prioritize speakers"
 msgstr "Prioritizează vorbitorii"
 
 #. Permission name: allows a voice participant to be heard over others.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:480
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:484
 msgid "Priority speaker"
 msgstr "Vorbitor prioritar"
 
@@ -26771,6 +26990,11 @@ msgstr "Push-to-talk nu îți reactivează microfonul cât timp ai sunetul dezac
 msgid "Quality"
 msgstr "Calitate"
 
+#. Label of the poll question field.
+#: src/features/messaging/components/CreatePollModal.tsx:36
+msgid "Question"
+msgstr "Question"
+
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Short label in the theme studio. Keep it concise.
 #: src/features/theme_studio/ThemeStudio.tsx:52
@@ -26929,7 +27153,7 @@ msgid "Read message aloud"
 msgstr "Citește mesajul cu voce tare"
 
 #. Permission name: allows seeing earlier messages in a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:431
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:435
 msgid "Read message history"
 msgstr "Citește istoricul mesajelor"
 
@@ -26941,12 +27165,12 @@ msgid "Read messages"
 msgstr "Citește mesaje"
 
 #. Permission description in the role/permission editor for the Read Message History permission at community scope. Without the permission the member sees only messages that arrive while the channel is open in front of them.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:156
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:160
 msgid "Read messages sent before opening a channel. Without this permission, members only see messages that arrive while they have the channel open."
 msgstr "Citește mesajele trimise înainte de a deschide un canal. Fără această permisiune, membrii văd doar mesajele care sosesc cât timp au canalul deschis."
 
 #. Permission description in the channel-scoped permissions editor for the Read Message History permission. Without the permission the member sees only messages that arrive while the channel is open in front of them.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:254
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:258
 msgid "Read messages sent in this channel before opening it. Without this permission, members only see messages that arrive while they have it open."
 msgstr "Citește mesajele trimise în acest canal înainte de a-l deschide. Fără această permisiune, membrii văd doar mesajele care sosesc cât timp îl au deschis."
 
@@ -26978,8 +27202,8 @@ msgstr "Ești gata să faci upgrade?"
 msgid "Real-time"
 msgstr "Timp real"
 
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:622
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:1291
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:624
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:1293
 #: src/features/moderation/components/modals/BanDetailsModal.tsx:74
 msgid "Reason"
 msgstr "Motiv"
@@ -27471,6 +27695,11 @@ msgstr "Elimini toate reacțiile {emojiNameWithColons} de pe acest mesaj?"
 msgid "Remove all reactions"
 msgstr "Elimină toate reacțiile"
 
+#. Accessible label of the button that removes one poll answer field.
+#: src/features/messaging/components/CreatePollModal.tsx:47
+msgid "Remove answer"
+msgstr "Remove answer"
+
 #. Button or menu action label in the channel attachment area. Keep it concise. Keep the tone plain and specific.
 #: src/features/channel/components/ChannelAttachmentArea.tsx:60
 msgid "Remove attachment"
@@ -27570,7 +27799,7 @@ msgid "Remove it from the channel for everyone."
 msgstr "Elimină-l din canal pentru toată lumea."
 
 #. Permission description in the role/permission editor for the Kick Members permission. Note that a kick is not permanent, unlike a ban.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:123
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:127
 msgid "Remove members from the community. They can rejoin with a new invite."
 msgstr "Elimină membrii din comunitate. Aceștia se pot alătura din nou cu o invitație nouă."
 
@@ -27652,6 +27881,11 @@ msgstr "Elimină timeoutul"
 #: src/features/user/components/modals/tabs/chat_settings_tab/SearchEnginesTab.tsx:106
 msgid "Remove translator"
 msgstr "Elimină traducătorul"
+
+#. Button in a poll footer that withdraws the current member’s vote.
+#: src/features/channel/components/MessagePoll.tsx:49
+msgid "Remove vote"
+msgstr "Remove vote"
 
 #. Button or menu action label in the premium badge settings. Keep it concise. Preserve {premiumProductName}; it is inserted by code. Keep the tone plain and specific.
 #: src/features/user/components/modals/tabs/my_profile_tab/PremiumBadgeSettings.tsx:31
@@ -27910,7 +28144,7 @@ msgid "Rename :{emojiName}:"
 msgstr "Redenumește :{emojiName}:"
 
 #. Permission description in the channel-scoped permissions editor for the Manage Channel permission. "This channel" refers to the channel currently being edited.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:201
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:205
 msgid "Rename and edit this channel's settings."
 msgstr "Redenumește și editează setările acestui canal."
 
@@ -28739,6 +28973,10 @@ msgstr "Reabonează-te"
 msgid "Resumed invites"
 msgstr "A reluat invitațiile"
 
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:165
+msgid "Retry"
+msgstr "Retry"
+
 #: src/features/auth/components/pages/ForgotPasswordPage.tsx:62
 msgid "Return to sign-in"
 msgstr "Înapoi la autentificare"
@@ -29012,7 +29250,7 @@ msgstr "Ton de apel"
 
 #. Audit log target-type filter label. Filters entries that target a role.
 #. Slash-command argument type name, spoken by screen readers for an argument that takes a role.
-#: src/features/app/config/AuditLogConstants.ts:191
+#: src/features/app/config/AuditLogConstants.ts:195
 #: src/features/lexical/composer/nodes/SlashSlotNode.ts:35
 msgid "Role"
 msgstr "Rol"
@@ -29068,7 +29306,7 @@ msgid "Roles"
 msgstr "Roluri"
 
 #. Community settings tab for role hierarchy and permission rules.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:58
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:64
 msgctxt "community-settings-tab"
 msgid "Roles"
 msgstr "Roluri"
@@ -29230,6 +29468,7 @@ msgid "Save banner"
 msgstr "Salvează bannerul"
 
 #: src/features/app/components/dialogs/shared/UnsavedChangesBannerContent.tsx:60
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:324
 #: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:467
 msgid "Save changes"
 msgstr "Salvează modificările"
@@ -29963,7 +30202,7 @@ msgid "Security key PIN form"
 msgstr "Formular pentru PIN-ul cheii de securitate"
 
 #. Permission description in the role/permission editor for the View Channel permission at community scope. Per-channel overwrites still decide access for individual channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:133
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:137
 msgid "See channels by default. Channels that deny it stay hidden."
 msgstr "Vezi canalele implicit. Canalele care îl refuză rămân ascunse."
 
@@ -29977,12 +30216,12 @@ msgid "See the member list for channels in this community."
 msgstr "Vezi lista de membri pentru canalele din această comunitate."
 
 #. Permission description in the channel-scoped permissions editor for the View Channel Members permission. Scoped to a single channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:216
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:220
 msgid "See the member list for this channel."
 msgstr "Vezi lista de membri a acestui canal."
 
 #. Permission description in the channel-scoped permissions editor for the View Channel permission. The placeholder renders the literal @everyone role name and must not be translated.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:226
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:230
 msgid "See this channel. Denying it for {everyoneMention} makes the channel private."
 msgstr "Vezi acest canal. Refuzarea lui pentru {everyoneMention} face canalul privat."
 
@@ -30097,6 +30336,16 @@ msgstr "Selectează GIF {title}"
 #: src/features/user/components/modals/tabs/LanguageTab.tsx:78
 msgid "Select interface language"
 msgstr "Selectează limba interfeței"
+
+#. Hint under a poll question when members may pick a single answer.
+#: src/features/channel/components/MessagePoll.tsx:29
+msgid "Select one answer"
+msgstr "Select one answer"
+
+#. Hint under a poll question when members may pick several answers.
+#: src/features/channel/components/MessagePoll.tsx:33
+msgid "Select one or more answers"
+msgstr "Select one or more answers"
 
 #. Button or menu action label in the o auth builder section. Keep it concise. Keep the tone plain and specific.
 #: src/features/user/components/modals/tabs/applications_tab/application_detail/OAuthBuilderSection.tsx:39
@@ -30326,7 +30575,7 @@ msgstr "Trimite mesaj"
 #. Audit log operation flag label for message sending.
 #. Permission name: allows sending chat messages.
 #: src/features/guild/utils/guild_tabs/GuildAuditLogTabUtils.ts:197
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:407
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:411
 msgid "Send messages"
 msgstr "Trimite mesaje"
 
@@ -30336,14 +30585,19 @@ msgid "Send messages disabled"
 msgstr "Trimiterea mesajelor dezactivată"
 
 #. Permission description in the role/permission editor for the Send Messages permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:138
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:142
 msgid "Send messages in channels."
 msgstr "Trimite mesaje în canale."
 
 #. Permission description in the channel-scoped permissions editor for the Send Messages permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:231
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:235
 msgid "Send messages in this channel."
 msgstr "Trimite mesaje în acest canal."
+
+#. Permission name: allows creating polls in text channels.
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:488
+msgid "Send polls"
+msgstr "Send polls"
 
 #. Footer submit button in the IAR modal. Sends the report to the safety team.
 #: src/features/moderation/components/report_modal/IARModal.tsx:90
@@ -30396,7 +30650,7 @@ msgid "Send to"
 msgstr "Trimite la"
 
 #. Permission name: allows sending text-to-speech messages.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:411
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:415
 msgid "Send TTS messages"
 msgstr "Trimite mesaje TTS"
 
@@ -30407,7 +30661,7 @@ msgstr "Trimite codul de verificare"
 #. Accessible label and tooltip for the send button after recording a voice message.
 #. Keyboard shortcut action label that opens the desktop voice message composer.
 #. Plus menu item that opens the desktop voice message composer to record and send a voice clip.
-#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:35
+#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:44
 #: src/features/channel/components/VoiceMessageRecorder.tsx:69
 #: src/features/input/state/input_keybind/shared.ts:285
 msgid "Send voice message"
@@ -30875,7 +31129,7 @@ msgid "Set verification level to <0>none</0>."
 msgstr "Nivelul de verificare a fost setat la <0>niciunul</0>."
 
 #. Permission name: allows changing the voice service region.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:500
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:508
 msgid "Set voice region"
 msgstr "Setează regiunea vocală"
 
@@ -31282,12 +31536,12 @@ msgid "Show download button"
 msgstr "Afișează butonul de descărcare"
 
 #. Permission description in the channel-scoped permissions editor for the Embed Links permission. The preview is the card rendered under a message that contains a link.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:245
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:249
 msgid "Show embedded previews for links sent in this channel."
 msgstr "Afișează previzualizări încorporate pentru linkurile trimise în acest canal."
 
 #. Permission description in the role/permission editor for the Embed Links permission at community scope. The preview is the card rendered under a message that contains a link.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:147
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:151
 msgid "Show embedded previews for links sent."
 msgstr "Afișează previzualizări încorporate pentru linkurile trimise."
 
@@ -31303,7 +31557,7 @@ msgstr "Afișează încorporări și previzualizări pentru linkuri web"
 
 #. Short label for an advanced message input preference.
 #. Short label in the channel and chat textarea plus menu. Keep it concise.
-#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:55
+#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:64
 #: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:124
 msgid "Show emoji button"
 msgstr "Afișează butonul de emoji"
@@ -31342,7 +31596,7 @@ msgstr "Afișează indicatorul GIF"
 
 #. Plus menu submenu toggle that shows the GIFs button next to the textarea.
 #. Short label for an advanced message input preference.
-#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:43
+#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:52
 #: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:104
 msgid "Show GIFs button"
 msgstr "Afișează butonul GIF-uri"
@@ -31391,7 +31645,7 @@ msgstr "Afișează max. 5 (insignă +5)"
 
 #. Plus menu submenu toggle that shows the saved media (memes) button next to the textarea.
 #. Short label for an advanced message input preference.
-#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:47
+#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:56
 #: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:108
 msgid "Show media button"
 msgstr "Afișează butonul media"
@@ -31539,7 +31793,7 @@ msgstr "Afișează media salvată în completarea automată a expresiilor"
 #. Short label in the channel and chat textarea plus menu. Keep it concise.
 #. Short label in the channel and chat textarea plus menu. Keep it concise.
 #: src/features/channel/components/textarea/TextareaContextMenu.tsx:102
-#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:59
+#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:68
 #: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:128
 msgid "Show send button"
 msgstr "Afișează butonul de trimitere"
@@ -31551,7 +31805,7 @@ msgstr "Afișează conținutul spoiler la clic"
 
 #. Short label for an advanced message input preference.
 #. Short label in the channel and chat textarea plus menu. Keep it concise.
-#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:51
+#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:60
 #: src/features/user/components/modals/tabs/advanced_settings_tab/AdvancedChatControls.tsx:120
 msgid "Show stickers button"
 msgstr "Afișează butonul de stickere"
@@ -31599,6 +31853,11 @@ msgstr "Afișează numărul de DM-uri necitite când este restrâns"
 #: src/features/user/components/modals/tabs/appearance_tab/ChannelListTab.tsx:11
 msgid "Show unread indicator on muted channels"
 msgstr "Afișează indicatorul de mesaje necitite pe canalele puse pe silențios"
+
+#. Button in a poll footer that reveals per-answer results before the member has voted.
+#: src/features/channel/components/MessagePoll.tsx:53
+msgid "Show votes"
+msgstr "Show votes"
 
 #. Label in the avatar uploader.
 #: src/features/user/components/modals/tabs/my_profile_tab/AvatarUploader.tsx:62
@@ -32261,7 +32520,7 @@ msgid "Something went wrong while issuing your refund. Contact support if this k
 msgstr "A apărut o eroare la emiterea rambursării. Contactează asistența dacă problema persistă."
 
 #. Generic error shown in the activity log tab when fetching log entries fails.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:105
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:106
 msgid "Something went wrong while loading the activity log."
 msgstr "A apărut o eroare la încărcarea jurnalului de activitate."
 
@@ -32405,7 +32664,7 @@ msgid "Sound Volume"
 msgstr "Sound Volume"
 
 #. Community settings tab for managing soundboard sounds uploaded to the community.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:48
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:54
 msgctxt "community-settings-tab"
 msgid "Soundboard"
 msgstr "Soundboard"
@@ -32417,22 +32676,22 @@ msgid "Soundboard"
 msgstr "Soundboard"
 
 #. Audit log target-type filter label. Filters entries that target a soundboard sound.
-#: src/features/app/config/AuditLogConstants.ts:207
+#: src/features/app/config/AuditLogConstants.ts:211
 msgid "Soundboard sound"
 msgstr "Soundboard sound"
 
 #. Audit log entry label. A soundboard sound was added to the community.
-#: src/features/app/config/AuditLogConstants.ts:147
+#: src/features/app/config/AuditLogConstants.ts:151
 msgid "Soundboard sound created"
 msgstr "Soundboard sound created"
 
 #. Audit log entry label. A soundboard sound was removed from the community.
-#: src/features/app/config/AuditLogConstants.ts:155
+#: src/features/app/config/AuditLogConstants.ts:159
 msgid "Soundboard sound deleted"
 msgstr "Soundboard sound deleted"
 
 #. Audit log entry label. A soundboard sound was renamed or edited.
-#: src/features/app/config/AuditLogConstants.ts:151
+#: src/features/app/config/AuditLogConstants.ts:155
 msgid "Soundboard sound updated"
 msgstr "Soundboard sound updated"
 
@@ -32572,7 +32831,7 @@ msgid "Spatial and temporal layers"
 msgstr "Straturi spațiale și temporale"
 
 #. Permission name: allows speaking in voice channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:467
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:471
 msgctxt "voice-permission"
 msgid "Speak"
 msgstr "Vorbește"
@@ -32983,7 +33242,7 @@ msgstr "sticker"
 #. Generic label for one sticker.
 #. Label for the has:sticker option in the mobile content-type filter sheet.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
-#: src/features/app/config/AuditLogConstants.ts:203
+#: src/features/app/config/AuditLogConstants.ts:207
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:234
 #: src/features/search/components/search/HasFilterSheet.tsx:73
 #: src/features/user/components/settings_utils/section_registry/ChatSettingsSections.ts:133
@@ -33074,7 +33333,7 @@ msgid "Stickers"
 msgstr "Stickere"
 
 #. Community settings tab for managing custom stickers uploaded to the community.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:43
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:45
 msgctxt "community-settings-tab"
 msgid "Stickers"
 msgstr "Stickere"
@@ -33291,7 +33550,7 @@ msgid "Stream settings"
 msgstr "Setări stream"
 
 #. Permission name: allows video streaming or screen sharing in voice.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:472
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:476
 msgid "Stream video"
 msgstr "Transmite video"
 
@@ -33932,12 +34191,12 @@ msgid "Talk in calls and test your input."
 msgstr "Vorbește în apeluri și testează-ți intrarea audio."
 
 #. Permission description in the channel-scoped permissions editor for the Speak permission. "Mute members" is another permission in this same editor, so match the wording used for its name.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:291
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:295
 msgid "Talk in this voice channel. Without this permission, members stay muted until someone with the \"Mute members\" permission unmutes them."
 msgstr "Vorbește în acest canal vocal. Fără această permisiune, membrii rămân cu microfonul dezactivat până când cineva cu permisiunea „Dezactivează microfonul membrilor” le activează microfonul."
 
 #. Permission description in the role/permission editor for the Speak permission at community scope. "Mute members" is another permission in this same editor, so match the wording used for its name.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:171
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:175
 msgid "Talk in voice channels. Without this permission, members stay muted until someone with the \"Mute members\" permission unmutes them."
 msgstr "Vorbește în canalele vocale. Fără această permisiune, membrii rămân cu microfonul dezactivat până când cineva cu permisiunea „Dezactivează microfonul membrilor” le activează microfonul."
 
@@ -34459,6 +34718,16 @@ msgstr "Pagina pe care o cauți nu există sau a fost mutată."
 msgid "The phone check is set aside. One email step is left."
 msgstr "Verificarea telefonică a fost amânată. A mai rămas un pas cu e-mailul."
 
+#. Error shown when ending a poll early fails.
+#: src/features/channel/components/MessagePoll.tsx:81
+msgid "The poll could not be ended."
+msgstr "The poll could not be ended."
+
+#. Error shown at the bottom of the poll composer when the request fails.
+#: src/features/messaging/components/CreatePollModal.tsx:74
+msgid "The poll could not be posted. Try again."
+msgstr "The poll could not be posted. Try again."
+
 #. OAuth authorize page error shown when the redirect_uri is not registered for this OAuth app.
 #: src/features/auth/components/pages/oauth_authorize_page/state/useAuthorizeFlow.ts:58
 msgid "The provided redirect_uri is not registered for this application."
@@ -34885,6 +35154,11 @@ msgstr "Această comunitate este marcată pentru conținut matur și poate conț
 #: src/features/discovery/commands/DiscoveryJoinCommands.tsx:46
 msgid "This community is no longer available"
 msgstr "Această comunitate nu mai este disponibilă"
+
+#. Description under the multiple-answers toggle when the community has disabled it.
+#: src/features/messaging/components/CreatePollModal.tsx:65
+msgid "This community only allows single-answer polls."
+msgstr "This community only allows single-answer polls."
 
 #. Description text in the linked accounts tab.
 #. Description text in the user profile shared popout.
@@ -35591,7 +35865,7 @@ msgid "Time out {tag}"
 msgstr "Timeout pentru {tag}"
 
 #. Permission name: allows temporarily restricting members.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:451
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:455
 msgid "Time out members"
 msgstr "Aplică timeout membrilor"
 
@@ -35888,7 +36162,7 @@ msgid "TOTP"
 msgstr "TOTP"
 
 #. Subtitle under the activity-log page title.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:113
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:114
 msgid "Track moderator actions across the community."
 msgstr "Urmărește acțiunile moderatorilor în comunitate."
 
@@ -36260,12 +36534,12 @@ msgid "Turn off streaming privacy before viewing login or account security detai
 msgstr "Dezactivează confidențialitatea streamingului înainte de a vizualiza detaliile de conectare sau de securitate a contului."
 
 #. Permission description in the channel-scoped permissions editor for the Stream Video permission. Covers both the webcam and screen sharing.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:297
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:301
 msgid "Turn on a camera or share a screen in this voice channel."
 msgstr "Pornește o cameră sau partajează ecranul în acest canal vocal."
 
 #. Permission description in the role/permission editor for the Stream Video permission at community scope. Covers both the webcam and screen sharing.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:177
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:181
 msgid "Turn on a camera or share a screen in voice channels."
 msgstr "Pornește o cameră sau partajează ecranul în canalele vocale."
 
@@ -36491,7 +36765,7 @@ msgid "Ukrainian"
 msgstr "Ucraineană"
 
 #. Error-state title in the activity log tab when fetching log entries failed.
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:137
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:138
 msgid "Unable to load activity logs"
 msgstr "Nu se pot încărca jurnalele de activitate"
 
@@ -36849,7 +37123,7 @@ msgid "Unknown message type"
 msgstr "Tip de mesaj necunoscut"
 
 #. Fallback label for a permission bit the client does not recognize.
-#: src/features/permissions/utils/PermissionUtils.ts:423
+#: src/features/permissions/utils/PermissionUtils.ts:425
 msgid "Unknown permission"
 msgstr "Permisiune necunoscută"
 
@@ -36895,7 +37169,7 @@ msgstr "utilizator necunoscut"
 #: src/features/channel/utils/ChannelUtils.tsx:55
 #: src/features/devtools/utils/CommandUtils.ts:27
 #: src/features/guild/components/modals/guild_tabs/GuildAuditLogSentence.tsx:54
-#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:125
+#: src/features/guild/components/modals/guild_tabs/GuildAuditLogTab.tsx:126
 #: src/features/lexical/composer/nodes/SlashSlotNode.ts:61
 #: src/features/voice/components/VoiceParticipantAvatarList.tsx:44
 #: src/features/voice/components/VoiceParticipantTile.tsx:176
@@ -37555,12 +37829,12 @@ msgid "Upload file"
 msgstr "Încarcă fișier"
 
 #. Permission description in the role/permission editor for the Attach Files permission at community scope.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:152
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:156
 msgid "Upload files and media in messages."
 msgstr "Încarcă fișiere și media în mesaje."
 
 #. Permission description in the channel-scoped permissions editor for the Attach Files permission.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:250
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:254
 msgid "Upload files and media in this channel."
 msgstr "Încarcă fișiere și media în acest canal."
 
@@ -37843,7 +38117,7 @@ msgid "Use email"
 msgstr "Folosește e-mailul"
 
 #. Permission description in the channel-scoped permissions editor for the Use External Emoji permission. "Other communities" means custom emoji uploaded in a different Fluxer community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:265
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:269
 msgid "Use emoji from other communities in this channel."
 msgstr "Folosește emoji din alte comunități în acest canal."
 
@@ -37858,12 +38132,12 @@ msgid "Use emoji from other communities."
 msgstr "Folosește emoji din alte comunități."
 
 #. Permission name: allows using emoji from other communities.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:435
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:439
 msgid "Use external emoji"
 msgstr "Folosește emoji externe"
 
 #. Permission name: allows using stickers from other communities.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:439
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:443
 msgid "Use external stickers"
 msgstr "Folosește stickere externe"
 
@@ -37956,12 +38230,12 @@ msgid "Use selection"
 msgstr "Folosește selecția"
 
 #. Permission name: allows playing soundboard sounds in voice channels.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:484
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:492
 msgid "Use soundboard"
 msgstr "Use soundboard"
 
 #. Permission description in the channel-scoped permissions editor for the Use External Stickers permission. "Other communities" means stickers uploaded in a different Fluxer community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:270
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:274
 msgid "Use stickers from other communities in this channel."
 msgstr "Folosește stickere din alte comunități în acest canal."
 
@@ -37971,7 +38245,7 @@ msgid "Use stickers from other communities with {premiumProductName}"
 msgstr "Folosește stickere din alte comunități cu {premiumProductName}"
 
 #. Permission description in the role/permission editor for the Use External Stickers permission. "Other communities" means stickers uploaded in a different Fluxer community.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:162
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:166
 msgid "Use stickers from other communities."
 msgstr "Folosește stickere din alte comunități."
 
@@ -38037,7 +38311,7 @@ msgid "Use video and camera previews."
 msgstr "Folosește previzualizări video și de cameră."
 
 #. Permission name: allows voice activation instead of requiring push-to-talk.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:476
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:480
 msgid "Use voice activity"
 msgstr "Folosește activitatea vocală"
 
@@ -38089,7 +38363,7 @@ msgstr "Folosit doar în această comunitate."
 #. Audit log target-type filter label. Filters entries that target a user account.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #. Slash-command argument type name, spoken by screen readers for an argument that takes a user.
-#: src/features/app/config/AuditLogConstants.ts:187
+#: src/features/app/config/AuditLogConstants.ts:191
 #: src/features/lexical/composer/nodes/SlashSlotNode.ts:27
 #: src/features/user/components/settings_utils/search_index/MyProfileIndex.ts:65
 msgid "User"
@@ -38335,7 +38609,7 @@ msgid "Vanity URL"
 msgstr "URL personalizat"
 
 #. Community settings tab for the community vanity/custom invite link.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:78
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:84
 msgctxt "community-settings-tab"
 msgid "Vanity URL"
 msgstr "URL personalizat"
@@ -38779,7 +39053,7 @@ msgid "View {userName}'s profile"
 msgstr "Vezi profilul lui {userName}"
 
 #. Permission name: allows viewing community audit/activity logs.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:359
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:363
 msgid "View activity log"
 msgstr "Vizualizează jurnalul de activitate"
 
@@ -38835,12 +39109,12 @@ msgid "View call controls"
 msgstr "Vezi comenzile apelului"
 
 #. Permission name: allows seeing a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:455
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:459
 msgid "View channel"
 msgstr "Vizualizare canal"
 
 #. Permission name: allows seeing the member list for a channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:459
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:463
 msgid "View channel members"
 msgstr "Vizualizează membrii canalului"
 
@@ -39355,6 +39629,16 @@ msgctxt "keyboard-key-name"
 msgid "Volume up"
 msgstr "Mărește volumul"
 
+#. Title of the error dialog shown when voting on a poll fails.
+#: src/features/channel/components/MessagePoll.tsx:69
+msgid "Vote not saved"
+msgstr "Vote not saved"
+
+#. Heading of the popout listing who voted for a poll answer. {answer} is the answer text.
+#: src/features/channel/components/MessagePoll.tsx:61
+msgid "Voted for {answer}"
+msgstr "Voted for {answer}"
+
 #. Description text in the message delete too quick modal. Keep the tone plain and specific.
 #: src/features/messaging/components/alerts/MessageDeleteTooQuickModal.tsx:12
 msgid "Wait a moment before deleting more messages."
@@ -39716,7 +40000,7 @@ msgid "Webcam"
 msgstr "Cameră web"
 
 #. Audit log target-type filter label. Filters entries that target a webhook.
-#: src/features/app/config/AuditLogConstants.ts:216
+#: src/features/app/config/AuditLogConstants.ts:220
 msgid "Webhook"
 msgstr "Webhook"
 
@@ -39764,7 +40048,7 @@ msgid "Webhooks"
 msgstr "Webhook-uri"
 
 #. Community settings tab for configuring webhooks.
-#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:73
+#: src/features/user/components/settings_utils/GuildSettingsConstants.ts:79
 msgctxt "community-settings-tab"
 msgid "Webhooks"
 msgstr "Webhook-uri"
@@ -39876,6 +40160,11 @@ msgctxt "us-state"
 msgid "West Virginia"
 msgstr "Virginia de Vest"
 
+#. Placeholder of the poll question field.
+#: src/features/messaging/components/CreatePollModal.tsx:37
+msgid "What do you want to ask?"
+msgstr "What do you want to ask?"
+
 #. IAR modal: category-step title for the platform-report path. User picks a broad area before drilling in.
 #: src/features/moderation/components/report_modal/IARModalCopy.ts:31
 msgid "What kind of rule was broken?"
@@ -39929,6 +40218,10 @@ msgstr "Când expirarea atașamentelor este dezactivată, atașamentele rămân 
 #: src/features/channel/components/active_now/ActiveNowSidebar.tsx:21
 msgid "When friends are active in voice channels, their activity will appear here."
 msgstr "Când prietenii sunt activi în canalele vocale, activitatea lor va apărea aici."
+
+#: src/features/guild/components/modals/guild_tabs/GuildPollsTab.tsx:311
+msgid "When off, every poll posted here is single-choice."
+msgstr "When off, every poll posted here is single-choice."
 
 #. Label in the display tab.
 #: src/features/user/components/modals/tabs/chat_settings_tab/DisplayTab.tsx:51
@@ -40148,7 +40441,7 @@ msgid "Withdraw"
 msgstr "Retrage"
 
 #. Permission description in the channel-scoped permissions editor for the Use Voice Activity permission. Explains the inverse: without it, the user must use push-to-talk in this voice channel.
-#: src/features/permissions/utils/PermissionLabelDescriptors.ts:302
+#: src/features/permissions/utils/PermissionLabelDescriptors.ts:306
 msgid "Without this permission, push-to-talk is required in this channel."
 msgstr "Fără această permisiune, în acest canal este necesar push-to-talk."
 
@@ -40407,6 +40700,11 @@ msgstr "Nu te poți adăuga pe tine ca prieten"
 #: src/features/user/components/modals/tabs/MyProfileTab.tsx:134
 msgid "You can't change your nickname here"
 msgstr "Nu-ți poți schimba pseudonimul aici"
+
+#. Hint on the disabled Create poll entry of the textarea plus menu when the member lacks the Send Polls permission.
+#: src/features/channel/components/textarea/TextareaPlusMenu.tsx:39
+msgid "You can't create polls in this channel."
+msgstr "You can't create polls in this channel."
 
 #. Title of the error modal shown when the user lacks permission to delete a channel or category.
 #: src/features/app/components/alerts/ChannelDeleteFailedModal.tsx:18
@@ -41316,22 +41614,22 @@ msgid "Your last purchase is outside the refund window. Contact support for bill
 msgstr "Ultima achiziție este în afara perioadei de rambursare. Contactează asistența pentru probleme de facturare."
 
 #. Label in the message queue state.
-#: src/features/messaging/state/MessageQueue.tsx:72
+#: src/features/messaging/state/MessageQueue.tsx:73
 msgid "Your message could not be delivered because it was flagged by our safety systems. If you believe this is a mistake, please contact support."
 msgstr "Mesajul tău nu a putut fi livrat deoarece a fost semnalat de sistemele noastre de siguranță. Dacă crezi că este o greșeală, te rugăm să contactezi asistența."
 
 #. Label in the message queue state.
-#: src/features/messaging/state/MessageQueue.tsx:59
+#: src/features/messaging/state/MessageQueue.tsx:60
 msgid "Your message could not be delivered. This is usually because you don't share a community with the recipient or the recipient is only accepting direct messages from friends. You may also need to adjust your own direct message privacy settings in {directMessagePrivacySettingsPath}."
 msgstr "Mesajul tău nu a putut fi livrat. Acest lucru se întâmplă de obicei deoarece nu ești în aceeași comunitate cu destinatarul sau destinatarul acceptă mesaje directe doar de la prieteni. S-ar putea să fie nevoie să îți ajustezi și propriile setări de confidențialitate pentru mesaje directe în {directMessagePrivacySettingsPath}."
 
 #. Description text in the message queue state.
-#: src/features/messaging/state/MessageQueue.tsx:64
+#: src/features/messaging/state/MessageQueue.tsx:65
 msgid "Your message could not be delivered. You need to claim your account to send direct messages."
 msgstr "Mesajul tău nu a putut fi livrat. Trebuie să-ți revendici contul pentru a trimite mesaje directe."
 
 #. Description text in the message queue state.
-#: src/features/messaging/state/MessageQueue.tsx:68
+#: src/features/messaging/state/MessageQueue.tsx:69
 msgid "Your message could not be delivered. You need to claim your account to send messages."
 msgstr "Mesajul tău nu a putut fi livrat. Trebuie să-ți revendici contul pentru a trimite mesaje."
 
@@ -41518,6 +41816,11 @@ msgstr "Adresa URL personalizată a fost setată la {inviteEndpoint}/{vanitySlug
 msgctxt "screen-share"
 msgid "Your video encoder stopped encoding frames, so your screen share was stopped. Try sharing again."
 msgstr "Codificatorul tău video a încetat să codifice cadre, așa că partajarea ecranului a fost oprită. Încearcă să partajezi din nou."
+
+#. Error shown when voting on a poll fails.
+#: src/features/channel/components/MessagePoll.tsx:77
+msgid "Your vote could not be saved. Try again."
+msgstr "Your vote could not be saved. Try again."
 
 #. Label for the YouTube enrichment service toggle in the setup wizard.
 #: src/features/app/components/setup/SetupWizardSteps.tsx:286
