@@ -73,6 +73,8 @@ export const PollCreateRequest = z.object({
 });
 
 export type PollCreateRequest = z.infer<typeof PollCreateRequest>;
+/** What a client puts on the wire: snowflakes as strings, before parsing. */
+export type PollCreateRequestInput = z.input<typeof PollCreateRequest>;
 
 export const PollEmojiResponse = z.object({
 	id: SnowflakeStringType.nullable(),

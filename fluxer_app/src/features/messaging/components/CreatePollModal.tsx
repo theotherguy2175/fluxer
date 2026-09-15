@@ -20,7 +20,7 @@ import {
 	POLL_MIN_ANSWERS,
 	POLL_MIN_DURATION_HOURS,
 } from '@fluxer/constants/src/PollConstants';
-import type {GuildPollSettingsResponse, PollCreateRequest} from '@fluxer/schema/src/domains/message/PollSchemas';
+import type {GuildPollSettingsResponse, PollCreateRequestInput} from '@fluxer/schema/src/domains/message/PollSchemas';
 import * as SnowflakeUtils from '@fluxer/snowflake/src/SnowflakeUtils';
 import {msg, plural} from '@lingui/core/macro';
 import {Trans, useLingui} from '@lingui/react/macro';
@@ -147,11 +147,13 @@ export const CreatePollModal: React.FC<CreatePollModalProps> = observer(({channe
 		if (!canSubmit) return;
 		setSubmitting(true);
 		setError(null);
-		const poll: PollCreateRequest = {
+		// Wire shape: snowflakes travel as strings (z.input of the schema); a
+		// BigInt here would blow up JSON.stringify before the request is sent.
+		const poll: PollCreateRequestInput = {
 			question: {text: questionTrimmed},
 			answers: filledAnswers.map((answer) => ({
 				text: answer.text.trim(),
-				emoji_id: answer.emojiId ? BigInt(answer.emojiId) : undefined,
+				emoji_id: answer.emojiId ?? undefined,
 				emoji_name: answer.emojiId ? undefined : (answer.emojiName ?? undefined),
 			})),
 			duration_hours: effectiveDuration,

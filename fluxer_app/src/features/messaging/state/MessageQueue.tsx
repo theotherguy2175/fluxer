@@ -52,7 +52,7 @@ import type {
 	MessageReference,
 	MessageStickerItem,
 } from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
-import type {PollCreateRequest} from '@fluxer/schema/src/domains/message/PollSchemas';
+import type {PollCreateRequestInput} from '@fluxer/schema/src/domains/message/PollSchemas';
 import type {I18n} from '@lingui/core';
 import {msg} from '@lingui/core/macro';
 import {reaction} from 'mobx';
@@ -107,7 +107,7 @@ interface SendMessagePayload extends BaseMessagePayload {
 	favoriteMemeId?: string;
 	stickers?: Array<MessageStickerItem>;
 	tts?: boolean;
-	poll?: PollCreateRequest;
+	poll?: PollCreateRequestInput;
 }
 
 export type MessageQueuePayload = SendMessagePayload;

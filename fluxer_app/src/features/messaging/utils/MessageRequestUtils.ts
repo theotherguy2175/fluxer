@@ -11,7 +11,7 @@ import type {
 	MessageReference,
 	MessageStickerItem,
 } from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
-import type {PollCreateRequest} from '@fluxer/schema/src/domains/message/PollSchemas';
+import type {PollCreateRequestInput} from '@fluxer/schema/src/domains/message/PollSchemas';
 
 const DEFAULT_ALLOWED_MENTIONS: AllowedMentions = {replied_user: true};
 
@@ -50,7 +50,7 @@ export interface MessageCreateRequest {
 	favorite_meme_id?: string;
 	sticker_ids?: Array<string>;
 	tts?: true;
-	poll?: PollCreateRequest;
+	poll?: PollCreateRequestInput;
 }
 
 export interface MessageEditRequest {
@@ -77,7 +77,7 @@ export interface MessageCreatePayload {
 	favoriteMemeId?: string;
 	stickers?: Array<MessageStickerItem>;
 	tts?: boolean;
-	poll?: PollCreateRequest;
+	poll?: PollCreateRequestInput;
 }
 
 export interface NormalizedMessageContent {

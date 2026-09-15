@@ -60,6 +60,12 @@ describe('MessageValidationService.validateMessageContent', () => {
 		expect(() => service.validateMessageContent({content: '\u200e hello'} as never, null)).not.toThrow();
 	});
 
+	it('accepts a message that carries only a poll', () => {
+		const service = createValidationService();
+		const poll = {question: {text: 'Q?'}, answers: [{text: 'a'}, {text: 'b'}], duration_hours: 1};
+		expect(() => service.validateMessageContent({content: '', poll} as never, null)).not.toThrow();
+	});
+
 	it('limits regular users to the non-premium message length', () => {
 		const service = createValidationService();
 		const user = createUser();
