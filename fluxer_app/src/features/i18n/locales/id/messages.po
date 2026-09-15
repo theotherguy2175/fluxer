@@ -3509,7 +3509,7 @@ msgid "Add some CSS before sharing."
 msgstr "Tambahkan CSS sebelum berbagi."
 
 #. Tile in the voice soundboard popover to upload a new sound.
-#: src/features/voice/components/SoundboardMenu.tsx:70
+#: src/features/voice/components/SoundboardMenu.tsx:72
 msgid "Add Sound"
 msgstr "Add Sound"
 
@@ -3543,7 +3543,7 @@ msgstr "Tambahkan ke kamus"
 #. Action label that pins the current channel, DM, or attachment to the favorites list.
 #. Tooltip on the star button of a soundboard sound tile.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:322
-#: src/features/voice/components/SoundboardMenu.tsx:50
+#: src/features/voice/components/SoundboardMenu.tsx:52
 msgid "Add to favorites"
 msgstr "Tambahkan ke favorit"
 
@@ -6398,7 +6398,7 @@ msgid "Brightness"
 msgstr "Kecerahan"
 
 #. Button that opens the OS file picker to choose a different audio file.
-#: src/features/voice/components/SoundboardSoundModal.tsx:48
+#: src/features/voice/components/SoundboardSoundModal.tsx:49
 msgid "Browse"
 msgstr "Browse"
 
@@ -7997,7 +7997,7 @@ msgstr "Pilih tindakan."
 #. Button or menu action label in the custom status modal. Keep it concise.
 #: src/features/user/components/modals/CustomStatusBottomSheet.tsx:48
 #: src/features/user/components/modals/CustomStatusModal.tsx:58
-#: src/features/voice/components/SoundboardSoundModal.tsx:63
+#: src/features/voice/components/SoundboardSoundModal.tsx:64
 msgid "Choose an emoji"
 msgstr "Pilih emoji"
 
@@ -8586,7 +8586,7 @@ msgid "Click to reveal spoiler"
 msgstr "Klik untuk menampilkan spoiler"
 
 #. Placeholder on the soundboard emoji picker button when no emoji is chosen.
-#: src/features/voice/components/SoundboardSoundModal.tsx:58
+#: src/features/voice/components/SoundboardSoundModal.tsx:59
 msgid "Click to select"
 msgstr "Click to select"
 
@@ -10628,7 +10628,7 @@ msgid "Couldn't save soundboard limits"
 msgstr "Couldn't save soundboard limits"
 
 #. Title of the soundboard save error modal.
-#: src/features/voice/components/SoundboardSoundModal.tsx:67
+#: src/features/voice/components/SoundboardSoundModal.tsx:68
 msgid "Couldn't save this sound"
 msgstr "Couldn't save this sound"
 
@@ -11926,7 +11926,7 @@ msgstr "Delaware"
 #: src/features/user/components/modals/tabs/component_gallery_tab/index.tsx:238
 #: src/features/user/components/settings_utils/search_index/AccountSecurityIndex.ts:154
 #: src/features/user/components/settings_utils/section_registry/SharedDescriptors.ts:190
-#: src/features/voice/components/SoundboardSoundModal.tsx:568
+#: src/features/voice/components/SoundboardSoundModal.tsx:569
 msgid "Delete"
 msgstr "Hapus"
 
@@ -13847,7 +13847,7 @@ msgid "Edit shortcut"
 msgstr "Edit pintasan"
 
 #. Title of the soundboard edit modal.
-#: src/features/voice/components/SoundboardSoundModal.tsx:45
+#: src/features/voice/components/SoundboardSoundModal.tsx:46
 msgid "Edit Sound"
 msgstr "Edit Sound"
 
@@ -15766,7 +15766,7 @@ msgstr "Favorit"
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:258
 #: src/features/user/components/settings_utils/section_registry/AppearanceSections.ts:426
-#: src/features/voice/components/SoundboardMenu.tsx:46
+#: src/features/voice/components/SoundboardMenu.tsx:48
 msgid "Favorites"
 msgstr "Favorit"
 
@@ -15793,7 +15793,7 @@ msgstr "Ambil URL dan periksa muatan sematan yang diterima perender obrolan."
 #. Field label for the chosen soundboard audio file.
 #. Top-level native menu bar title (File menu).
 #: src/features/platform/utils/DesktopLocaleBridge.ts:43
-#: src/features/voice/components/SoundboardSoundModal.tsx:47
+#: src/features/voice/components/SoundboardSoundModal.tsx:48
 msgid "File"
 msgstr "File"
 
@@ -15961,7 +15961,7 @@ msgid "Find the emoji of your dreams"
 msgstr "Temukan emoji impianmu"
 
 #. Placeholder in the voice soundboard popover search box.
-#: src/features/voice/components/SoundboardMenu.tsx:42
+#: src/features/voice/components/SoundboardMenu.tsx:44
 msgid "Find the perfect sound"
 msgstr "Find the perfect sound"
 
@@ -20788,7 +20788,7 @@ msgid "Manage roles"
 msgstr "Kelola peran"
 
 #. Accessible label for the settings button in the voice soundboard popover.
-#: src/features/voice/components/SoundboardMenu.tsx:74
+#: src/features/voice/components/SoundboardMenu.tsx:81
 msgid "Manage soundboard"
 msgstr "Manage soundboard"
 
@@ -23034,7 +23034,7 @@ msgid "Never automatically"
 msgstr "Tidak pernah otomatis"
 
 #: src/features/messaging/components/CreatePollModal.tsx:406
-#: src/features/voice/components/SoundboardSoundModal.tsx:578
+#: src/features/voice/components/SoundboardSoundModal.tsx:579
 msgid "Never mind"
 msgstr "Never mind"
 
@@ -23743,12 +23743,12 @@ msgid "No soundboard slots available"
 msgstr "No soundboard slots available"
 
 #. Empty state in the voice soundboard popover.
-#: src/features/voice/components/SoundboardMenu.tsx:62
+#: src/features/voice/components/SoundboardMenu.tsx:64
 msgid "No soundboard sounds yet"
 msgstr "No soundboard sounds yet"
 
 #. Empty state in the voice soundboard popover when a search returns nothing.
-#: src/features/voice/components/SoundboardMenu.tsx:66
+#: src/features/voice/components/SoundboardMenu.tsx:68
 msgid "No sounds match your search"
 msgstr "No sounds match your search"
 
@@ -25417,7 +25417,7 @@ msgstr "Tempel tautan pesan."
 #. Pause-preview button label in the voice message composer modal.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:369
 #: src/features/voice/components/EntranceSoundTrimmerModal.tsx:45
-#: src/features/voice/components/SoundboardSoundModal.tsx:75
+#: src/features/voice/components/SoundboardSoundModal.tsx:76
 #: src/features/voice/components/VoiceMessageComposerModal.tsx:89
 msgid "Pause"
 msgstr "Jeda"
@@ -26004,7 +26004,7 @@ msgstr "Putar contoh"
 #. Button label in the trimmer modal. Plays the currently selected portion.
 #. Play button label in the soundboard trimmer.
 #: src/features/voice/components/EntranceSoundTrimmerModal.tsx:41
-#: src/features/voice/components/SoundboardSoundModal.tsx:71
+#: src/features/voice/components/SoundboardSoundModal.tsx:72
 msgid "Play selection"
 msgstr "Putar bagian terpilih"
 
@@ -26358,12 +26358,12 @@ msgstr "Mencegah anggota mengirim pesan, bereaksi, dan bergabung ke saluran suar
 #: src/features/expressions/components/modals/sticker_form/StickerPreview.tsx:21
 #: src/features/guild/components/modals/guild_tabs/guild_overview_tab/fields/GuildInviteSplashSettingsField.tsx:45
 #: src/features/user/components/modals/tabs/EmbedDebuggerTab.tsx:276
-#: src/features/voice/components/SoundboardSoundModal.tsx:46
+#: src/features/voice/components/SoundboardSoundModal.tsx:47
 msgid "Preview"
 msgstr "Pratinjau"
 
 #. Tooltip on the speaker button that plays a soundboard sound locally without sending it to the call.
-#: src/features/voice/components/SoundboardMenu.tsx:58
+#: src/features/voice/components/SoundboardMenu.tsx:60
 msgid "Preview (only you hear this)"
 msgstr "Preview (only you hear this)"
 
@@ -27539,7 +27539,7 @@ msgid "Rejected"
 msgstr "Ditolak"
 
 #. Field label for a soundboard sound emoji.
-#: src/features/voice/components/SoundboardSoundModal.tsx:57
+#: src/features/voice/components/SoundboardSoundModal.tsx:58
 msgid "Related Emoji"
 msgstr "Related Emoji"
 
@@ -27763,7 +27763,7 @@ msgstr "Hapus dari kamus"
 #. Action label that unpins the current channel, DM, or attachment from the favorites list.
 #. Tooltip on the star button of a favorited soundboard sound tile.
 #: src/features/i18n/utils/CommonMessageDescriptors.ts:326
-#: src/features/voice/components/SoundboardMenu.tsx:54
+#: src/features/voice/components/SoundboardMenu.tsx:56
 msgid "Remove from favorites"
 msgstr "Hapus dari favorit"
 
@@ -29439,7 +29439,7 @@ msgstr "Saturasi"
 #: src/features/user/components/modals/CustomStatusBottomSheet.tsx:297
 #: src/features/user/components/modals/NoteEditSheet.tsx:48
 #: src/features/user/components/modals/tabs/chat_settings_tab/AddCustomSearchEngineModal.tsx:96
-#: src/features/voice/components/SoundboardSoundModal.tsx:587
+#: src/features/voice/components/SoundboardSoundModal.tsx:588
 msgid "Save"
 msgstr "Simpan"
 
@@ -32651,8 +32651,8 @@ msgstr "Suara untuk cakupan ini"
 
 #. Field label for a soundboard sound name.
 #. Placeholder for the soundboard sound name field.
-#: src/features/voice/components/SoundboardSoundModal.tsx:52
 #: src/features/voice/components/SoundboardSoundModal.tsx:53
+#: src/features/voice/components/SoundboardSoundModal.tsx:54
 msgid "Sound Name"
 msgstr "Sound Name"
 
@@ -32664,7 +32664,7 @@ msgid "Sound volume"
 msgstr "Volume suara"
 
 #. Field label for the soundboard sound volume.
-#: src/features/voice/components/SoundboardSoundModal.tsx:62
+#: src/features/voice/components/SoundboardSoundModal.tsx:63
 msgid "Sound Volume"
 msgstr "Sound Volume"
 
@@ -32708,10 +32708,15 @@ msgstr "Soundboard sounds"
 #. Body of the unsupported-file error. {maxSize} is a formatted file size.
 #. Error modal body. {maxSize} is a formatted file size.
 #: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:65
-#: src/features/voice/components/SoundboardMenu.tsx:79
-#: src/features/voice/components/SoundboardSoundModal.tsx:80
+#: src/features/voice/components/SoundboardMenu.tsx:86
+#: src/features/voice/components/SoundboardSoundModal.tsx:81
 msgid "Soundboard sounds must be MP3, OGG, M4A, or WAV audio under {maxSize}."
 msgstr "Soundboard sounds must be MP3, OGG, M4A, or WAV audio under {maxSize}."
+
+#. Accessible label of the slider in the soundboard menu that sets how loud soundboard sounds play for this member on this device.
+#: src/features/voice/components/SoundboardMenu.tsx:76
+msgid "Soundboard volume (only you)"
+msgstr "Soundboard volume (only you)"
 
 #. Section heading / tab label for the notification-sounds area.
 #. Settings search synonym. Used to match this term when the user types it in the settings search bar.
@@ -36280,7 +36285,7 @@ msgid "Trimmed clip is over the {limit} size limit. Try a shorter selection."
 msgstr "Klip yang dipangkas melebihi batas ukuran {limit}. Coba pilih bagian yang lebih pendek."
 
 #. Error when a trimmed soundboard clip encodes larger than the size cap.
-#: src/features/voice/components/SoundboardSoundModal.tsx:84
+#: src/features/voice/components/SoundboardSoundModal.tsx:85
 msgid "Trimmed selection is {size} — over the {limit} limit. Pick a shorter selection."
 msgstr "Trimmed selection is {size} — over the {limit} limit. Pick a shorter selection."
 
@@ -37524,8 +37529,8 @@ msgstr "Perubahan belum disimpan"
 #. Title of the error modal shown when an unsupported soundboard file type is selected.
 #. Title of the error shown when a chosen soundboard file is the wrong type or too large.
 #: src/features/guild/components/modals/guild_tabs/GuildSoundboardTab.tsx:61
-#: src/features/voice/components/SoundboardMenu.tsx:78
-#: src/features/voice/components/SoundboardSoundModal.tsx:76
+#: src/features/voice/components/SoundboardMenu.tsx:85
+#: src/features/voice/components/SoundboardSoundModal.tsx:77
 msgid "Unsupported audio file"
 msgstr "Unsupported audio file"
 
@@ -37756,7 +37761,7 @@ msgstr "Upgrade untuk menyimpan hingga 15 latar belakang kustom dan membuka kual
 #. Button that opens a file picker to upload a branding image.
 #: src/features/app/components/setup/SetupWizardSteps.tsx:109
 #: src/features/theme/components/modals/BackgroundImageGalleryModal.tsx:84
-#: src/features/voice/components/SoundboardSoundModal.tsx:587
+#: src/features/voice/components/SoundboardSoundModal.tsx:588
 msgid "Upload"
 msgstr "Unggah"
 
@@ -37782,7 +37787,7 @@ msgid "Upload a file"
 msgstr "Unggah file"
 
 #. Title of the soundboard upload modal.
-#: src/features/voice/components/SoundboardSoundModal.tsx:44
+#: src/features/voice/components/SoundboardSoundModal.tsx:45
 msgid "Upload a Sound"
 msgstr "Upload a Sound"
 
