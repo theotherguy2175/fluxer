@@ -10,7 +10,10 @@ import {temporaryFile} from 'tempy';
 
 const execFilePromise = promisify(execFile);
 const FFPROBE_TIMEOUT_MS = 5_000;
-const FFPROBE_MAX_BUFFER_BYTES = 512 * 1024;
+// ffprobe stdout: one small JSON object per audio frame. Soundboard uploads may be up to
+// 5 MB, so a long low-bitrate file can produce >10k frames; 4 MB keeps the probe from
+// failing with "maxBuffer exceeded" before the duration check gets to reject it.
+const FFPROBE_MAX_BUFFER_BYTES = 4 * 1024 * 1024;
 
 interface FfprobeFrame {
 	duration_time?: string;

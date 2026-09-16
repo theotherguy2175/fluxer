@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 export const SOUNDBOARD_SOUND_PATH_PREFIX = 'soundboard-sounds';
-export const SOUNDBOARD_MAX_BYTES = 512 * 1024;
+// 5 MB: room for a 30 s (the duration ceiling) MP3 at 320 kbps, or ~28 s of 16-bit mono WAV.
+// Uploads travel base64 in JSON like avatars/banners (10 MB), so no proxy limits are in play.
+export const SOUNDBOARD_MAX_BYTES = 5 * 1024 * 1024;
 export const SOUNDBOARD_MIN_DURATION_MS = 100;
 export const SOUNDBOARD_NAME_MAX_LENGTH = 32;
 export const SOUNDBOARD_EMOJI_MAX_LENGTH = 32;

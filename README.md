@@ -22,7 +22,7 @@ upstream `main`.
 ## What you get
 
 - **Community settings → Soundboard** tab: upload (`mp3` / `ogg` / `m4a` / `wav`,
-  ≤ 512 KB, 0.1–5 s by default), rename, pick an emoji, set per-sound volume, delete
+  ≤ 5 MB, 0.1–5 s by default), rename, pick an emoji, set per-sound volume, delete
 - **Soundboard button in the voice bar**: plays the clip for everyone in the
   channel (each client plays it locally in sync — nothing is mixed into LiveKit,
   so it works with voice/video exactly as before)
