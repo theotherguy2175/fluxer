@@ -227,6 +227,7 @@ export default defineConfig({
 						'http-api/guild-emojis',
 						'http-api/guild-stickers',
 						'http-api/expressions',
+						'http-api/polls',
 						'http-api/guild-audit-logs',
 					],
 				},
@@ -269,7 +270,7 @@ export default defineConfig({
 				},
 				{
 					label: 'Voice',
-					items: ['voice', 'http-api/calls', 'http-api/streams', 'http-api/entrance-sounds'],
+					items: ['voice', 'http-api/calls', 'http-api/streams', 'http-api/entrance-sounds', 'http-api/soundboard'],
 				},
 				{
 					label: 'Admin API',

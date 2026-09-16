@@ -52,6 +52,7 @@ A message object is the full stored form of one post in a channel.
 | nonce?<sup>6</sup> | string | Caller-supplied message nonce, echoed to the sender as a string of 1 through 32 characters |
 | call? | [message call](#message-call-object) object | Call state attached to a call message |
 | referenced_message?<sup>7</sup> | ?[message](#message-object) object | Resolved referenced message without a nested `referenced_message` field |
+| poll? | ?[poll](/http-api/polls/#poll-object) object | The poll attached to the message, on a message with the `HAS_POLL` flag |
 
 <sup>1</sup> Built for a webhook-authored message and for a stored author ID that no longer resolves
 
@@ -116,6 +117,7 @@ A reply reference resolves into `referenced_message`, and a forward has none. Fl
 | 6 | CHANNEL_PINNED_MESSAGE<sup>2</sup> | Channel pin system message |
 | 7 | USER_JOIN<sup>2</sup> | User-join system message |
 | 19 | REPLY<sup>1</sup> <sup>2</sup> | Message with a reply reference |
+| 46 | POLL_RESULT | System message posted when a [poll](/http-api/polls/) ends |
 
 <sup>1</sup> Only `DEFAULT` and `REPLY` can be modified, pinned, unpinned, or used as the target of a reply reference. Any other type rejects modification, pinning, and unpinning with 400 `CANNOT_MODIFY_SYSTEM_WEBHOOK`, and rejects being replied to with the field code `CANNOT_REPLY_TO_SYSTEM_MESSAGE`
 
@@ -128,10 +130,13 @@ A reply reference resolves into `referenced_message`, and a forward has none. Fl
 | 1 &lt;&lt; 2 | SUPPRESS_EMBEDS<sup>1</sup> | Suppress rendering of embeds |
 | 1 &lt;&lt; 12 | SUPPRESS_NOTIFICATIONS | Do not generate ordinary mention notifications |
 | 1 &lt;&lt; 13 | VOICE_MESSAGE<sup>2</sup> | Message has one voice recording attachment |
+| 1 &lt;&lt; 14 | HAS_POLL<sup>3</sup> | Message carries a poll |
 
 <sup>1</sup> The only flag a guild moderator can change on a message they did not author
 
 <sup>2</sup> A message with this flag has the voice message restrictions listed under [Create message](#create-message)
+
+<sup>3</sup> Set by the server when a create request includes `poll`; it is not in the sendable set and is ignored when supplied
 
 These bits are also the complete sendable set. A create masks the supplied value down to them, and a modify replaces only them and leaves every other stored bit untouched. A bit outside this table is discarded, and the request still succeeds.
 
@@ -1058,6 +1063,7 @@ The request body is read as a multipart form when `Content-Type` contains `multi
 | favorite_meme_id?<sup>4</sup> | ?snowflake | Favourite meme to attach |
 | sticker_ids? | ?array[snowflake] | At most 3 sticker IDs |
 | tts?<sup>5</sup> | boolean | Whether to request text-to-speech |
+| poll? | [poll create](/http-api/polls/#poll-create-object) object | Attach a poll; see [Polls](/http-api/polls/) for the permission and limits |
 
 <sup>1</sup> Echoed back on the created message and on its [Message Create](/gateway/events/#message-create) Dispatch so a client can match the result to its optimistic entry. An integer is converted to its decimal string form
 

@@ -132,4 +132,11 @@ export const ChannelRateLimitConfigs = {
 		bucket: 'voice:entrance_sound:play::user_id::channel_id',
 		config: {limit: 3, windowMs: ms('30 seconds')},
 	} as RouteRateLimitConfig,
+	// Outer bound only. The real per-member cap is the guild's
+	// max_soundboard_plays_per_second (default 25, ceiling 100), enforced in
+	// GuildSoundboardPlayService; 1000/10 s is that ceiling, so this never bites first.
+	VOICE_SOUNDBOARD_SOUND_PLAY: {
+		bucket: 'voice:soundboard_sound:play::user_id::channel_id',
+		config: {limit: 1000, windowMs: ms('10 seconds')},
+	} as RouteRateLimitConfig,
 } as const;

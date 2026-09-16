@@ -8,7 +8,7 @@ import type {PollResponse, PollResultsResponse} from '@fluxer/schema/src/domains
 
 const repository = new MessagePollRepository();
 
-export async function buildPollResults(poll: MessagePoll, viewerUserId: UserID | null): Promise<PollResultsResponse> {
+async function buildPollResults(poll: MessagePoll, viewerUserId: UserID | null): Promise<PollResultsResponse> {
 	const votes = await repository.listVotes(poll.messageId);
 	const counts = new Map<number, number>();
 	const mine = new Set<number>();

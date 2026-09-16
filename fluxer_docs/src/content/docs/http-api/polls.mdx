@@ -1,0 +1,262 @@
+---
+# SPDX-License-Identifier: AGPL-3.0-or-later
+title: Polls
+description: Polls attached to messages, voting, voter listing, ending a poll early, and the per-guild poll settings.
+---
+
+import RouteHeader from '@/components/RouteHeader.astro';
+
+A poll is attached to a message at creation through the `poll` field of [Create message](/http-api/messages/#create-message). The message then carries the `HAS_POLL` [flag](/http-api/messages/#message-flags) and a [poll object](#poll-object), and members vote on it through the routes below. When the poll's `expires_at` passes, or the author ends it early, the results become final and Fluxer posts a `POLL_RESULT` [system message](/http-api/messages/#message-types) in the same channel.
+
+This is a fork feature. Upstream Fluxer does not ship these routes.
+
+## Permissions and limits
+
+Creating a poll in a guild channel requires `SEND_POLLS`, which a newly created guild grants to `@everyone`. A private channel needs no permission. Ending a poll early is allowed for its author, and in a guild channel for anyone with `MANAGE_MESSAGES`. Voting and listing voters need only read access to the channel.
+
+Each bound below is an [instance limit](/http-api/instance/#limit-keys) that a guild can tighten under its poll settings but never raise. `feature_message_polls` turns the whole feature off for an instance or a guild, in which case creation fails with 403 `FEATURE_TEMPORARILY_DISABLED`.
+
+| Bound | Instance limit key | Default |
+| --- | --- | --- |
+| Answers per poll | `max_poll_answers` | 10, at least 2 |
+| Question length | `max_poll_question_length` | 300 characters |
+| Answer length | `max_poll_answer_length` | 55 characters |
+| Duration | `max_poll_duration_hours` | 768 hours, at least 1 |
+
+## Poll create object
+
+Supplied as `poll` when creating a message.
+
+### Structure
+
+| Field | Type | Description |
+| --- | --- | --- |
+| question | object | An object with one `text` string member, the question |
+| answers | array[[poll answer input](#poll-answer-input-object) object] | 2 to `max_poll_answers` answers |
+| duration_hours | integer | How long the poll stays open, 1 to `max_poll_duration_hours` |
+| allow_multiselect? | boolean | Whether a member may pick more than one answer, default false |
+| allow_vote_change? | boolean | Whether a member may withdraw or change a vote once cast, default true |
+| layout_type? | integer | Always `1`, the only layout |
+
+### Create validation
+
+Every failure below returns 400 `INVALID_FORM_BODY`.
+
+| Failure | Validation code |
+| --- | --- |
+| The trimmed question is empty or longer than `max_poll_question_length` | `POLL_QUESTION_LENGTH_INVALID` |
+| Fewer than 2 or more than `max_poll_answers` answers | `POLL_ANSWER_COUNT_INVALID` |
+| A trimmed answer is empty or longer than `max_poll_answer_length` | `POLL_ANSWER_LENGTH_INVALID` |
+| An answer emoji is neither a guild custom emoji nor a single Unicode emoji | `POLL_INVALID_EMOJI` |
+| `duration_hours` is below 1 or above `max_poll_duration_hours` | `POLL_DURATION_INVALID` |
+
+The entry's path is `question.text`, `answers`, or `duration_hours` respectively.
+
+## Poll answer input object
+
+### Structure
+
+| Field | Type | Description |
+| --- | --- | --- |
+| text | string | Answer label |
+| emoji_id? | ?snowflake | A custom emoji from this guild |
+| emoji_name? | ?string | A single Unicode emoji, ignored when `emoji_id` is given |
+
+## Poll object
+
+### Structure
+
+| Field | Type | Description |
+| --- | --- | --- |
+| question | object | An object with one `text` string member |
+| answers | array[[poll answer](#poll-answer-object) object] | The answers, in the order supplied |
+| expires_at | ISO8601 timestamp | When voting closes |
+| allow_multiselect | boolean | Whether a member may pick more than one answer |
+| allow_vote_change | boolean | Whether a member may withdraw or change a vote |
+| layout_type | integer | Always `1` |
+| results | [poll results](#poll-results-object) object | Current or final counts |
+
+## Poll answer object
+
+### Structure
+
+| Field | Type | Description |
+| --- | --- | --- |
+| answer_id | integer | Position-based ID, stable for the life of the poll |
+| text | string | Answer label |
+| emoji | ?object | `id` (?snowflake), `name` (?string) and optional `animated` (boolean), null when the answer has no emoji |
+
+## Poll results object
+
+### Structure
+
+| Field | Type | Description |
+| --- | --- | --- |
+| is_finalized | boolean | True once the poll has ended and counts are final |
+| answer_counts | array[object] | One entry per answer with `id` (the `answer_id`), `count` and `me_voted` members |
+| total_voters | integer | Distinct members who voted |
+
+## Add poll vote
+
+<RouteHeader method="PUT" path="/v1/channels/{channel_id}/polls/{message_id}/answers/{answer_id}/@me" bot />
+
+Casts the current user's vote for one answer. On a single-choice poll that allows changing votes, an existing vote for another answer is removed first; on one that does not, a second answer is refused.
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 204 | none | Vote was recorded, or was already recorded for that answer |
+| 400 | [error response](/http-api/#error-response) | The poll or answer cannot take the vote, with one of the codes below |
+
+The 400 carries `POLL_NOT_FOUND`, `POLL_ANSWER_NOT_FOUND`, `POLL_ALREADY_FINALIZED`, `POLL_MULTISELECT_NOT_ALLOWED` for a second answer on a single-choice poll whose votes cannot change, or `POLL_VOTE_CHANGE_NOT_ALLOWED` when switching answers is not allowed.
+
+### Side effects
+
+Emits [Message Poll Vote Add](/gateway/events/#message-poll-vote-add), preceded by a [Message Poll Vote Remove](/gateway/events/#message-poll-vote-remove) when a previous single-choice vote was replaced.
+
+### Rate limit
+
+30 requests per 10 seconds for each authenticated user, on the `channel:poll_vote::user_id::channel_id` bucket, shared with vote removal.
+
+## Remove poll vote
+
+<RouteHeader method="DELETE" path="/v1/channels/{channel_id}/polls/{message_id}/answers/{answer_id}/@me" bot />
+
+Withdraws the current user's vote for one answer.
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 204 | none | Vote was removed, or there was none |
+| 400 | [error response](/http-api/#error-response) | The poll or answer cannot release the vote, with one of the codes below |
+
+The 400 carries `POLL_NOT_FOUND`, `POLL_ANSWER_NOT_FOUND`, `POLL_ALREADY_FINALIZED`, or `POLL_VOTE_CHANGE_NOT_ALLOWED`.
+
+### Side effects
+
+Emits [Message Poll Vote Remove](/gateway/events/#message-poll-vote-remove).
+
+### Rate limit
+
+30 requests per 10 seconds for each authenticated user, on the `channel:poll_vote::user_id::channel_id` bucket.
+
+## Get poll answer voters
+
+<RouteHeader method="GET" path="/v1/channels/{channel_id}/polls/{message_id}/answers/{answer_id}" bot />
+
+Lists the members who voted for one answer, oldest voter first.
+
+### Query parameters
+
+| Field | Type | Description |
+| --- | --- | --- |
+| after? | snowflake | Return voters with a user ID greater than this |
+| limit? | integer | 1 to 100, default 25 |
+
+### Response body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| users | array[[partial user](/http-api/users/#partial-user-object) object] | The voters in this page |
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 200 | response body | Voters were returned |
+| 400 | [error response](/http-api/#error-response) | The message has no poll or the answer is not part of it |
+
+### Rate limit
+
+60 requests per 10 seconds for each channel, on the `channel:poll_voters::channel_id` bucket.
+
+## Expire poll
+
+<RouteHeader method="POST" path="/v1/channels/{channel_id}/polls/{message_id}/expire" bot auditReason />
+
+Ends a poll now. Allowed for the poll's author, and in a guild channel for anyone with `MANAGE_MESSAGES`.
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 200 | [poll](#poll-object) object | The finalized poll |
+| 400 | [error response](/http-api/#error-response) | The message has no poll or the poll has already ended |
+| 403 | [error response](/http-api/#error-response) | Caller is neither the author nor holds `MANAGE_MESSAGES` |
+
+### Side effects
+
+The message is re-sent as a [Message Update](/gateway/events/#message-update) with final results, and a `POLL_RESULT` system message is created in the channel. A poll that reaches `expires_at` on its own is finalized the same way by a worker that runs once a minute.
+
+### Rate limit
+
+10 requests per minute for each channel, on the `channel:poll_expire::channel_id` bucket.
+
+## Get guild poll settings
+
+<RouteHeader method="GET" path="/v1/guilds/{guild_id}/poll-settings" bot />
+
+Returns the guild's poll bounds together with the instance ceilings they are capped by.
+
+### Response body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| enabled | boolean | Whether polls can be created in the guild, false when the instance has the feature off |
+| max_answers | integer | Answers allowed per poll |
+| max_question_length | integer | Question length allowed |
+| max_answer_length | integer | Answer length allowed |
+| max_duration_hours | integer | Longest duration allowed |
+| default_duration_hours | integer | Duration the client preselects |
+| allow_multiselect | boolean | Whether multi-choice polls may be created |
+| max_answers_ceiling | integer | Instance cap on `max_answers` |
+| max_question_length_ceiling | integer | Instance cap on `max_question_length` |
+| max_answer_length_ceiling | integer | Instance cap on `max_answer_length` |
+| max_duration_hours_ceiling | integer | Instance cap on `max_duration_hours` |
+| instance_enabled | boolean | Whether the instance allows polls at all |
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 200 | response body | Settings were returned |
+
+### Rate limit
+
+60 requests per 10 seconds for each guild, on the `guild:poll_settings:get::guild_id` bucket.
+
+## Update guild poll settings
+
+<RouteHeader method="PATCH" path="/v1/guilds/{guild_id}/poll-settings" bot />
+
+Changes the guild's poll bounds. Every field is optional and an omitted field keeps its value. Requires `MANAGE_GUILD`.
+
+### JSON body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| enabled? | boolean | Allow polls in the guild |
+| max_answers? | integer | 2 to the instance cap |
+| max_question_length? | integer | 1 to the instance cap |
+| max_answer_length? | integer | 1 to the instance cap |
+| max_duration_hours? | integer | 1 to the instance cap |
+| default_duration_hours? | integer | 1 to `max_duration_hours` |
+| allow_multiselect? | boolean | Allow multi-choice polls |
+
+### Settings validation
+
+A value above the instance limit of the same name fails with 400 `INVALID_FORM_BODY` and the validation code `POLL_SETTING_EXCEEDS_INSTANCE_LIMIT` on that field.
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 200 | the same body as [Get guild poll settings](#get-guild-poll-settings) | Settings were stored |
+| 400 | [error response](/http-api/#error-response) | A field fails [settings validation](#settings-validation) |
+| 403 | [error response](/http-api/#error-response) | Caller lacks `MANAGE_GUILD` |
+
+### Rate limit
+
+20 requests per minute for each guild, on the `guild:poll_settings:update::guild_id` bucket.

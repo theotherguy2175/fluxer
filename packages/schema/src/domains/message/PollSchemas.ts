@@ -36,13 +36,11 @@ function hasNoEmojiOrValidEmoji(value: {emoji_id?: unknown; emoji_name?: unknown
 	return typeof value.emoji_name === 'string' && isValidSingleUnicodeEmoji(value.emoji_name);
 }
 
-export const PollQuestionRequest = z.object({
+const PollQuestionRequest = z.object({
 	text: createStringType(1, POLL_MAX_QUESTION_LENGTH_CEILING).describe('The question being asked'),
 });
 
-export type PollQuestionRequest = z.infer<typeof PollQuestionRequest>;
-
-export const PollAnswerRequest = z
+const PollAnswerRequest = z
 	.object({
 		text: createStringType(1, POLL_MAX_ANSWER_LENGTH_CEILING).describe('Answer label'),
 		emoji_id: PollEmojiIdField,
@@ -52,8 +50,6 @@ export const PollAnswerRequest = z
 		message: 'An answer emoji must be a custom emoji id or a single Unicode emoji',
 		path: ['emoji_name'],
 	});
-
-export type PollAnswerRequest = z.infer<typeof PollAnswerRequest>;
 
 export const PollCreateRequest = z.object({
 	question: PollQuestionRequest,
@@ -80,13 +76,11 @@ export type PollCreateRequest = z.infer<typeof PollCreateRequest>;
 /** What a client puts on the wire: snowflakes as strings, before parsing. */
 export type PollCreateRequestInput = z.input<typeof PollCreateRequest>;
 
-export const PollEmojiResponse = z.object({
+const PollEmojiResponse = z.object({
 	id: SnowflakeStringType.nullable(),
 	name: z.string().nullable(),
 	animated: z.boolean().optional(),
 });
-
-export type PollEmojiResponse = z.infer<typeof PollEmojiResponse>;
 
 export const PollAnswerResponse = z.object({
 	answer_id: Int32Type.describe('Position-based ID, stable for the life of the poll'),
@@ -96,13 +90,11 @@ export const PollAnswerResponse = z.object({
 
 export type PollAnswerResponse = z.infer<typeof PollAnswerResponse>;
 
-export const PollAnswerCountResponse = z.object({
+const PollAnswerCountResponse = z.object({
 	id: Int32Type.describe('The answer_id this count belongs to'),
 	count: Int32Type,
 	me_voted: z.boolean(),
 });
-
-export type PollAnswerCountResponse = z.infer<typeof PollAnswerCountResponse>;
 
 export const PollResultsResponse = z.object({
 	is_finalized: z.boolean().describe('True once the poll has ended and counts are final'),

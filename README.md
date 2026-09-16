@@ -66,7 +66,7 @@ compose stack. Three steps:
 cd <your fluxer directory>          # the one holding docker-compose.yml and .env
 
 # 1. add the overlay file next to docker-compose.yml
-curl -fsSLO https://raw.githubusercontent.com/theotherguy2175/fluxer/main/deploy/self-hosting/docker-compose.soundboard.yml
+curl -fsSLO https://raw.githubusercontent.com/theotherguy2175/fluxer/main/deploy/soundboard/docker-compose.soundboard.yml
 
 # 2. add it to the COMPOSE_FILE line in .env — append to the existing line
 #    (the installer writes one, e.g. docker-compose.yml:docker-compose.proxy.yml),
@@ -205,7 +205,7 @@ map, and the entrance-sound service the soundboard reuses. Everything else the
 feature adds is in new files under `*/soundboard/`.
 
 To see the soundboard as a single patch against upstream at any time:
-`git diff upstream/main...main -- . ':!README.md' ':!deploy/self-hosting/docker-compose.soundboard.yml' ':!tools/soundboard' ':!.github/workflows/soundboard-images.yaml'`
+`git diff upstream/main...main -- . ':!README.md' ':!deploy/soundboard/docker-compose.soundboard.yml' ':!tools/soundboard' ':!.github/workflows/soundboard-images.yaml'`
 
 ## Layout of the change
 
@@ -219,7 +219,7 @@ To see the soundboard as a single patch against upstream at any time:
 | `fluxer_gateway/src/utils/event_atoms.erl` | `SOUNDBOARD_SOUND_PLAY` / `SOUNDBOARD_SOUNDS_UPDATE` gateway events |
 | `fluxer_media_proxy/src/server/` | serves `soundboard-sounds/…` from the CDN bucket |
 | `fluxer_app/src/features/guild/…/GuildSoundboardTab.tsx`, `fluxer_app/src/features/voice/components/Soundboard*.tsx` | settings tab, voice-bar menu, upload modal |
-| `deploy/self-hosting/docker-compose.soundboard.yml` | compose overlay |
+| `deploy/soundboard/docker-compose.soundboard.yml` | compose overlay |
 | `.github/workflows/soundboard-images.yaml`, `tools/soundboard/build-images.sh` | image builds |
 
 Storage is additive (new `guild_soundboard_*` and `message_poll*` tables / KV

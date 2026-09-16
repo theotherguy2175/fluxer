@@ -4,13 +4,16 @@ import {ChannelIdParam} from '@fluxer/schema/src/domains/common/CommonParamSchem
 import {SoundboardSoundPlayRequest} from '@fluxer/schema/src/domains/guild/GuildSoundboardSchemas';
 import {createChannelID, createSoundboardSoundID} from '../../BrandedTypes';
 import {LoginRequired} from '../../middleware/AuthMiddleware';
+import {RateLimitMiddleware} from '../../middleware/RateLimitMiddleware';
 import {OpenAPI} from '../../middleware/ResponseTypeMiddleware';
+import {RateLimitConfigs} from '../../RateLimitConfig';
 import type {HonoApp} from '../../types/HonoEnv';
 import {Validator} from '../../Validator';
 
 export function GuildSoundboardPlayController(app: HonoApp) {
 	app.post(
 		'/voice/channels/:channel_id/soundboard-sound',
+		RateLimitMiddleware(RateLimitConfigs.VOICE_SOUNDBOARD_SOUND_PLAY),
 		LoginRequired,
 		Validator('param', ChannelIdParam),
 		Validator('json', SoundboardSoundPlayRequest),

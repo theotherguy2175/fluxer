@@ -24,7 +24,6 @@ export const POLL_EMOJI_MAX_LENGTH = 32;
 export const PollLayoutTypes = {
 	DEFAULT: 1,
 } as const;
-export type PollLayoutType = (typeof PollLayoutTypes)[keyof typeof PollLayoutTypes];
 
 // Duration presets offered by the composer, filtered to the effective maximum.
 export const POLL_DURATION_PRESETS_HOURS: ReadonlyArray<number> = Object.freeze([1, 4, 8, 24, 72, 168, 336]);

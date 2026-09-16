@@ -152,7 +152,9 @@ jobs:
             'packages/markdown_parser/rust/src/**') }}
 
   rust:
-    runs-on: blacksmith-4vcpu-ubuntu-2404
+    # Fork: upstream runs this on Blacksmith runners, which this repo doesn't have —
+    # the job would queue forever and hang every Tests run.
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - name: Checkout code

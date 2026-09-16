@@ -1,8 +1,12 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
-# Soundboard overlay. Swaps the four images that carry the soundboard
+# Soundboard + polls overlay. Swaps the four images that carry the fork's
 # changes for builds from github.com/theotherguy2175/fluxer (branch main);
 # everything else keeps running upstream's images.
+#
+# Lives outside deploy/self-hosting on purpose: upstream's installer fetches
+# that whole directory from fluxerapp/fluxer, and its docs verifier insists the
+# two lists match. Copy this file next to your docker-compose.yml.
 #
 # Enable it by adding this file to COMPOSE_FILE in .env, after the base file
 # and after docker-compose.proxy.yml if you use that:

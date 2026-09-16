@@ -45,7 +45,7 @@ const createFetchExpiredByBucketQuery = (limit: number) =>
 		limit,
 	});
 
-export function getPollExpiryBucket(expiresAt: Date): number {
+function getPollExpiryBucket(expiresAt: Date): number {
 	return Number(
 		`${expiresAt.getUTCFullYear()}${String(expiresAt.getUTCMonth() + 1).padStart(2, '0')}${String(expiresAt.getUTCDate()).padStart(2, '0')}`,
 	);

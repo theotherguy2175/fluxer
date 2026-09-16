@@ -317,7 +317,9 @@ Each key names one limit. A key whose name begins with `feature_` is a feature g
 | feature_custom_notification_sounds | Allow custom notification sounds, in user scope |
 | feature_early_access | Access to beta features, in user scope |
 | feature_global_expressions | Use expressions across all guilds, in user scope |
+| feature_guild_soundboard | Allow the guild soundboard, in guild scope |
 | feature_higher_video_quality | Access to higher video streaming quality, in user scope |
+| feature_message_polls | Allow polls in messages, in guild scope |
 | feature_per_guild_profiles | Different profile per guild, in user scope |
 | feature_voice_entrance_sounds | Play a sound when joining voice, in user scope |
 | max_attachment_file_size | Maximum size of each attachment file in bytes, in user and guild scope |
@@ -344,9 +346,16 @@ Each key names one limit. A key whose name begins with `feature_` is a feature g
 | max_guild_stickers_more<sup>2</sup> | Compatibility alias for older clients, in guild scope |
 | max_guilds | Maximum number of guilds a user can join, in user scope |
 | max_message_length | Maximum number of characters per message, in user and guild scope |
+| max_poll_answer_length | Maximum characters per poll answer, in guild scope |
+| max_poll_answers | Maximum answers per poll, in guild scope |
+| max_poll_duration_hours | Maximum poll duration in hours, in guild scope |
+| max_poll_question_length | Maximum characters in a poll question, in guild scope |
 | max_private_channels_per_user | Maximum direct message channels per user, in user scope |
 | max_reactions_per_message | Maximum distinct reactions per message, in guild scope |
 | max_relationships | Maximum friend and blocked relationships, in user scope |
+| max_soundboard_plays_per_second | Maximum soundboard plays per member per second, in guild scope |
+| max_soundboard_sound_duration_ms | Maximum soundboard sound duration in milliseconds, in guild scope |
+| max_soundboard_sounds_per_guild | Maximum soundboard sounds per guild, in guild scope |
 | max_users_per_message_reaction | Maximum users who can use the same reaction on a message, in guild scope |
 | max_voice_message_duration | Maximum voice message duration in seconds, in user and guild scope |
 | max_webhooks_per_channel | Maximum webhooks per channel, in guild scope |

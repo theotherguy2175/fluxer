@@ -1853,6 +1853,50 @@ Password isn't set
 
 Phone number must be in E.164 format (for example, +1234567890)
 
+### `POLL_ALREADY_FINALIZED`
+
+This poll has already ended.
+
+### `POLL_ANSWER_COUNT_INVALID`
+
+Polls need between {min, number} and {max, number} answers.
+
+### `POLL_ANSWER_LENGTH_INVALID`
+
+Poll answers must be between 1 and {max, number} characters.
+
+### `POLL_ANSWER_NOT_FOUND`
+
+That answer is not part of this poll.
+
+### `POLL_DURATION_INVALID`
+
+Polls must stay open between {min, number} and {max, number} hours.
+
+### `POLL_INVALID_EMOJI`
+
+Choose a custom emoji from this community or a single standard emoji.
+
+### `POLL_MULTISELECT_NOT_ALLOWED`
+
+This poll only allows one answer per person.
+
+### `POLL_NOT_FOUND`
+
+This message has no poll.
+
+### `POLL_QUESTION_LENGTH_INVALID`
+
+Poll questions must be between 1 and {max, number} characters.
+
+### `POLL_SETTING_EXCEEDS_INSTANCE_LIMIT`
+
+This instance limits this to {max}. Ask an instance admin to raise the limit.
+
+### `POLL_VOTE_CHANGE_NOT_ALLOWED`
+
+Votes on this poll are final and cannot be changed.
+
 ### `PRECEDING_CHANNEL_MUST_SHARE_PARENT`
 
 Preceding channel must share the same parent as the moved channel
@@ -1896,6 +1940,42 @@ Session timed out
 ### `SNOWFLAKE_OUT_OF_RANGE`
 
 Invalid snowflake
+
+### `SOUNDBOARD_MAX_SOUNDS_BELOW_INSTALLED`
+
+This community already has {installed} sounds. Delete some before lowering the limit to {max}.
+
+### `SOUNDBOARD_SETTING_EXCEEDS_INSTANCE_LIMIT`
+
+This instance limits this to {max}. Ask an instance admin to raise the limit.
+
+### `SOUNDBOARD_SOUND_DURATION_EXCEEDS_LIMIT`
+
+Soundboard sounds can be at most {max_ms, number}ms long.
+
+### `SOUNDBOARD_SOUND_INVALID_EMOJI`
+
+Choose a custom emoji from this community or a single standard emoji.
+
+### `SOUNDBOARD_SOUND_INVALID_FORMAT`
+
+Soundboard sounds must be MP3, OGG, M4A, or WAV audio.
+
+### `SOUNDBOARD_SOUND_NAME_LENGTH_INVALID`
+
+Soundboard sound names must be between 1 and {max, number} characters.
+
+### `SOUNDBOARD_SOUND_NOT_FOUND`
+
+Soundboard sound not found.
+
+### `SOUNDBOARD_SOUND_QUOTA_REACHED`
+
+This server has reached the limit of {max, number} soundboard sounds.
+
+### `SOUNDBOARD_SOUND_SIZE_EXCEEDS_LIMIT`
+
+Soundboard sounds can be at most {max_bytes, number} bytes.
 
 ### `SSO_IDENTITY_MISMATCH`
 

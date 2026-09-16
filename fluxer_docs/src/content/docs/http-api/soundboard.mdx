@@ -1,0 +1,249 @@
+---
+# SPDX-License-Identifier: AGPL-3.0-or-later
+title: Soundboard
+description: Guild soundboard sound library, community limits, upload validation, and playing a sound into a voice channel.
+---
+
+import RouteHeader from '@/components/RouteHeader.astro';
+
+A soundboard sound is a short audio clip a guild keeps, which any member connected to one of the guild's voice channels can play for everyone in that channel. Playback is client-side: the API fans out a [Soundboard Sound Play](/gateway/events/#soundboard-sound-play) Dispatch and each client fetches and plays the file itself, so nothing is mixed into the voice stream.
+
+This is a fork feature. Upstream Fluxer does not ship these routes.
+
+## Permissions
+
+Any member can list the guild's sounds. Playing one needs `USE_SOUNDBOARD` in the voice channel and a voice state in it; a newly created guild grants `USE_SOUNDBOARD` to `@everyone`. Uploading a sound, and modifying or deleting a sound the caller uploaded, needs `CREATE_EXPRESSIONS`; modifying or deleting another member's sound needs `MANAGE_EXPRESSIONS`, the same split as emojis and stickers. Changing the guild's soundboard settings needs `MANAGE_GUILD`.
+
+## Clip limits
+
+| Bound | Value |
+| --- | --- |
+| File size | 5242880 bytes |
+| Duration | 100 ms to the guild's `max_duration_ms`, itself capped by the `max_soundboard_sound_duration_ms` [instance limit](/http-api/instance/#limit-keys) |
+| Sounds per guild | The guild's `max_sounds`, capped by `max_soundboard_sounds_per_guild` |
+| Plays per member | `max_soundboard_plays_per_second`, evaluated per second |
+| Containers | MP3, OGG, M4A, WAV |
+
+## Soundboard sound object
+
+### Structure
+
+| Field | Type | Description |
+| --- | --- | --- |
+| id | snowflake | Sound ID |
+| name | string | Display label, 1-32 characters |
+| emoji_id | ?snowflake | Custom emoji shown for the sound |
+| emoji_name | ?string | Unicode emoji shown for the sound |
+| emoji_animated | boolean | Whether the custom emoji is animated |
+| volume | number | Playback multiplier, 0 to 2 |
+| hash | string | Content hash of the stored file |
+| extension | string | Stored file extension, one of `mp3`, `ogg`, `m4a`, `wav` |
+| content_type | string | MIME type of the stored file |
+| duration_ms | integer | Measured duration in milliseconds |
+| size_bytes | integer | Stored file size in bytes |
+| creator_id | snowflake | Member who uploaded the sound |
+| user | ?[partial user](/http-api/users/#user-object) object | The uploader, when resolvable |
+| url | string | URL the media proxy serves the file from |
+| created_at | ISO8601 timestamp | When the sound was uploaded |
+
+## List guild soundboard sounds
+
+<RouteHeader method="GET" path="/v1/guilds/{guild_id}/soundboard-sounds" bot />
+
+Returns every sound the guild has, together with the guild's effective limits.
+
+### Response body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| sounds | array[[soundboard sound](#soundboard-sound-object) object] | Every sound, newest last |
+| max_duration_ms | integer | Longest clip the guild accepts, in milliseconds |
+| max_sounds | integer | Most sounds the guild may hold |
+| max_duration_ms_ceiling | integer | The instance cap on `max_duration_ms` |
+| max_sounds_ceiling | integer | The instance cap on `max_sounds` |
+| restart_on_repeat | boolean | Whether playing a sound again while it is still playing restarts it instead of layering |
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 200 | response body | Library was returned |
+
+### Rate limit
+
+60 requests per 10 seconds for each guild, on the `guild:soundboard_sounds:list::guild_id` bucket.
+
+## Upload guild soundboard sound
+
+<RouteHeader method="POST" path="/v1/guilds/{guild_id}/soundboard-sounds" bot />
+
+Decodes, validates, and stores one audio clip in the guild's library, and returns the created [soundboard sound object](#soundboard-sound-object). Requires `CREATE_EXPRESSIONS`.
+
+### JSON body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| name | string | Display label, 1-32 characters after trimming |
+| emoji_id? | ?snowflake | A custom emoji from this guild |
+| emoji_name? | ?string | A single Unicode emoji, ignored when `emoji_id` is given |
+| volume? | number | Playback multiplier, 0 to 2, default 1 |
+| audio | base64 string | The audio bytes |
+
+One of `emoji_id` or `emoji_name` is required.
+
+### Validation
+
+Every failure below returns 400 `INVALID_FORM_BODY`.
+
+| Failure | Validation code |
+| --- | --- |
+| The name is empty or longer than 32 characters after trimming | `SOUNDBOARD_SOUND_NAME_LENGTH_INVALID` |
+| Neither a guild custom emoji nor a single Unicode emoji was given | `SOUNDBOARD_SOUND_INVALID_EMOJI` |
+| The guild already holds `max_sounds` clips | `SOUNDBOARD_SOUND_QUOTA_REACHED` |
+| The decoded bytes exceed 5242880 | `SOUNDBOARD_SOUND_SIZE_EXCEEDS_LIMIT` |
+| The bytes are not a supported container, or the duration cannot be measured | `SOUNDBOARD_SOUND_INVALID_FORMAT` |
+| The measured duration is above `max_duration_ms` or below 100 ms | `SOUNDBOARD_SOUND_DURATION_EXCEEDS_LIMIT` |
+
+The entry's path is `name` for the first row, `emoji_name` for the second, and `audio` for the rest.
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 201 | [soundboard sound](#soundboard-sound-object) object | Clip was stored |
+| 400 | [error response](/http-api/#error-response) | A field fails [validation](#validation) |
+| 403 | [error response](/http-api/#error-response) | Caller lacks `CREATE_EXPRESSIONS` |
+
+### Side effects
+
+Emits [Soundboard Sounds Update](/gateway/events/#soundboard-sounds-update) to the guild and writes a `SOUNDBOARD_SOUND_CREATE` audit log entry.
+
+### Rate limit
+
+5 requests per 5 minutes for each guild, on the `guild:soundboard_sound:create::guild_id` bucket.
+
+## Update guild soundboard sound
+
+<RouteHeader method="PATCH" path="/v1/guilds/{guild_id}/soundboard-sounds/{sound_id}" bot />
+
+Changes a sound's label, emoji, or volume. The audio itself cannot be replaced; delete and upload instead. Requires `CREATE_EXPRESSIONS` for a sound the caller uploaded and `MANAGE_EXPRESSIONS` for anyone else's.
+
+### JSON body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| name? | string | New label, 1-32 characters |
+| emoji_id? | ?snowflake | A custom emoji from this guild |
+| emoji_name? | ?string | A single Unicode emoji |
+| volume? | number | Playback multiplier, 0 to 2 |
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 200 | [soundboard sound](#soundboard-sound-object) object | Sound was updated |
+| 400 | [error response](/http-api/#error-response) | The sound does not exist, or a field fails validation |
+| 403 | [error response](/http-api/#error-response) | Caller lacks the required expressions permission |
+
+### Side effects
+
+Emits [Soundboard Sounds Update](/gateway/events/#soundboard-sounds-update) and writes a `SOUNDBOARD_SOUND_UPDATE` audit log entry.
+
+### Rate limit
+
+20 requests per minute for each guild, on the `guild:soundboard_sound:mutate::guild_id` bucket, shared with delete and settings changes.
+
+## Delete guild soundboard sound
+
+<RouteHeader method="DELETE" path="/v1/guilds/{guild_id}/soundboard-sounds/{sound_id}" bot />
+
+Removes a sound and its stored file. Same permission split as update.
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 204 | none | Sound was deleted |
+| 400 | [error response](/http-api/#error-response) | The sound does not exist, `SOUNDBOARD_SOUND_NOT_FOUND` |
+| 403 | [error response](/http-api/#error-response) | Caller lacks the required expressions permission |
+
+### Side effects
+
+Emits [Soundboard Sounds Update](/gateway/events/#soundboard-sounds-update) and writes a `SOUNDBOARD_SOUND_DELETE` audit log entry.
+
+### Rate limit
+
+20 requests per minute for each guild, on the `guild:soundboard_sound:mutate::guild_id` bucket.
+
+## Update guild soundboard settings
+
+<RouteHeader method="PATCH" path="/v1/guilds/{guild_id}/soundboard-settings" bot />
+
+Sets the guild's own bounds. Each numeric value can only tighten the matching instance limit; a value above the instance cap is refused. Requires `MANAGE_GUILD`.
+
+### JSON body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| max_duration_ms | integer | Longest clip to accept, 100 to the instance cap |
+| max_sounds | integer | Most sounds to hold, 1 to the instance cap |
+| restart_on_repeat | boolean | Restart a sound that is played again while still playing |
+
+### Settings validation
+
+| Failure | Validation code |
+| --- | --- |
+| A value is above the instance limit of the same name | `SOUNDBOARD_SETTING_EXCEEDS_INSTANCE_LIMIT` |
+| `max_sounds` is below the number of sounds the guild already holds | `SOUNDBOARD_MAX_SOUNDS_BELOW_INSTALLED` |
+
+Both return 400 `INVALID_FORM_BODY` with the entry on the offending field.
+
+### Response body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| max_duration_ms | integer | The stored bound |
+| max_sounds | integer | The stored bound |
+| restart_on_repeat | boolean | The stored flag |
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 200 | response body | Settings were stored |
+| 400 | [error response](/http-api/#error-response) | A field fails [settings validation](#settings-validation) |
+| 403 | [error response](/http-api/#error-response) | Caller lacks `MANAGE_GUILD` |
+
+### Rate limit
+
+20 requests per minute for each guild, on the `guild:soundboard_sound:mutate::guild_id` bucket.
+
+## Play soundboard sound
+
+<RouteHeader method="POST" path="/v1/voice/channels/{channel_id}/soundboard-sound" bot />
+
+Plays one of the guild's sounds for everyone in a voice channel the caller is connected to. Requires `USE_SOUNDBOARD` in that channel and a voice state in it.
+
+### JSON body
+
+| Field | Type | Description |
+| --- | --- | --- |
+| sound_id | snowflake | A sound from the channel's guild |
+
+### Response
+
+| Status | Body | Condition |
+| --- | --- | --- |
+| 204 | none | The play was fanned out |
+| 400 | [error response](/http-api/#error-response) | Caller has no voice state in the channel, or the sound does not exist |
+| 403 | [error response](/http-api/#error-response) | Caller lacks `USE_SOUNDBOARD` in the channel |
+| 404 | [error response](/http-api/#error-response) | The channel does not exist |
+| 429 | [error response](/http-api/#error-response) | The member exceeded `max_soundboard_plays_per_second` |
+
+### Side effects
+
+Emits [Soundboard Sound Play](/gateway/events/#soundboard-sound-play) to every account with a voice state in the channel, the caller included. The 400 carries `USER_NOT_IN_CHANNEL` or `SOUNDBOARD_SOUND_NOT_FOUND`, and the 404 is `UNKNOWN_CHANNEL`.
+
+### Rate limit
+
+1,000 requests per 10 seconds for each authenticated user, on the `voice:soundboard_sound:play::user_id::channel_id` bucket. This is an outer bound; the effective cap is the guild's `max_soundboard_plays_per_second`, which returns 429 on its own.

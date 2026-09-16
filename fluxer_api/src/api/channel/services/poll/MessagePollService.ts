@@ -64,7 +64,7 @@ const HOUR_MS = 60 * 60 * 1000;
 const EXPIRY_LOOKBACK_DAYS = 3;
 const EXPIRY_FETCH_LIMIT = 200;
 
-export interface InstancePollLimits {
+interface InstancePollLimits {
 	enabled: boolean;
 	maxAnswers: number;
 	maxQuestionLength: number;
@@ -72,7 +72,7 @@ export interface InstancePollLimits {
 	maxDurationHours: number;
 }
 
-export interface EffectivePollLimits extends InstancePollLimits {
+interface EffectivePollLimits extends InstancePollLimits {
 	instanceEnabled: boolean;
 	defaultDurationHours: number;
 	allowMultiselect: boolean;

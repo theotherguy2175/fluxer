@@ -10419,6 +10419,8 @@
 							"feature_custom_notification_sounds",
 							"feature_early_access",
 							"feature_global_expressions",
+							"feature_guild_soundboard",
+							"feature_message_polls",
 							"feature_higher_video_quality",
 							"feature_per_guild_profiles",
 							"feature_voice_entrance_sounds",
@@ -10449,6 +10451,13 @@
 							"max_private_channels_per_user",
 							"max_reactions_per_message",
 							"max_relationships",
+							"max_soundboard_sound_duration_ms",
+							"max_soundboard_sounds_per_guild",
+							"max_soundboard_plays_per_second",
+							"max_poll_answers",
+							"max_poll_question_length",
+							"max_poll_answer_length",
+							"max_poll_duration_hours",
 							"max_users_per_message_reaction",
 							"max_voice_message_duration",
 							"max_webhooks_per_channel",
@@ -11486,7 +11495,11 @@
 					"MESSAGE_DELETE",
 					"MESSAGE_BULK_DELETE",
 					"MESSAGE_PIN",
-					"MESSAGE_UNPIN"
+					"MESSAGE_UNPIN",
+					"SOUNDBOARD_SOUND_CREATE",
+					"SOUNDBOARD_SOUND_UPDATE",
+					"SOUNDBOARD_SOUND_DELETE",
+					"POLL_END"
 				],
 				"x-enumDescriptions": [
 					"Guild settings were updated",
@@ -11523,11 +11536,15 @@
 					"Message was deleted",
 					"Messages were bulk deleted",
 					"Message was pinned",
-					"Message was unpinned"
+					"Message was unpinned",
+					"Soundboard sound was created",
+					"Soundboard sound was updated",
+					"Soundboard sound was deleted",
+					"Poll was ended early"
 				],
 				"enum": [
 					1, 10, 11, 12, 13, 14, 15, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 40, 41, 42, 50, 51, 52, 60, 61, 62,
-					90, 91, 92, 72, 73, 74, 75
+					90, 91, 92, 72, 73, 74, 75, 130, 131, 132, 133
 				]
 			},
 			"Int32Type": {"type": "integer", "minimum": 0, "maximum": 2147483647, "format": "int32"},
@@ -13604,6 +13621,11 @@
 						"required": ["participants"],
 						"additionalProperties": false
 					},
+					"poll": {
+						"description": "The poll attached to this message, if any",
+						"nullable": true,
+						"allOf": [{"$ref": "#/components/schemas/PollResponse"}]
+					},
 					"referenced_message": {
 						"description": "The reply target. Present and populated when the target resolved, present and null when the target is gone, absent when this message carries no default reference. Clients must tell null apart from absent by key presence.",
 						"nullable": true,
@@ -13748,6 +13770,11 @@
 								},
 								"required": ["participants"],
 								"additionalProperties": false
+							},
+							"poll": {
+								"description": "The poll attached to this message, if any",
+								"nullable": true,
+								"allOf": [{"$ref": "#/components/schemas/PollResponse"}]
 							}
 						},
 						"required": [
@@ -13899,6 +13926,37 @@
 				"format": "int32",
 				"x-enumNames": ["SAFE", "AGE_RESTRICTED"],
 				"x-enumDescriptions": ["Guild is safe for all ages", "Guild is age-restricted"]
+			},
+			"PollResponse": {
+				"type": "object",
+				"properties": {
+					"question": {
+						"type": "object",
+						"properties": {"text": {"type": "string"}},
+						"required": ["text"],
+						"additionalProperties": false
+					},
+					"answers": {"type": "array", "items": {"$ref": "#/components/schemas/PollAnswerResponse"}},
+					"expires_at": {
+						"type": "string",
+						"format": "date-time",
+						"pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+					},
+					"allow_multiselect": {"type": "boolean"},
+					"allow_vote_change": {"type": "boolean"},
+					"layout_type": {"type": "number", "enum": [1]},
+					"results": {"$ref": "#/components/schemas/PollResultsResponse"}
+				},
+				"required": [
+					"question",
+					"answers",
+					"expires_at",
+					"allow_multiselect",
+					"allow_vote_change",
+					"layout_type",
+					"results"
+				],
+				"additionalProperties": false
 			},
 			"MessageSnapshotResponse": {
 				"type": "object",
@@ -14215,13 +14273,14 @@
 						"value": "4096",
 						"description": "This message will not trigger push or desktop notifications"
 					},
-					{"name": "VOICE_MESSAGE", "value": "8192", "description": "This message is a voice message"}
+					{"name": "VOICE_MESSAGE", "value": "8192", "description": "This message is a voice message"},
+					{"name": "HAS_POLL", "value": "16384", "description": "This message carries a poll"}
 				]
 			},
 			"MessageType": {
 				"description": "The type of message",
 				"type": "integer",
-				"enum": [0, 1, 2, 3, 4, 5, 6, 7, 19],
+				"enum": [0, 1, 2, 3, 4, 5, 6, 7, 19, 46],
 				"format": "int32",
 				"x-enumNames": [
 					"DEFAULT",
@@ -14232,7 +14291,8 @@
 					"CHANNEL_ICON_CHANGE",
 					"CHANNEL_PINNED_MESSAGE",
 					"USER_JOIN",
-					"REPLY"
+					"REPLY",
+					"POLL_RESULT"
 				],
 				"x-enumDescriptions": [
 					"A regular message",
@@ -14243,7 +14303,8 @@
 					"A system message indicating the channel icon changed",
 					"A system message indicating a message was pinned",
 					"A system message indicating a user joined",
-					"A reply message"
+					"A reply message",
+					"A system message announcing the result of a poll that ended"
 				]
 			},
 			"MentionReplyPreferences": {
@@ -14475,6 +14536,57 @@
 					},
 					{"name": "IS_ANIMATED", "value": "32", "description": "Attachment is animated"}
 				]
+			},
+			"PollResultsResponse": {
+				"type": "object",
+				"properties": {
+					"is_finalized": {"type": "boolean", "description": "True once the poll has ended and counts are final"},
+					"answer_counts": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"id": {
+									"description": "The answer_id this count belongs to",
+									"allOf": [{"$ref": "#/components/schemas/Int32Type"}]
+								},
+								"count": {"$ref": "#/components/schemas/Int32Type"},
+								"me_voted": {"type": "boolean"}
+							},
+							"required": ["id", "count", "me_voted"],
+							"additionalProperties": false
+						}
+					},
+					"total_voters": {
+						"description": "Distinct members who voted",
+						"allOf": [{"$ref": "#/components/schemas/Int32Type"}]
+					}
+				},
+				"required": ["is_finalized", "answer_counts", "total_voters"],
+				"additionalProperties": false
+			},
+			"PollAnswerResponse": {
+				"type": "object",
+				"properties": {
+					"answer_id": {
+						"description": "Position-based ID, stable for the life of the poll",
+						"allOf": [{"$ref": "#/components/schemas/Int32Type"}]
+					},
+					"text": {"type": "string"},
+					"emoji": {
+						"nullable": true,
+						"type": "object",
+						"properties": {
+							"id": {"nullable": true, "allOf": [{"$ref": "#/components/schemas/SnowflakeStringType"}]},
+							"name": {"nullable": true, "type": "string"},
+							"animated": {"type": "boolean"}
+						},
+						"required": ["id", "name"],
+						"additionalProperties": false
+					}
+				},
+				"required": ["answer_id", "text", "emoji"],
+				"additionalProperties": false
 			},
 			"DiscoveryAdminPendingApplicationResponse": {
 				"type": "object",
@@ -14725,7 +14837,13 @@
 						"description": "Allows using stickers from other guilds"
 					},
 					{"name": "MODERATE_MEMBERS", "value": "1099511627776", "description": "Allows timing out users"},
+					{
+						"name": "USE_SOUNDBOARD",
+						"value": "4398046511104",
+						"description": "Allows playing soundboard sounds in a voice channel"
+					},
 					{"name": "CREATE_EXPRESSIONS", "value": "8796093022208", "description": "Allows creating guild expressions"},
+					{"name": "SEND_POLLS", "value": "562949953421312", "description": "Allows creating polls in text channels"},
 					{"name": "PIN_MESSAGES", "value": "2251799813685248", "description": "Allows pinning messages"},
 					{"name": "BYPASS_SLOWMODE", "value": "4503599627370496", "description": "Allows bypassing slowmode"},
 					{"name": "UPDATE_RTC_REGION", "value": "9007199254740992", "description": "Allows updating the voice region"},
@@ -15058,7 +15176,7 @@
 				"type": "integer",
 				"enum": [
 					1, 10, 11, 12, 13, 14, 15, 20, 21, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 40, 41, 42, 50, 51, 52, 60, 61, 62,
-					90, 91, 92, 72, 73, 74, 75
+					90, 91, 92, 72, 73, 74, 75, 130, 131, 132, 133
 				],
 				"format": "int32",
 				"x-enumNames": [
@@ -15096,7 +15214,11 @@
 					"MESSAGE_DELETE",
 					"MESSAGE_BULK_DELETE",
 					"MESSAGE_PIN",
-					"MESSAGE_UNPIN"
+					"MESSAGE_UNPIN",
+					"SOUNDBOARD_SOUND_CREATE",
+					"SOUNDBOARD_SOUND_UPDATE",
+					"SOUNDBOARD_SOUND_DELETE",
+					"POLL_END"
 				],
 				"x-enumDescriptions": [
 					"Guild settings were updated",
@@ -15133,7 +15255,11 @@
 					"Message was deleted",
 					"Messages were bulk deleted",
 					"Message was pinned",
-					"Message was unpinned"
+					"Message was unpinned",
+					"Soundboard sound was created",
+					"Soundboard sound was updated",
+					"Soundboard sound was deleted",
+					"Poll was ended early"
 				]
 			},
 			"WebhookType": {

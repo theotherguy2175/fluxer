@@ -101,12 +101,16 @@ A Dispatch is buffered for [Resume](/gateway/commands/#resume) replay unless it 
 | [Message Reaction Remove](#message-reaction-remove) | One user's reaction is removed from a message | Message access |
 | [Message Reaction Remove All](#message-reaction-remove-all) | Every reaction is removed from a message at once | Message access |
 | [Message Reaction Remove Emoji](#message-reaction-remove-emoji) | Every reaction using one emoji is removed from a message | Message access |
+| [Message Poll Vote Add](#message-poll-vote-add) | A user votes for an answer on a message's poll | Message access |
+| [Message Poll Vote Remove](#message-poll-vote-remove) | A user withdraws a poll vote | Message access |
 | [Typing Start](#typing-start) | A visible user begins typing in a channel | Channel visibility |
 | [Channel Pins Update](#channel-pins-update) | A channel's most recent pin time changes | Channel visibility |
 | [Channel Pins ACK](#channel-pins-ack) | The current user acknowledges a channel's pins | Current user |
 | [Voice State Update](#voice-state-update) | A guild or call participant's voice state changes | Channel visibility |
 | [Voice Server Update](#voice-server-update) | The session receives or replaces its own voice grant | Current session |
 | [Entrance Sound Play](#entrance-sound-play) | A participant's entrance sound plays in a voice channel | Voice channel |
+| [Soundboard Sound Play](#soundboard-sound-play) | A participant plays a soundboard sound in a voice channel | Voice channel |
+| [Soundboard Sounds Update](#soundboard-sounds-update) | A guild's soundboard sound set changes | Guild |
 | [Call Create](#call-create) | A private channel call begins or becomes visible | Call recipient |
 | [Call Update](#call-update) | The ringing set, participant roster, or region of a call changes | Call recipient |
 | [Call Delete](#call-delete) | A call ends or becomes unavailable | Call recipient |
@@ -876,6 +880,34 @@ Every reaction using one emoji was removed from a message.
 | emoji | [reaction emoji object](#reaction-emoji-object) | The emoji whose reactions were removed |
 | guild_id? | snowflake | Guild the channel belongs to |
 
+### <span id="message-poll-vote-add"></span>MESSAGE_POLL_VOTE_ADD
+
+A user voted for an answer on a message's poll. The message's `poll` object carries the new totals; a client MUST refetch or recount rather than assume a single increment, since a multi-select poll can deliver several of these for one vote action.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| channel_id | snowflake | Channel the message is in |
+| message_id | snowflake | Message that carries the poll |
+| guild_id? | snowflake | Guild the channel belongs to |
+| user_id | snowflake | User who voted |
+| answer_id | integer | The `answer_id` of the chosen answer |
+
+Delivered to every session that can read the channel. As with reactions, in a guild channel the session named by the request's `session_id` is excluded, so a client MUST apply its own vote locally.
+
+### <span id="message-poll-vote-remove"></span>MESSAGE_POLL_VOTE_REMOVE
+
+A user withdrew a vote. On a poll that does not allow changing answers, switching answers is refused and this event is never sent for that user; on one that does, a switch arrives as a remove followed by an add.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| channel_id | snowflake | Channel the message is in |
+| message_id | snowflake | Message that carries the poll |
+| guild_id? | snowflake | Guild the channel belongs to |
+| user_id | snowflake | User whose vote was removed |
+| answer_id | integer | The `answer_id` the vote is removed from |
+
+When a poll ends, whether by expiry or an early end, the message is re-sent as a [Message Update](#message-update) with `poll.results.is_finalized` set, and a `POLL_RESULT` system message is created in the channel.
+
 ### <span id="typing-start"></span>TYPING_START
 
 A visible user began typing in a channel.
@@ -982,6 +1014,38 @@ A participant asked for their entrance sound to play in a voice channel they are
 | content_type | string | MIME type of the sound file |
 
 Recipients are every other account with a voice state in that channel, one Dispatch each and at most one per account. The requesting account never receives its own sound.
+
+### <span id="soundboard-sound-play"></span>SOUNDBOARD_SOUND_PLAY
+
+A participant played one of the guild's soundboard sounds in a voice channel. Each client plays the file locally; nothing is mixed into the voice stream.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| user_id | snowflake | Participant who played the sound |
+| channel_id | snowflake | Voice channel |
+| guild_id | snowflake | Guild that owns the sound |
+| sound_id | snowflake | Soundboard sound |
+| hash | string | Content hash of the sound file |
+| url | string | URL to fetch the sound from |
+| duration_ms | integer | Sound duration in milliseconds |
+| content_type | string | MIME type of the sound file |
+| volume | number | Playback multiplier set on the sound, 0 to 2 |
+| emoji_id | ?snowflake | Custom emoji shown for the sound |
+| emoji_name | ?string | Unicode emoji shown for the sound |
+| emoji_animated | boolean | Whether the custom emoji is animated |
+| restart_on_repeat | boolean | Whether playing the same sound again restarts it instead of layering |
+
+Recipients are every account with a voice state in that channel, including the one that played it, one Dispatch each and at most one per account. Plays are rate limited per member by the `max_soundboard_plays_per_second` instance limit.
+
+### <span id="soundboard-sounds-update"></span>SOUNDBOARD_SOUNDS_UPDATE
+
+A guild's soundboard sound set changed: a sound was uploaded, edited, or deleted. The payload is the full replacement list.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| sounds | array[soundboard sound object] | Every sound the guild now has, in the order the list endpoint returns them |
+
+Delivered to every session with the guild. Each entry has the shape returned by `GET /guilds/{guild.id}/soundboard-sounds`.
 
 ### <span id="call-create"></span>CALL_CREATE
 
