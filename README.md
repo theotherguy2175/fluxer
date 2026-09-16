@@ -128,16 +128,16 @@ With kustomize, swap the four images and leave the rest:
 images:
   - name: ghcr.io/fluxerapp/fluxer-api
     newName: ghcr.io/theotherguy2175/fluxer-api
-    newTag: sb-20260916-7c9ca92
+    newTag: sb-20260916-b7bd210
   - name: ghcr.io/fluxerapp/fluxer-gateway
     newName: ghcr.io/theotherguy2175/fluxer-gateway
-    newTag: sb-20260916-7c9ca92
+    newTag: sb-20260916-b7bd210
   - name: ghcr.io/fluxerapp/fluxer-media-proxy
     newName: ghcr.io/theotherguy2175/fluxer-media-proxy
-    newTag: sb-20260916-7c9ca92
+    newTag: sb-20260916-b7bd210
   - name: ghcr.io/fluxerapp/fluxer-app-proxy-self-hosted
     newName: ghcr.io/theotherguy2175/fluxer-app-proxy-self-hosted
-    newTag: sb-20260916-7c9ca92
+    newTag: sb-20260916-b7bd210
 ```
 
 Bump all four together; they're built from one commit. Run the same two backfill
