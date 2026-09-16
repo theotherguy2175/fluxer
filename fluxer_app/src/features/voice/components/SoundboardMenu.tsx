@@ -20,6 +20,7 @@ import {formatKeyCombo} from '@app/features/input/utils/KeybindUtils';
 import {openFilePicker} from '@app/features/messaging/utils/FilePickerUtils';
 import {formatFileSize} from '@app/features/messaging/utils/FileUtils';
 import Permission from '@app/features/permissions/state/Permission';
+import AppStorage from '@app/features/platform/state/PersistentStorage';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
@@ -111,13 +112,15 @@ const UNSUPPORTED_FILE_BODY_DESCRIPTOR = msg({
 
 const logger = new Logger('SoundboardMenu');
 
+// Favorites are a personal, device-local preference. Must go through AppStorage:
+// production builds delete window.localStorage (ProtectedWebStorage), so a direct
+// access throws and nothing is saved — which is exactly what happened on prod.
 function favoritesKey(guildId: string): string {
 	return `soundboard:favorites:${guildId}`;
 }
 function readFavorites(guildId: string): Array<string> {
 	try {
-		const raw = window.localStorage.getItem(favoritesKey(guildId));
-		const parsed: unknown = raw ? JSON.parse(raw) : [];
+		const parsed = AppStorage.getJSON<unknown>(favoritesKey(guildId), []);
 		return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
 	} catch {
 		return [];
@@ -125,7 +128,7 @@ function readFavorites(guildId: string): Array<string> {
 }
 function writeFavorites(guildId: string, ids: Array<string>): void {
 	try {
-		window.localStorage.setItem(favoritesKey(guildId), JSON.stringify(ids));
+		AppStorage.setJSON(favoritesKey(guildId), ids);
 	} catch {}
 }
 
