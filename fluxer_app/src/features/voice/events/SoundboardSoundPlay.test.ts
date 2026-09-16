@@ -4,6 +4,7 @@ import type {GatewayHandlerContext} from '@app/features/gateway/events/EventRout
 import MediaEngine from '@app/features/voice/engine/MediaEngineFacade';
 import SoundboardPlaybackEngine from '@app/features/voice/engine/SoundboardPlaybackEngine';
 import SoundboardActivity from '@app/features/voice/state/SoundboardActivity';
+import {subscribeToSoundboardPlays} from '@app/features/voice/utils/SoundboardPlayFeed';
 import {beforeEach, describe, expect, it, vi} from 'vitest';
 import {handleSoundboardSoundPlay} from './SoundboardSoundPlay';
 
@@ -17,6 +18,10 @@ vi.mock('@app/features/voice/engine/MediaEngineFacade', () => ({
 
 vi.mock('@app/features/voice/state/SoundboardActivity', () => ({
 	default: {notifyPlayed: vi.fn()},
+}));
+
+vi.mock('@app/features/user/state/Users', () => ({
+	default: {currentUserId: 'me'},
 }));
 
 const payload = {
@@ -57,6 +62,20 @@ describe('handleSoundboardSoundPlay', () => {
 			emojiName: '🔔',
 			emojiAnimated: false,
 		});
+	});
+
+	it("announces other members' plays on the play feed, but not our own", () => {
+		const listener = vi.fn();
+		const unsubscribe = subscribeToSoundboardPlays(listener);
+		try {
+			handleSoundboardSoundPlay(payload, context);
+			expect(listener).toHaveBeenCalledWith('sound-1', 'remote');
+			listener.mockClear();
+			handleSoundboardSoundPlay({...payload, user_id: 'me'}, context);
+			expect(listener).not.toHaveBeenCalled();
+		} finally {
+			unsubscribe();
+		}
 	});
 
 	it('forwards restart_on_repeat to the playback engine', () => {

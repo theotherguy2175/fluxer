@@ -2,9 +2,11 @@
 
 import type {GatewayHandlerContext} from '@app/features/gateway/events/EventRouter';
 import {Logger} from '@app/features/platform/utils/AppLogger';
+import Users from '@app/features/user/state/Users';
 import MediaEngine from '@app/features/voice/engine/MediaEngineFacade';
 import SoundboardPlaybackEngine from '@app/features/voice/engine/SoundboardPlaybackEngine';
 import SoundboardActivity from '@app/features/voice/state/SoundboardActivity';
+import {emitSoundboardPlay} from '@app/features/voice/utils/SoundboardPlayFeed';
 
 const logger = new Logger('SoundboardSoundPlay');
 
@@ -44,4 +46,8 @@ export function handleSoundboardSoundPlay(data: SoundboardSoundPlayPayload, _con
 		emojiName: data.emoji_name ?? null,
 		emojiAnimated: data.emoji_animated ?? false,
 	});
+	// Our own plays already flashed the tile on click/hotkey; this is for everyone else's.
+	if (data.user_id !== Users.currentUserId) {
+		emitSoundboardPlay(data.sound_id, 'remote');
+	}
 }

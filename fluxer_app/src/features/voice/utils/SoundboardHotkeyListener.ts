@@ -11,20 +11,10 @@ import {isNativeMacOS} from '@app/features/ui/utils/NativeUtils';
 import MediaEngine from '@app/features/voice/engine/MediaEngineFacade';
 import SoundboardHotkeys from '@app/features/voice/state/SoundboardHotkeys';
 import {findFluxerKeybindConflict} from '@app/features/voice/utils/SoundboardHotkeyConflicts';
+import {emitSoundboardPlay} from '@app/features/voice/utils/SoundboardPlayFeed';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
 
 const logger = new Logger('SoundboardHotkeyListener');
-
-export type SoundboardHotkeyPlayListener = (soundId: string) => void;
-const playListeners = new Set<SoundboardHotkeyPlayListener>();
-
-/** Lets the soundboard popover flash the tile when its sound was triggered by hotkey. */
-export function subscribeToSoundboardHotkeyPlays(listener: SoundboardHotkeyPlayListener): () => void {
-	playListeners.add(listener);
-	return () => {
-		playListeners.delete(listener);
-	};
-}
 
 const hasNonShiftModifier = (combo: KeyCombo): boolean =>
 	Boolean(combo.ctrlOrMeta || combo.ctrl || combo.alt || combo.meta);
@@ -63,7 +53,7 @@ function trigger(target: ActiveSoundboardTarget, soundId: string): void {
 	void GuildSoundboardCommands.play(target.channelId, soundId).catch((error) =>
 		logger.error(`Hotkey play failed for sound ${soundId}`, error),
 	);
-	for (const listener of playListeners) listener(soundId);
+	emitSoundboardPlay(soundId, 'local');
 }
 
 function handleKeyDown(event: KeyboardEvent): void {

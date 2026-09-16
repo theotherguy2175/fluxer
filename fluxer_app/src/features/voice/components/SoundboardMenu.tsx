@@ -32,7 +32,7 @@ import {SoundboardSoundModal} from '@app/features/voice/components/SoundboardSou
 import SoundboardPlaybackEngine from '@app/features/voice/engine/SoundboardPlaybackEngine';
 import SoundboardHotkeys from '@app/features/voice/state/SoundboardHotkeys';
 import VoiceSettings from '@app/features/voice/state/VoiceSettings';
-import {subscribeToSoundboardHotkeyPlays} from '@app/features/voice/utils/SoundboardHotkeyListener';
+import {subscribeToSoundboardPlays} from '@app/features/voice/utils/SoundboardPlayFeed';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {SOUNDBOARD_DEFAULT_MAX_DURATION_MS, SOUNDBOARD_MAX_BYTES} from '@fluxer/constants/src/SoundboardConstants';
 import type {GuildSoundboardSoundResponse} from '@fluxer/schema/src/domains/guild/GuildSoundboardSchemas';
@@ -40,6 +40,7 @@ import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import {
 	GearSixIcon,
+	HeadphonesIcon,
 	KeyboardIcon,
 	MagnifyingGlassIcon,
 	PlusIcon,
@@ -173,40 +174,49 @@ const SoundTile: React.FC<SoundTileProps> = ({
 							emojiId={sound.emoji_id}
 							emojiName={sound.emoji_name}
 							emojiAnimated={sound.emoji_animated}
-							size={18}
+							size={24}
 						/>
 					) : (
-						<SpeakerHighIcon size={16} data-flx="voice.soundboard-menu.tile-speaker" />
+						<SpeakerHighIcon size={22} data-flx="voice.soundboard-menu.tile-speaker" />
 					)}
 				</span>
 				<span className={styles.tileName} data-flx="voice.soundboard-menu.tile-name">
 					{sound.name}
 				</span>
-				{hotkeyText && (
-					<kbd className={styles.tileHotkey} data-flx="voice.soundboard-menu.tile-hotkey">
-						{hotkeyText}
-					</kbd>
-				)}
 			</button>
-			<Tooltip
-				text={i18n._(PREVIEW_SOUND_DESCRIPTOR)}
-				position="top"
-				data-flx="voice.soundboard-menu.tile-preview-tooltip"
-			>
-				<button
-					type="button"
-					className={styles.tilePreviewButton}
-					onClick={(event) => {
-						event.stopPropagation();
-						onPreview();
-					}}
-					aria-label={i18n._(PREVIEW_SOUND_DESCRIPTOR)}
-					data-flx="voice.soundboard-menu.tile-preview-button"
-				>
-					<SpeakerHighIcon size={14} weight="fill" data-flx="voice.soundboard-menu.tile-preview-icon" />
-				</button>
-			</Tooltip>
+			{favorited && (
+				<StarIcon
+					size={11}
+					weight="fill"
+					className={styles.tileFavoriteMark}
+					aria-hidden="true"
+					data-flx="voice.soundboard-menu.tile-favorite-mark"
+				/>
+			)}
+			{hotkeyText && (
+				<kbd className={styles.tileHotkey} data-flx="voice.soundboard-menu.tile-hotkey">
+					{hotkeyText}
+				</kbd>
+			)}
 			<div className={styles.tileActions} data-flx="voice.soundboard-menu.tile-actions">
+				<Tooltip
+					text={i18n._(PREVIEW_SOUND_DESCRIPTOR)}
+					position="top"
+					data-flx="voice.soundboard-menu.tile-preview-tooltip"
+				>
+					<button
+						type="button"
+						className={styles.tileActionButton}
+						onClick={(event) => {
+							event.stopPropagation();
+							onPreview();
+						}}
+						aria-label={i18n._(PREVIEW_SOUND_DESCRIPTOR)}
+						data-flx="voice.soundboard-menu.tile-preview-button"
+					>
+						<HeadphonesIcon size={13} data-flx="voice.soundboard-menu.tile-preview-icon" />
+					</button>
+				</Tooltip>
 				<Tooltip
 					text={hotkeyText ? i18n._(EDIT_HOTKEY_DESCRIPTOR, {combo: hotkeyText}) : i18n._(SET_HOTKEY_DESCRIPTOR)}
 					position="top"
@@ -325,7 +335,7 @@ export const SoundboardMenu: React.FC<SoundboardMenuProps> = observer(({guildId,
 		[channelId, flash],
 	);
 
-	useEffect(() => subscribeToSoundboardHotkeyPlays(flash), [flash]);
+	useEffect(() => subscribeToSoundboardPlays((soundId) => flash(soundId)), [flash]);
 
 	const openHotkeyModal = useCallback(
 		(sound: GuildSoundboardSoundResponse) => {
@@ -503,7 +513,7 @@ export const SoundboardMenu: React.FC<SoundboardMenuProps> = observer(({guildId,
 									onClick={handleAdd}
 									data-flx="voice.soundboard-menu.add-tile"
 								>
-									<PlusIcon size={16} data-flx="voice.soundboard-menu.add-icon" />
+									<PlusIcon size={20} data-flx="voice.soundboard-menu.add-icon" />
 									<span>{i18n._(ADD_SOUND_DESCRIPTOR)}</span>
 								</button>
 							)}
