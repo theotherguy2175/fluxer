@@ -5,6 +5,7 @@ import StreamerMode from '@app/features/streamer_mode/state/StreamerMode';
 import Sound from '@app/features/ui/state/Sound';
 import {getEffectiveAudioState} from '@app/features/voice/engine/VoiceEffectiveAudioState';
 import VoiceSettings from '@app/features/voice/state/VoiceSettings';
+import {soundboardMultiplierToGain} from '@app/features/voice/utils/SoundboardVolumeCurve';
 import {SOUNDBOARD_MAX_VOLUME} from '@fluxer/constants/src/SoundboardConstants';
 
 const logger = new Logger('SoundboardPlaybackEngine');
@@ -126,12 +127,15 @@ class SoundboardPlaybackEngine {
 		if (!buffer) return;
 		const outputVolumePct = VoiceSettings.getOutputVolume();
 		// Chain: voice output volume × app sounds master × this member's soundboard
-		// slider × the sound's own volume (which may exceed 1). Hard-capped so a
-		// stack of boosts cannot blow out the output.
-		const soundboardVolume = VoiceSettings.getSoundboardVolume() / 100;
+		// slider × the sound's own volume (which may exceed 1). The two soundboard
+		// controls go through a perceptual curve so 50% sounds half as loud; the
+		// upstream output/master volumes are applied as-is. Hard-capped so a stack
+		// of boosts cannot blow out the output.
+		const soundboardGain = soundboardMultiplierToGain(VoiceSettings.getSoundboardVolume() / 100);
+		const soundGain = soundboardMultiplierToGain(soundVolume);
 		const gainValue = Math.max(
 			0,
-			Math.min(MAX_GAIN, (outputVolumePct / 100) * this.getMasterVolumeMultiplier() * soundboardVolume * soundVolume),
+			Math.min(MAX_GAIN, (outputVolumePct / 100) * this.getMasterVolumeMultiplier() * soundboardGain * soundGain),
 		);
 		try {
 			const source = ctx.createBufferSource();

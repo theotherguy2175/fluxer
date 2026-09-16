@@ -27,6 +27,7 @@ import {AudioWaveform, computePeaks} from '@app/features/voice/components/AudioW
 import styles from '@app/features/voice/components/SoundboardSoundModal.module.css';
 import {SoundWaveform} from '@app/features/voice/components/SoundWaveform';
 import {encodeAudioBufferSliceToWav} from '@app/features/voice/utils/AudioWavEncode';
+import {soundboardMultiplierToGain} from '@app/features/voice/utils/SoundboardVolumeCurve';
 import {
 	SOUNDBOARD_MAX_BYTES,
 	SOUNDBOARD_MAX_VOLUME,
@@ -226,7 +227,7 @@ export const SoundboardSoundModal: React.FC<SoundboardSoundModalProps> = observe
 	useEffect(() => stopPlayback, [stopPlayback]);
 
 	useEffect(() => {
-		if (gainNodeRef.current) gainNodeRef.current.gain.value = volumePercent / 100;
+		if (gainNodeRef.current) gainNodeRef.current.gain.value = soundboardMultiplierToGain(volumePercent / 100);
 	}, [volumePercent]);
 
 	const togglePlayback = useCallback(() => {
@@ -243,7 +244,7 @@ export const SoundboardSoundModal: React.FC<SoundboardSoundModalProps> = observe
 		const node = ctx.createBufferSource();
 		node.buffer = audioBuffer;
 		const gain = ctx.createGain();
-		gain.gain.value = volumePercent / 100;
+		gain.gain.value = soundboardMultiplierToGain(volumePercent / 100);
 		node.connect(gain).connect(ctx.destination);
 		sourceNodeRef.current = node;
 		gainNodeRef.current = gain;

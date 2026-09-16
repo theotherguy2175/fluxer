@@ -40,7 +40,6 @@ import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import {
 	GearSixIcon,
-	HeadphonesIcon,
 	KeyboardIcon,
 	MagnifyingGlassIcon,
 	PlusIcon,
@@ -174,73 +173,35 @@ const SoundTile: React.FC<SoundTileProps> = ({
 							emojiId={sound.emoji_id}
 							emojiName={sound.emoji_name}
 							emojiAnimated={sound.emoji_animated}
-							size={24}
+							size={18}
 						/>
 					) : (
-						<SpeakerHighIcon size={22} data-flx="voice.soundboard-menu.tile-speaker" />
+						<SpeakerHighIcon size={16} data-flx="voice.soundboard-menu.tile-speaker" />
 					)}
 				</span>
 				<span className={styles.tileName} data-flx="voice.soundboard-menu.tile-name">
 					{sound.name}
 				</span>
 			</button>
-			{favorited && (
-				<StarIcon
-					size={11}
-					weight="fill"
-					className={styles.tileFavoriteMark}
-					aria-hidden="true"
-					data-flx="voice.soundboard-menu.tile-favorite-mark"
-				/>
-			)}
-			{hotkeyText && (
-				<kbd className={styles.tileHotkey} data-flx="voice.soundboard-menu.tile-hotkey">
-					{hotkeyText}
-				</kbd>
-			)}
+			<Tooltip
+				text={i18n._(PREVIEW_SOUND_DESCRIPTOR)}
+				position="top"
+				data-flx="voice.soundboard-menu.tile-preview-tooltip"
+			>
+				<button
+					type="button"
+					className={styles.tilePreviewButton}
+					onClick={(event) => {
+						event.stopPropagation();
+						onPreview();
+					}}
+					aria-label={i18n._(PREVIEW_SOUND_DESCRIPTOR)}
+					data-flx="voice.soundboard-menu.tile-preview-button"
+				>
+					<SpeakerHighIcon size={14} weight="fill" data-flx="voice.soundboard-menu.tile-preview-icon" />
+				</button>
+			</Tooltip>
 			<div className={styles.tileActions} data-flx="voice.soundboard-menu.tile-actions">
-				<Tooltip
-					text={i18n._(PREVIEW_SOUND_DESCRIPTOR)}
-					position="top"
-					data-flx="voice.soundboard-menu.tile-preview-tooltip"
-				>
-					<button
-						type="button"
-						className={styles.tileActionButton}
-						onClick={(event) => {
-							event.stopPropagation();
-							onPreview();
-						}}
-						aria-label={i18n._(PREVIEW_SOUND_DESCRIPTOR)}
-						data-flx="voice.soundboard-menu.tile-preview-button"
-					>
-						<HeadphonesIcon size={13} data-flx="voice.soundboard-menu.tile-preview-icon" />
-					</button>
-				</Tooltip>
-				<Tooltip
-					text={hotkeyText ? i18n._(EDIT_HOTKEY_DESCRIPTOR, {combo: hotkeyText}) : i18n._(SET_HOTKEY_DESCRIPTOR)}
-					position="top"
-					data-flx="voice.soundboard-menu.tile-hotkey-tooltip"
-				>
-					<button
-						type="button"
-						className={clsx(styles.tileActionButton, hotkeyText && styles.tileActionButtonActive)}
-						onClick={(event) => {
-							event.stopPropagation();
-							onSetHotkey();
-						}}
-						aria-label={
-							hotkeyText ? i18n._(EDIT_HOTKEY_DESCRIPTOR, {combo: hotkeyText}) : i18n._(SET_HOTKEY_DESCRIPTOR)
-						}
-						data-flx="voice.soundboard-menu.tile-hotkey-button"
-					>
-						<KeyboardIcon
-							size={13}
-							weight={hotkeyText ? 'fill' : 'regular'}
-							data-flx="voice.soundboard-menu.tile-hotkey-icon"
-						/>
-					</button>
-				</Tooltip>
 				<Tooltip
 					text={i18n._(favorited ? REMOVE_FAVORITE_DESCRIPTOR : ADD_FAVORITE_DESCRIPTOR)}
 					position="top"
@@ -264,6 +225,45 @@ const SoundTile: React.FC<SoundTileProps> = ({
 						/>
 					</button>
 				</Tooltip>
+				{hotkeyText ? (
+					<Tooltip
+						text={i18n._(EDIT_HOTKEY_DESCRIPTOR, {combo: hotkeyText})}
+						position="top"
+						data-flx="voice.soundboard-menu.tile-hotkey-tooltip"
+					>
+						<button
+							type="button"
+							className={styles.tileHotkeyButton}
+							onClick={(event) => {
+								event.stopPropagation();
+								onSetHotkey();
+							}}
+							aria-label={i18n._(EDIT_HOTKEY_DESCRIPTOR, {combo: hotkeyText})}
+							data-flx="voice.soundboard-menu.tile-hotkey-chip"
+						>
+							{hotkeyText}
+						</button>
+					</Tooltip>
+				) : (
+					<Tooltip
+						text={i18n._(SET_HOTKEY_DESCRIPTOR)}
+						position="top"
+						data-flx="voice.soundboard-menu.tile-hotkey-tooltip"
+					>
+						<button
+							type="button"
+							className={styles.tileActionButton}
+							onClick={(event) => {
+								event.stopPropagation();
+								onSetHotkey();
+							}}
+							aria-label={i18n._(SET_HOTKEY_DESCRIPTOR)}
+							data-flx="voice.soundboard-menu.tile-hotkey-button"
+						>
+							<KeyboardIcon size={13} data-flx="voice.soundboard-menu.tile-hotkey-icon" />
+						</button>
+					</Tooltip>
+				)}
 			</div>
 			{flashNonce > 0 && (
 				<span
@@ -513,7 +513,7 @@ export const SoundboardMenu: React.FC<SoundboardMenuProps> = observer(({guildId,
 									onClick={handleAdd}
 									data-flx="voice.soundboard-menu.add-tile"
 								>
-									<PlusIcon size={20} data-flx="voice.soundboard-menu.add-icon" />
+									<PlusIcon size={16} data-flx="voice.soundboard-menu.add-icon" />
 									<span>{i18n._(ADD_SOUND_DESCRIPTOR)}</span>
 								</button>
 							)}
