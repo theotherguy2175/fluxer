@@ -45,7 +45,7 @@
 }
 
 .contextMenu:has([data-soundboard-popover]) {
-	max-width: min(30rem, var(--context-menu-viewport-max-width));
+	max-width: min(34rem, var(--context-menu-viewport-max-width));
 }
 
 .menuScroller {

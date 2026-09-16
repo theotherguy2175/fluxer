@@ -3,7 +3,7 @@
 .panel {
 	display: flex;
 	flex-direction: column;
-	width: 29.25rem;
+	width: 33rem;
 	max-width: 100%;
 }
 
@@ -231,11 +231,7 @@
 .tileActions:focus-within::before {
 	opacity: 1;
 	/* Opaque endpoint: the hover modifier is translucent white, which never actually hid text. */
-	background: linear-gradient(
-		to right,
-		transparent,
-		color-mix(in srgb, var(--background-secondary), white 5%) 30%
-	);
+	background: linear-gradient(to right, transparent, color-mix(in srgb, var(--background-secondary), white 5%) 30%);
 }
 
 .tileActions > * {
