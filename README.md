@@ -2,10 +2,10 @@
 
 
 This is a fork of [fluxerapp/fluxer](https://github.com/fluxerapp/fluxer) that
-adds a **community soundboard**: members upload short clips, and anyone in a
-voice channel can trigger them so everyone in the channel hears it. Upstream
-declined to merge it, so it lives here as a maintained patch on top of
-upstream `main`.
+adds a **community soundboard** — members upload short clips, and anyone in a
+voice channel can trigger them so everyone in the channel hears it — and
+**Discord-style polls** in messages. Upstream declined to merge the soundboard,
+so both live here as a maintained patch on top of upstream `main`.
 
 - Branch: **`main`** — upstream `main` plus the soundboard commits on top
 - Images: `ghcr.io/theotherguy2175/fluxer-{api,gateway,media-proxy,app-proxy-self-hosted}`
@@ -39,9 +39,23 @@ upstream `main`.
   **Manage Expressions**; the community-level soundboard settings need
   **Manage Community** — the same split as emojis and stickers
 - Audit log entries for create / update / delete
-- Instance limits: `max_soundboard_sounds_per_guild` (default 9, ceiling 200) and
-  `max_soundboard_sound_duration_ms` (default 5000, ceiling 30000), adjustable per
+- Instance limits: `max_soundboard_sounds_per_guild` (default 9, ceiling 200),
+  `max_soundboard_sound_duration_ms` (default 5000, ceiling 30000) and
+  `max_soundboard_plays_per_second` (default 25, ceiling 100), adjustable per
   plan/community like the other limits
+
+### Polls
+
+- **Create poll** from the ➕ menu in the message box: question, 2–10 answers with
+  optional emoji, single- or multi-choice, "allow changing answers", and a duration
+- Live vote counts, voter list per answer, your own votes highlighted; when the
+  poll ends the message locks and a **Poll results** system message is posted
+- New permission **Send Polls** (bit 49), granted to `@everyone` on new communities
+  by default; ending someone else's poll early needs **Manage Messages**
+- Instance limits `max_poll_answers`, `max_poll_question_length`,
+  `max_poll_answer_length`, `max_poll_duration_hours`; each community can tighten
+  them in **Community settings → Polls**
+- Design notes and data model: [POLLS.md](./POLLS.md)
 
 ## Run it: existing Docker Compose install
 
@@ -69,17 +83,19 @@ docker compose up -d
 
 Tested end to end on a fresh `install.sh` instance (amd64 and arm64).
 
-Then, **once**, grant *Use Soundboard* to `@everyone` on communities that already
-existed (new communities get it automatically):
+Then, **once**, grant *Use Soundboard* and *Send Polls* to `@everyone` on
+communities that already existed (new communities get both automatically):
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/theotherguy2175/fluxer/main/fluxer_api/scripts/backfill-use-soundboard-permission.sql \
-  | docker compose exec -T postgres psql -U fluxer -d fluxer
+for f in backfill-use-soundboard-permission backfill-send-polls-permission; do
+  curl -fsSL https://raw.githubusercontent.com/theotherguy2175/fluxer/main/fluxer_api/scripts/$f.sql \
+    | docker compose exec -T postgres psql -U fluxer -d fluxer
+done
 docker compose restart api gateway     # drop cached role permissions
 ```
 
-The script is idempotent. Skip it if you'd rather hand the permission out per
-role in each community's settings.
+The scripts are idempotent. Skip them if you'd rather hand the permissions out
+per role in each community's settings.
 
 Two optional `.env` knobs, both default to a published build:
 
@@ -112,20 +128,20 @@ With kustomize, swap the four images and leave the rest:
 images:
   - name: ghcr.io/fluxerapp/fluxer-api
     newName: ghcr.io/theotherguy2175/fluxer-api
-    newTag: sb-20260915-fa1cf92
+    newTag: sb-20260916-7c9ca92
   - name: ghcr.io/fluxerapp/fluxer-gateway
     newName: ghcr.io/theotherguy2175/fluxer-gateway
-    newTag: sb-20260915-fa1cf92
+    newTag: sb-20260916-7c9ca92
   - name: ghcr.io/fluxerapp/fluxer-media-proxy
     newName: ghcr.io/theotherguy2175/fluxer-media-proxy
-    newTag: sb-20260915-fa1cf92
+    newTag: sb-20260916-7c9ca92
   - name: ghcr.io/fluxerapp/fluxer-app-proxy-self-hosted
     newName: ghcr.io/theotherguy2175/fluxer-app-proxy-self-hosted
-    newTag: sb-20260915-fa1cf92
+    newTag: sb-20260916-7c9ca92
 ```
 
-Bump all four together; they're built from one commit. Run the same backfill SQL
-against your Postgres (`kubectl exec -i deploy/postgres -- psql -U fluxer -d fluxer < …`)
+Bump all four together; they're built from one commit. Run the same two backfill
+SQL scripts against your Postgres (`kubectl exec -i deploy/postgres -- psql -U fluxer -d fluxer < …`)
 and restart `api` + `gateway`.
 
 Note that current upstream requires `FLUXER_ERLANG_COOKIE` in the gateway's
@@ -197,16 +213,19 @@ To see the soundboard as a single patch against upstream at any time:
 |---|---|
 | `packages/constants`, `packages/schema`, `packages/errors`, `packages/limits` | permission bit, limits, request/response schemas, audit-log action types |
 | `fluxer_api/src/api/guild/soundboard/` | repository, service, play service, controllers |
-| `fluxer_api/scripts/backfill-use-soundboard-permission.sql` | one-time permission grant for existing communities |
+| `fluxer_api/scripts/backfill-{use-soundboard,send-polls}-permission.sql` | one-time permission grants for existing communities |
+| `fluxer_api/src/api/channel/services/poll/`, `fluxer_api/src/api/worker/tasks/ExpirePolls.ts` | poll service, response enrichment, expiry cron |
+| `fluxer_app/src/features/messaging/components/CreatePollModal.tsx`, `fluxer_app/src/features/channel/components/MessagePoll.tsx`, `…/guild_tabs/GuildPollsTab.tsx` | poll composer, message card, community settings tab |
 | `fluxer_gateway/src/utils/event_atoms.erl` | `SOUNDBOARD_SOUND_PLAY` / `SOUNDBOARD_SOUNDS_UPDATE` gateway events |
 | `fluxer_media_proxy/src/server/` | serves `soundboard-sounds/…` from the CDN bucket |
 | `fluxer_app/src/features/guild/…/GuildSoundboardTab.tsx`, `fluxer_app/src/features/voice/components/Soundboard*.tsx` | settings tab, voice-bar menu, upload modal |
 | `deploy/self-hosting/docker-compose.soundboard.yml` | compose overlay |
 | `.github/workflows/soundboard-images.yaml`, `tools/soundboard/build-images.sh` | image builds |
 
-Storage is additive (new `guild_soundboard_*` tables / KV keys); there is no
-migration and nothing upstream reads changes shape, so rolling back is
-switching the four images back to upstream's.
+Storage is additive (new `guild_soundboard_*` and `message_poll*` tables / KV
+keys); there is no migration and nothing upstream reads changes shape, so
+rolling back is switching the four images back to upstream's (existing polls
+simply stop rendering until you roll forward again).
 
 ---
 

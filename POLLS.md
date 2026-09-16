@@ -1,8 +1,7 @@
 # Polls — design and build plan
 
-> Status 2026-09-15: implemented end to end on `feature/polls` (shared
-> constants, API + worker, gateway routing, client renderer/composer/settings,
-> i18n, backfill, tests). Awaiting a dev deployment and click-through.
+> Status 2026-09-16: shipped — merged to `main`, live on dev and prod
+> (release v2026.09.16.1-soundboard). Kept as the design record.
 
 Discord-style polls for Fluxer, built the same way as the soundboard: instance
 limits an admin sets, community settings that can only tighten them, and no
