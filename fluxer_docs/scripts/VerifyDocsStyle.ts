@@ -17,7 +17,7 @@ import {
 } from './DocsTableWidth.ts';
 
 const STYLES_ROOT = fileURLToPath(new URL('../src/styles/', import.meta.url));
-const STARLIGHT_STYLES = fileURLToPath(new URL('../node_modules/@astrojs/starlight/style/', import.meta.url));
+const STARLIGHT_STYLES = fileURLToPath(new URL('../node_modules/@astrojs/starlight/dist/style/', import.meta.url));
 
 const FORBIDDEN_MARKETING_WORDS = [
 	'seamless',
@@ -34,7 +34,6 @@ const FORBIDDEN_MARKETING_WORDS = [
 ];
 
 const FORBIDDEN_TOPICS = [
-	{pattern: /mobile[- ]device/iu, reason: 'mobile notifications API does not exist in the live era'},
 	{pattern: /push subscription/iu, reason: 'push API does not exist in the live era'},
 	{pattern: /\/push\/events/u, reason: 'push events API does not exist in the live era'},
 	{pattern: /voice[- ]public[- ]key/iu, reason: 'voice connection API does not exist in the live era'},
@@ -271,8 +270,8 @@ const ACCEPTED_TABLE_FINDINGS = new Map<string, Readonly<Partial<Record<TableRul
 	['admin-api/bulk-jobs.mdx', {'table-fit': 1}],
 	['admin-api/discovery.mdx', {'table-identifier': 1}],
 	['admin-api/guilds.mdx', {'table-identifier': 3}],
-	['admin-api/index.mdx', {'table-fit': 1, 'table-identifier': 2}],
-	['admin-api/instance.mdx', {'table-fit': 1, 'table-identifier': 7}],
+	['admin-api/index.mdx', {'table-fit': 1, 'table-identifier': 3}],
+	['admin-api/instance.mdx', {'table-fit': 1, 'table-identifier': 5}],
 	['admin-api/messages.mdx', {'table-identifier': 1}],
 	['admin-api/reports.mdx', {'table-fit': 1, 'table-identifier': 2}],
 	['admin-api/users.mdx', {'table-fit': 1, 'table-identifier': 1}],
@@ -290,7 +289,6 @@ const ACCEPTED_TABLE_FINDINGS = new Map<string, Readonly<Partial<Record<TableRul
 	['http-api/discovery.mdx', {'table-cell': 3}],
 	['http-api/donations.mdx', {'table-cell': 1}],
 	['http-api/entrance-sounds.mdx', {'table-cell': 3, 'table-parallel': 1}],
-	['http-api/experiments.mdx', {'table-identifier': 1}],
 	['http-api/gifs.mdx', {'table-cell': 5}],
 	['http-api/gifts.mdx', {'table-cell': 1}],
 	['http-api/guild-audit-logs.mdx', {'table-identifier': 3}],
@@ -300,7 +298,7 @@ const ACCEPTED_TABLE_FINDINGS = new Map<string, Readonly<Partial<Record<TableRul
 	['http-api/guild-moderation.mdx', {'table-cell': 1}],
 	['http-api/guild-stickers.mdx', {'table-cell': 3}],
 	['http-api/guilds.mdx', {'table-fit': 1, 'table-identifier': 4}],
-	['http-api/instance.mdx', {'table-identifier': 4}],
+	['http-api/instance.mdx', {'table-identifier': 5}],
 	['http-api/invites.mdx', {'table-cell': 6}],
 	['http-api/messages.mdx', {'table-fit': 1, 'table-cell': 20}],
 	['http-api/permissions.mdx', {'table-cell': 8}],

@@ -23,21 +23,11 @@ pub struct InstanceConfigResponse {
     #[serde(default)]
     pub voice_noise_suppression: VoiceNoiseSuppressionConfigResponse,
     #[serde(default)]
+    pub screen_share_delivery: ScreenShareDeliveryConfigResponse,
+    #[serde(default)]
+    pub push_service_delivery: PushServiceDeliveryConfigResponse,
+    #[serde(default)]
     pub experiment_delivery: ExperimentDeliveryConfigResponse,
-    #[serde(default)]
-    pub message_hover_tracking: MessageHoverTrackingConfigResponse,
-    #[serde(default)]
-    pub message_keyboard_focus: MessageKeyboardFocusConfigResponse,
-    #[serde(default)]
-    pub blocked_message_groups: BlockedMessageGroupsConfigResponse,
-    #[serde(default)]
-    pub guild_activity_log_presentation: GuildActivityLogPresentationConfigResponse,
-    #[serde(default)]
-    pub expression_info_card: ExpressionInfoCardConfigResponse,
-    #[serde(default)]
-    pub guild_header_collapse: GuildHeaderCollapseConfigResponse,
-    #[serde(default)]
-    pub typing_indicator_rework: TypingIndicatorReworkConfigResponse,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -340,6 +330,8 @@ pub struct AppBrandingConfigResponse {
     pub wordmark_url: Option<String>,
     pub favicon_url: Option<String>,
     pub theme_color: Option<String>,
+    pub status_page_url: Option<String>,
+    pub status_page_incident_history_url: Option<String>,
 }
 
 impl Default for AppBrandingConfigResponse {
@@ -352,6 +344,8 @@ impl Default for AppBrandingConfigResponse {
             wordmark_url: None,
             favicon_url: None,
             theme_color: None,
+            status_page_url: None,
+            status_page_incident_history_url: None,
         }
     }
 }
@@ -456,7 +450,9 @@ impl VoiceE2eeScope {
     }
 }
 
-pub const VOICE_NS_MAX_TARGETED_USERS: usize = 1_000;
+pub const EXPERIMENT_MAX_TARGETED_USERS: usize = 1_000;
+pub const PUSH_SERVICE_DELIVERY_DEFAULT_SALT: &str = "push-service-delivery-v1";
+pub const SCREEN_SHARE_DELIVERY_DEFAULT_SALT: &str = "screen-share-delivery-v1";
 pub const VOICE_NS_MAX_GUILD_OVERRIDES: usize = 200;
 
 impl NoiseSuppressionBackend {
@@ -502,7 +498,6 @@ pub struct VoiceNoiseSuppressionConfigResponse {
     pub included_user_ids: Vec<String>,
     pub excluded_user_ids: Vec<String>,
     pub guild_overrides: Vec<VoiceNoiseSuppressionGuildOverride>,
-    pub stereo_enabled: bool,
     pub suppression_strength: u32,
 }
 
@@ -519,7 +514,6 @@ impl Default for VoiceNoiseSuppressionConfigResponse {
             included_user_ids: Vec::new(),
             excluded_user_ids: Vec::new(),
             guild_overrides: Vec::new(),
-            stereo_enabled: false,
             suppression_strength: 80,
         }
     }
@@ -546,14 +540,12 @@ pub struct VoiceNoiseSuppressionConfigUpdateRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub guild_overrides: Option<Vec<VoiceNoiseSuppressionGuildOverride>>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub stereo_enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
     pub suppression_strength: Option<u32>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
-pub struct MessageHoverTrackingConfigResponse {
+pub struct ScreenShareDeliveryConfigResponse {
     pub enabled: bool,
     pub config_version: u64,
     pub rollout_basis_points: u32,
@@ -562,13 +554,13 @@ pub struct MessageHoverTrackingConfigResponse {
     pub excluded_user_ids: Vec<String>,
 }
 
-impl Default for MessageHoverTrackingConfigResponse {
+impl Default for ScreenShareDeliveryConfigResponse {
     fn default() -> Self {
         Self {
             enabled: false,
             config_version: 0,
             rollout_basis_points: 0,
-            rollout_salt: "message-hover-tracking-v1".to_owned(),
+            rollout_salt: SCREEN_SHARE_DELIVERY_DEFAULT_SALT.to_owned(),
             included_user_ids: Vec::new(),
             excluded_user_ids: Vec::new(),
         }
@@ -576,7 +568,7 @@ impl Default for MessageHoverTrackingConfigResponse {
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
-pub struct MessageHoverTrackingConfigUpdateRequest {
+pub struct ScreenShareDeliveryConfigUpdateRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -591,7 +583,7 @@ pub struct MessageHoverTrackingConfigUpdateRequest {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 #[serde(default)]
-pub struct MessageKeyboardFocusConfigResponse {
+pub struct PushServiceDeliveryConfigResponse {
     pub enabled: bool,
     pub config_version: u64,
     pub rollout_basis_points: u32,
@@ -600,13 +592,13 @@ pub struct MessageKeyboardFocusConfigResponse {
     pub excluded_user_ids: Vec<String>,
 }
 
-impl Default for MessageKeyboardFocusConfigResponse {
+impl Default for PushServiceDeliveryConfigResponse {
     fn default() -> Self {
         Self {
             enabled: false,
             config_version: 0,
             rollout_basis_points: 0,
-            rollout_salt: "message-keyboard-focus-v1".to_owned(),
+            rollout_salt: PUSH_SERVICE_DELIVERY_DEFAULT_SALT.to_owned(),
             included_user_ids: Vec::new(),
             excluded_user_ids: Vec::new(),
         }
@@ -614,197 +606,7 @@ impl Default for MessageKeyboardFocusConfigResponse {
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
-pub struct MessageKeyboardFocusConfigUpdateRequest {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rollout_basis_points: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rollout_salt: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub included_user_ids: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub excluded_user_ids: Option<Vec<String>>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(default)]
-pub struct BlockedMessageGroupsConfigResponse {
-    pub enabled: bool,
-    pub config_version: u64,
-    pub rollout_basis_points: u32,
-    pub rollout_salt: String,
-    pub included_user_ids: Vec<String>,
-    pub excluded_user_ids: Vec<String>,
-}
-
-impl Default for BlockedMessageGroupsConfigResponse {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            config_version: 0,
-            rollout_basis_points: 0,
-            rollout_salt: "blocked-message-groups-v1".to_owned(),
-            included_user_ids: Vec::new(),
-            excluded_user_ids: Vec::new(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default, Serialize)]
-pub struct BlockedMessageGroupsConfigUpdateRequest {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rollout_basis_points: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rollout_salt: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub included_user_ids: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub excluded_user_ids: Option<Vec<String>>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(default)]
-pub struct GuildActivityLogPresentationConfigResponse {
-    pub enabled: bool,
-    pub config_version: u64,
-    pub rollout_basis_points: u32,
-    pub rollout_salt: String,
-    pub included_user_ids: Vec<String>,
-    pub excluded_user_ids: Vec<String>,
-}
-
-impl Default for GuildActivityLogPresentationConfigResponse {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            config_version: 0,
-            rollout_basis_points: 0,
-            rollout_salt: "guild-activity-log-presentation-v1".to_owned(),
-            included_user_ids: Vec::new(),
-            excluded_user_ids: Vec::new(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default, Serialize)]
-pub struct GuildActivityLogPresentationConfigUpdateRequest {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rollout_basis_points: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rollout_salt: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub included_user_ids: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub excluded_user_ids: Option<Vec<String>>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(default)]
-pub struct ExpressionInfoCardConfigResponse {
-    pub enabled: bool,
-    pub config_version: u64,
-    pub rollout_basis_points: u32,
-    pub rollout_salt: String,
-    pub included_user_ids: Vec<String>,
-    pub excluded_user_ids: Vec<String>,
-}
-
-impl Default for ExpressionInfoCardConfigResponse {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            config_version: 0,
-            rollout_basis_points: 0,
-            rollout_salt: "expression-info-card-v1".to_owned(),
-            included_user_ids: Vec::new(),
-            excluded_user_ids: Vec::new(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default, Serialize)]
-pub struct ExpressionInfoCardConfigUpdateRequest {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rollout_basis_points: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rollout_salt: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub included_user_ids: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub excluded_user_ids: Option<Vec<String>>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(default)]
-pub struct GuildHeaderCollapseConfigResponse {
-    pub enabled: bool,
-    pub config_version: u64,
-    pub rollout_basis_points: u32,
-    pub rollout_salt: String,
-    pub included_user_ids: Vec<String>,
-    pub excluded_user_ids: Vec<String>,
-}
-
-impl Default for GuildHeaderCollapseConfigResponse {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            config_version: 0,
-            rollout_basis_points: 0,
-            rollout_salt: "guild-header-collapse-v1".to_owned(),
-            included_user_ids: Vec::new(),
-            excluded_user_ids: Vec::new(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default, Serialize)]
-pub struct GuildHeaderCollapseConfigUpdateRequest {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub enabled: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rollout_basis_points: Option<u32>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub rollout_salt: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub included_user_ids: Option<Vec<String>>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub excluded_user_ids: Option<Vec<String>>,
-}
-
-#[derive(Clone, Debug, Deserialize, Serialize)]
-#[serde(default)]
-pub struct TypingIndicatorReworkConfigResponse {
-    pub enabled: bool,
-    pub config_version: u64,
-    pub rollout_basis_points: u32,
-    pub rollout_salt: String,
-    pub included_user_ids: Vec<String>,
-    pub excluded_user_ids: Vec<String>,
-}
-
-impl Default for TypingIndicatorReworkConfigResponse {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            config_version: 0,
-            rollout_basis_points: 0,
-            rollout_salt: "typing-indicator-rework-v1".to_owned(),
-            included_user_ids: Vec::new(),
-            excluded_user_ids: Vec::new(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Default, Serialize)]
-pub struct TypingIndicatorReworkConfigUpdateRequest {
+pub struct PushServiceDeliveryConfigUpdateRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub enabled: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -933,21 +735,11 @@ pub struct InstanceConfigUpdateRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub voice_noise_suppression: Option<VoiceNoiseSuppressionConfigUpdateRequest>,
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub screen_share_delivery: Option<ScreenShareDeliveryConfigUpdateRequest>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub push_service_delivery: Option<PushServiceDeliveryConfigUpdateRequest>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub experiment_delivery: Option<ExperimentDeliveryConfigUpdateRequest>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub message_hover_tracking: Option<MessageHoverTrackingConfigUpdateRequest>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub message_keyboard_focus: Option<MessageKeyboardFocusConfigUpdateRequest>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub blocked_message_groups: Option<BlockedMessageGroupsConfigUpdateRequest>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub guild_activity_log_presentation: Option<GuildActivityLogPresentationConfigUpdateRequest>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub expression_info_card: Option<ExpressionInfoCardConfigUpdateRequest>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub guild_header_collapse: Option<GuildHeaderCollapseConfigUpdateRequest>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub typing_indicator_rework: Option<TypingIndicatorReworkConfigUpdateRequest>,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -1152,6 +944,10 @@ pub struct AppBrandingConfigUpdateRequest {
     pub favicon_url: Option<Option<String>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub theme_color: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_page_url: Option<Option<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub status_page_incident_history_url: Option<Option<String>>,
 }
 
 #[derive(Clone, Debug, Default, Serialize)]
@@ -1280,118 +1076,39 @@ mod tests {
                 .expect("admin schema");
         let noise = serde_json::from_value::<VoiceNoiseSuppressionConfigResponse>(json!({}))
             .expect("default noise config");
+        let screen_share = serde_json::from_value::<ScreenShareDeliveryConfigResponse>(json!({}))
+            .expect("default screen share config");
         let delivery = serde_json::from_value::<ExperimentDeliveryConfigResponse>(json!({}))
             .expect("default delivery config");
-        let hover = serde_json::from_value::<MessageHoverTrackingConfigResponse>(json!({}))
-            .expect("default message hover tracking config");
-        let keyboard = serde_json::from_value::<MessageKeyboardFocusConfigResponse>(json!({}))
-            .expect("default message keyboard focus config");
-        let blocked = serde_json::from_value::<BlockedMessageGroupsConfigResponse>(json!({}))
-            .expect("default blocked message groups config");
-        let activity_log =
-            serde_json::from_value::<GuildActivityLogPresentationConfigResponse>(json!({}))
-                .expect("default guild activity log presentation config");
-        let expression = serde_json::from_value::<ExpressionInfoCardConfigResponse>(json!({}))
-            .expect("default expression info card config");
-        let collapse = serde_json::from_value::<GuildHeaderCollapseConfigResponse>(json!({}))
-            .expect("default guild header collapse config");
-        let typing = serde_json::from_value::<TypingIndicatorReworkConfigResponse>(json!({}))
-            .expect("default typing indicator rework config");
         let noise = serde_json::to_value(noise).expect("serializable noise config");
+        let screen_share =
+            serde_json::to_value(screen_share).expect("serializable screen share config");
         let delivery = serde_json::to_value(delivery).expect("serializable delivery config");
-        let hover =
-            serde_json::to_value(hover).expect("serializable message hover tracking config");
-        let keyboard =
-            serde_json::to_value(keyboard).expect("serializable message keyboard focus config");
-        let blocked =
-            serde_json::to_value(blocked).expect("serializable blocked message groups config");
-        let activity_log = serde_json::to_value(activity_log)
-            .expect("serializable guild activity log presentation config");
-        let expression =
-            serde_json::to_value(expression).expect("serializable expression info card config");
-        let collapse =
-            serde_json::to_value(collapse).expect("serializable guild header collapse config");
-        let typing =
-            serde_json::to_value(typing).expect("serializable typing indicator rework config");
         let generated_noise: generated_types::VoiceNoiseSuppressionConfigResponse =
             serde_json::from_value(noise.clone()).expect("generated noise config contract");
+        let generated_screen_share: generated_types::ScreenShareDeliveryConfigResponse =
+            serde_json::from_value(screen_share.clone())
+                .expect("generated screen share config contract");
         let generated_delivery: generated_types::ExperimentDeliveryConfigResponse =
             serde_json::from_value(delivery.clone()).expect("generated delivery config contract");
-        let generated_hover: generated_types::MessageHoverTrackingConfigResponse =
-            serde_json::from_value(hover.clone())
-                .expect("generated message hover tracking config contract");
-        let generated_keyboard: generated_types::MessageKeyboardFocusConfigResponse =
-            serde_json::from_value(keyboard.clone())
-                .expect("generated message keyboard focus config contract");
-        let generated_blocked: generated_types::BlockedMessageGroupsConfigResponse =
-            serde_json::from_value(blocked.clone())
-                .expect("generated blocked message groups config contract");
-        let generated_activity_log: generated_types::GuildActivityLogPresentationConfigResponse =
-            serde_json::from_value(activity_log.clone())
-                .expect("generated guild activity log presentation config contract");
-        let generated_expression: generated_types::ExpressionInfoCardConfigResponse =
-            serde_json::from_value(expression.clone())
-                .expect("generated expression info card config contract");
-        let generated_collapse: generated_types::GuildHeaderCollapseConfigResponse =
-            serde_json::from_value(collapse.clone())
-                .expect("generated guild header collapse config contract");
-        let generated_typing: generated_types::TypingIndicatorReworkConfigResponse =
-            serde_json::from_value(typing.clone())
-                .expect("generated typing indicator rework config contract");
         assert_eq!(
             serde_json::to_value(generated_noise).expect("serializable generated noise config"),
             noise
+        );
+        assert_eq!(
+            serde_json::to_value(generated_screen_share)
+                .expect("serializable generated screen share config"),
+            screen_share
         );
         assert_eq!(
             serde_json::to_value(generated_delivery)
                 .expect("serializable generated delivery config"),
             delivery
         );
-        assert_eq!(
-            serde_json::to_value(generated_hover)
-                .expect("serializable generated message hover tracking config"),
-            hover
-        );
-        assert_eq!(
-            serde_json::to_value(generated_keyboard)
-                .expect("serializable generated message keyboard focus config"),
-            keyboard
-        );
-        assert_eq!(
-            serde_json::to_value(generated_blocked)
-                .expect("serializable generated blocked message groups config"),
-            blocked
-        );
-        assert_eq!(
-            serde_json::to_value(generated_activity_log)
-                .expect("serializable generated guild activity log presentation config"),
-            activity_log
-        );
-        assert_eq!(
-            serde_json::to_value(generated_expression)
-                .expect("serializable generated expression info card config"),
-            expression
-        );
-        assert_eq!(
-            serde_json::to_value(generated_collapse)
-                .expect("serializable generated guild header collapse config"),
-            collapse
-        );
-        assert_eq!(
-            serde_json::to_value(generated_typing)
-                .expect("serializable generated typing indicator rework config"),
-            typing
-        );
         for (name, value) in [
             ("VoiceNoiseSuppressionConfigResponse", noise),
+            ("ScreenShareDeliveryConfigResponse", screen_share),
             ("ExperimentDeliveryConfigResponse", delivery),
-            ("MessageHoverTrackingConfigResponse", hover),
-            ("MessageKeyboardFocusConfigResponse", keyboard),
-            ("BlockedMessageGroupsConfigResponse", blocked),
-            ("GuildActivityLogPresentationConfigResponse", activity_log),
-            ("ExpressionInfoCardConfigResponse", expression),
-            ("GuildHeaderCollapseConfigResponse", collapse),
-            ("TypingIndicatorReworkConfigResponse", typing),
         ] {
             for (field, value) in value.as_object().expect("config object") {
                 assert_eq!(
@@ -1403,44 +1120,14 @@ mod tests {
     }
 
     #[test]
-    fn generated_client_accepts_unknown_response_fields() {
-        const GENERATED_CLIENT: &str =
-            include_str!(concat!(env!("OUT_DIR"), "/admin_api_generated.rs"));
-        assert!(
-            !GENERATED_CLIENT.contains("deny_unknown_fields"),
-            "fluxer_admin/build.rs must clear additionalProperties so a new API field cannot \
-             blank an admin page"
-        );
-        let mut section = serde_json::to_value(ExpressionInfoCardConfigResponse::default())
-            .expect("serializable expression info card config");
-        section
-            .as_object_mut()
-            .expect("expression info card object")
-            .insert("future_knob".to_owned(), json!(7));
-        serde_json::from_value::<generated_types::ExpressionInfoCardConfigResponse>(section)
-            .expect("generated instance config section tolerates unknown fields");
-    }
-
-    #[test]
-    fn generated_audit_log_change_accepts_scalar_and_object_values() {
-        for value in [json!("old"), json!(7), json!(true), json!(null)] {
-            let change = serde_json::from_value::<generated_types::AuditLogChangeSchema>(
-                json!({"key": "name", "old_value": value, "new_value": {"added": [], "removed": []}}),
-            )
-            .expect("generated audit log change tolerates scalar values");
-            assert_eq!(change.key, "name");
-        }
-    }
-
-    #[test]
-    fn expression_info_card_update_preserves_empty_lists_and_omitted_fields() {
-        let update = ExpressionInfoCardConfigUpdateRequest {
+    fn screen_share_delivery_update_preserves_empty_lists_and_omitted_fields() {
+        let update = ScreenShareDeliveryConfigUpdateRequest {
             included_user_ids: Some(Vec::new()),
             excluded_user_ids: Some(Vec::new()),
             ..Default::default()
         };
         let value = serde_json::to_value(update).expect("serializable update");
-        serde_json::from_value::<generated_types::ExpressionInfoCardConfigUpdateRequest>(
+        serde_json::from_value::<generated_types::ScreenShareDeliveryConfigUpdateRequest>(
             value.clone(),
         )
         .expect("generated update contract");
@@ -1449,179 +1136,7 @@ mod tests {
             json!({"included_user_ids": [], "excluded_user_ids": []})
         );
         assert_eq!(
-            serde_json::to_value(ExpressionInfoCardConfigUpdateRequest::default())
-                .expect("serializable update"),
-            json!({})
-        );
-    }
-
-    #[test]
-    fn guild_header_collapse_update_preserves_empty_lists_and_omitted_fields() {
-        let update = GuildHeaderCollapseConfigUpdateRequest {
-            included_user_ids: Some(Vec::new()),
-            excluded_user_ids: Some(Vec::new()),
-            ..Default::default()
-        };
-        let value = serde_json::to_value(update).expect("serializable update");
-        serde_json::from_value::<generated_types::GuildHeaderCollapseConfigUpdateRequest>(
-            value.clone(),
-        )
-        .expect("generated update contract");
-        assert_eq!(
-            value,
-            json!({"included_user_ids": [], "excluded_user_ids": []})
-        );
-        assert_eq!(
-            serde_json::to_value(GuildHeaderCollapseConfigUpdateRequest::default())
-                .expect("serializable update"),
-            json!({})
-        );
-    }
-
-    #[test]
-    fn guild_header_collapse_response_defaults_to_the_guild_header_collapse_v1_salt() {
-        let config = GuildHeaderCollapseConfigResponse::default();
-        assert!(!config.enabled);
-        assert_eq!(config.config_version, 0);
-        assert_eq!(config.rollout_basis_points, 0);
-        assert_eq!(config.rollout_salt, "guild-header-collapse-v1");
-        assert!(config.included_user_ids.is_empty());
-        assert!(config.excluded_user_ids.is_empty());
-        assert_eq!(
-            serde_json::from_value::<GuildHeaderCollapseConfigResponse>(json!({}))
-                .expect("default guild header collapse config")
-                .rollout_salt,
-            "guild-header-collapse-v1"
-        );
-    }
-
-    #[test]
-    fn typing_indicator_rework_update_preserves_empty_lists_and_omitted_fields() {
-        let update = TypingIndicatorReworkConfigUpdateRequest {
-            included_user_ids: Some(Vec::new()),
-            excluded_user_ids: Some(Vec::new()),
-            ..Default::default()
-        };
-        let value = serde_json::to_value(update).expect("serializable update");
-        serde_json::from_value::<generated_types::TypingIndicatorReworkConfigUpdateRequest>(
-            value.clone(),
-        )
-        .expect("generated update contract");
-        assert_eq!(
-            value,
-            json!({"included_user_ids": [], "excluded_user_ids": []})
-        );
-        assert_eq!(
-            serde_json::to_value(TypingIndicatorReworkConfigUpdateRequest::default())
-                .expect("serializable update"),
-            json!({})
-        );
-    }
-
-    #[test]
-    fn typing_indicator_rework_response_defaults_to_the_typing_indicator_rework_v1_salt() {
-        let config = TypingIndicatorReworkConfigResponse::default();
-        assert!(!config.enabled);
-        assert_eq!(config.config_version, 0);
-        assert_eq!(config.rollout_basis_points, 0);
-        assert_eq!(config.rollout_salt, "typing-indicator-rework-v1");
-        assert!(config.included_user_ids.is_empty());
-        assert!(config.excluded_user_ids.is_empty());
-        assert_eq!(
-            serde_json::from_value::<TypingIndicatorReworkConfigResponse>(json!({}))
-                .expect("default typing indicator rework config")
-                .rollout_salt,
-            "typing-indicator-rework-v1"
-        );
-    }
-
-    #[test]
-    fn message_hover_tracking_update_preserves_empty_lists_and_omitted_fields() {
-        let update = MessageHoverTrackingConfigUpdateRequest {
-            included_user_ids: Some(Vec::new()),
-            excluded_user_ids: Some(Vec::new()),
-            ..Default::default()
-        };
-        let value = serde_json::to_value(update).expect("serializable update");
-        serde_json::from_value::<generated_types::MessageHoverTrackingConfigUpdateRequest>(
-            value.clone(),
-        )
-        .expect("generated update contract");
-        assert_eq!(
-            value,
-            json!({"included_user_ids": [], "excluded_user_ids": []})
-        );
-        assert_eq!(
-            serde_json::to_value(MessageHoverTrackingConfigUpdateRequest::default())
-                .expect("serializable update"),
-            json!({})
-        );
-    }
-
-    #[test]
-    fn message_keyboard_focus_update_preserves_empty_lists_and_omitted_fields() {
-        let update = MessageKeyboardFocusConfigUpdateRequest {
-            included_user_ids: Some(Vec::new()),
-            excluded_user_ids: Some(Vec::new()),
-            ..Default::default()
-        };
-        let value = serde_json::to_value(update).expect("serializable update");
-        serde_json::from_value::<generated_types::MessageKeyboardFocusConfigUpdateRequest>(
-            value.clone(),
-        )
-        .expect("generated update contract");
-        assert_eq!(
-            value,
-            json!({"included_user_ids": [], "excluded_user_ids": []})
-        );
-        assert_eq!(
-            serde_json::to_value(MessageKeyboardFocusConfigUpdateRequest::default())
-                .expect("serializable update"),
-            json!({})
-        );
-    }
-
-    #[test]
-    fn blocked_message_groups_update_preserves_empty_lists_and_omitted_fields() {
-        let update = BlockedMessageGroupsConfigUpdateRequest {
-            included_user_ids: Some(Vec::new()),
-            excluded_user_ids: Some(Vec::new()),
-            ..Default::default()
-        };
-        let value = serde_json::to_value(update).expect("serializable update");
-        serde_json::from_value::<generated_types::BlockedMessageGroupsConfigUpdateRequest>(
-            value.clone(),
-        )
-        .expect("generated update contract");
-        assert_eq!(
-            value,
-            json!({"included_user_ids": [], "excluded_user_ids": []})
-        );
-        assert_eq!(
-            serde_json::to_value(BlockedMessageGroupsConfigUpdateRequest::default())
-                .expect("serializable update"),
-            json!({})
-        );
-    }
-
-    #[test]
-    fn guild_activity_log_presentation_update_preserves_empty_lists_and_omitted_fields() {
-        let update = GuildActivityLogPresentationConfigUpdateRequest {
-            included_user_ids: Some(Vec::new()),
-            excluded_user_ids: Some(Vec::new()),
-            ..Default::default()
-        };
-        let value = serde_json::to_value(update).expect("serializable update");
-        serde_json::from_value::<generated_types::GuildActivityLogPresentationConfigUpdateRequest>(
-            value.clone(),
-        )
-        .expect("generated update contract");
-        assert_eq!(
-            value,
-            json!({"included_user_ids": [], "excluded_user_ids": []})
-        );
-        assert_eq!(
-            serde_json::to_value(GuildActivityLogPresentationConfigUpdateRequest::default())
+            serde_json::to_value(ScreenShareDeliveryConfigUpdateRequest::default())
                 .expect("serializable update"),
             json!({})
         );

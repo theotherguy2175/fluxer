@@ -3,7 +3,8 @@
 import crypto from 'node:crypto';
 import {Config} from '@app/api/Config';
 import type {APIConfig, BlueskyOAuthConfig, BlueskyOAuthKeyConfig} from '@app/api/config/APIConfig';
-import {fetchMany, fetchOne, upsertOne} from '@app/api/database/CassandraQueryExecution';
+import {executeConditional, fetchMany, fetchOne, upsertOne} from '@app/api/database/CassandraQueryExecution';
+import {Db, type PreparedQuery} from '@app/api/database/CassandraTypes';
 import type {InstanceConfigurationRow} from '@app/api/database/types/InstanceConfigTypes';
 import {
 	getDefaultDateOfBirthCollection,
@@ -17,6 +18,9 @@ import {resolveDeferredPhoneGateEnabled, setCachedDeferredPhoneGateEnabled} from
 import {InstanceConfiguration} from '@app/api/Tables';
 import {DEFAULT_DECAY_CONSTANTS, DEFAULT_RENEWAL_CONSTANTS} from '@app/api/utils/AttachmentDecay';
 import {isJsonRecord} from '@app/api/utils/JsonBoundaryUtils';
+import {APIErrorCodes} from '@fluxer/constants/src/ApiErrorCodes';
+import {ConflictError} from '@fluxer/errors/src/domains/core/ConflictError';
+import {ServiceUnavailableError} from '@fluxer/errors/src/domains/core/ServiceUnavailableError';
 import type {LimitConfigSnapshot} from '@fluxer/limits/src/LimitTypes';
 import {
 	InstanceConfigResponse,
@@ -29,41 +33,21 @@ import {
 	GatewayRolloutConfigSchema,
 } from '@fluxer/schema/src/domains/admin/GatewayRolloutSchemas';
 import {
+	type PushServiceDeliveryConfig,
+	PushServiceDeliveryConfigSchema,
+} from '@fluxer/schema/src/domains/admin/PushServiceDeliverySchemas';
+import {
+	type ScreenShareDeliveryConfig,
+	ScreenShareDeliveryConfigSchema,
+} from '@fluxer/schema/src/domains/admin/ScreenShareDeliverySchemas';
+import {
 	type VoiceNoiseSuppressionConfig,
 	VoiceNoiseSuppressionConfigSchema,
 } from '@fluxer/schema/src/domains/admin/VoiceNoiseSuppressionSchemas';
 import {
-	type BlockedMessageGroupsConfig,
-	BlockedMessageGroupsConfigSchema,
-} from '@fluxer/schema/src/domains/experiment/BlockedMessageGroupsSchemas';
-import {
 	type ExperimentDeliveryConfig,
 	ExperimentDeliveryConfigSchema,
 } from '@fluxer/schema/src/domains/experiment/ExperimentSchemas';
-import {
-	type ExpressionInfoCardConfig,
-	ExpressionInfoCardConfigSchema,
-} from '@fluxer/schema/src/domains/experiment/ExpressionInfoCardSchemas';
-import {
-	type GuildActivityLogPresentationConfig,
-	GuildActivityLogPresentationConfigSchema,
-} from '@fluxer/schema/src/domains/experiment/GuildActivityLogPresentationSchemas';
-import {
-	type GuildHeaderCollapseConfig,
-	GuildHeaderCollapseConfigSchema,
-} from '@fluxer/schema/src/domains/experiment/GuildHeaderCollapseSchemas';
-import {
-	type MessageHoverTrackingConfig,
-	MessageHoverTrackingConfigSchema,
-} from '@fluxer/schema/src/domains/experiment/MessageHoverTrackingSchemas';
-import {
-	type MessageKeyboardFocusConfig,
-	MessageKeyboardFocusConfigSchema,
-} from '@fluxer/schema/src/domains/experiment/MessageKeyboardFocusSchemas';
-import {
-	type TypingIndicatorReworkConfig,
-	TypingIndicatorReworkConfigSchema,
-} from '@fluxer/schema/src/domains/experiment/TypingIndicatorReworkSchemas';
 import {
 	type InstanceAppPublic,
 	InstanceAppPublicSchema,
@@ -82,14 +66,9 @@ import {z} from 'zod';
 
 const GATEWAY_ROLLOUT_CONFIG_KEY = 'gateway_rollout_config';
 const VOICE_NOISE_SUPPRESSION_CONFIG_KEY = 'voice_noise_suppression_config';
-const GUILD_ACTIVITY_LOG_PRESENTATION_CONFIG_KEY = 'guild_activity_log_presentation_config';
+const SCREEN_SHARE_DELIVERY_CONFIG_KEY = 'screen_share_delivery_config';
+const PUSH_SERVICE_DELIVERY_CONFIG_KEY = 'push_service_delivery_config';
 const EXPERIMENT_DELIVERY_CONFIG_KEY = 'experiment_delivery_config';
-const MESSAGE_HOVER_TRACKING_CONFIG_KEY = 'message_hover_tracking_config';
-const MESSAGE_KEYBOARD_FOCUS_CONFIG_KEY = 'message_keyboard_focus_config';
-const BLOCKED_MESSAGE_GROUPS_CONFIG_KEY = 'blocked_message_groups_config';
-const EXPRESSION_INFO_CARD_CONFIG_KEY = 'expression_info_card_config';
-const GUILD_HEADER_COLLAPSE_CONFIG_KEY = 'guild_header_collapse_config';
-const TYPING_INDICATOR_REWORK_CONFIG_KEY = 'typing_indicator_rework_config';
 const REGISTRATION_CONFIG_KEY = 'registration_config';
 const REGISTRATION_URLS_KEY = 'registration_urls';
 const REGISTRATION_PENDING_APPROVALS_KEY = 'registration_pending_approvals';
@@ -102,6 +81,22 @@ const INSTANCE_MEDIA_CONFIG_KEY = 'instance_media_config';
 export const INSTANCE_CONFIG_REFRESH_CHANNEL = 'instance-config-refresh';
 export const REGISTRATION_PENDING_APPROVAL_TRAIT = 'registration_pending_approval';
 export const REGISTRATION_REJECTED_TRAIT = 'registration_rejected';
+export const INSTANCE_CONFIG_WRITE_ATTEMPTS = 5;
+
+export class InstanceConfigWriteConflictError extends ConflictError {
+	constructor(key: string) {
+		super({
+			code: APIErrorCodes.CONFLICT,
+			message: `Instance config "${key}" changed concurrently on all ${INSTANCE_CONFIG_WRITE_ATTEMPTS} write attempts. Nothing was written. Retry the change.`,
+		});
+		this.name = 'InstanceConfigWriteConflictError';
+	}
+}
+
+interface StoredValueUpdate<T> {
+	value: string | null;
+	result: T;
+}
 
 export type InstanceRegistrationConfig = InstanceRegistration;
 
@@ -307,6 +302,11 @@ export interface InstanceRegistrationUrl extends RegistrationUrlResponse {
 type InstanceRegistrationUrlPublic = RegistrationUrlResponse;
 type InstancePendingRegistration = PendingRegistrationResponse;
 
+export interface RegistrationUrlClaim {
+	registration_url_id: string;
+	user_id: string;
+}
+
 const DEFAULT_REGISTRATION_CONFIG: InstanceRegistrationConfig = {
 	mode: 'open',
 	admin_registration_urls_enabled: true,
@@ -354,6 +354,8 @@ function getDefaultAppPublicConfig(): InstanceAppPublicConfig {
 			wordmark_url: normalizeOptionalString(Config.instance.branding.wordmarkUrl),
 			favicon_url: normalizeOptionalString(Config.instance.branding.faviconUrl),
 			theme_color: normalizeOptionalString(Config.instance.branding.themeColor),
+			status_page_url: normalizeOptionalString(Config.instance.branding.statusPageUrl),
+			status_page_incident_history_url: normalizeOptionalString(Config.instance.branding.statusPageIncidentHistoryUrl),
 		},
 		setup: {
 			configured: !Config.instance.selfHosted || Config.instance.setup.configured,
@@ -372,14 +374,9 @@ type StoredConfigSection =
 	| 'app public'
 	| 'gateway rollout'
 	| 'voice noise suppression'
-	| 'guild activity log presentation'
+	| 'screen share delivery'
+	| 'push service delivery'
 	| 'experiment delivery'
-	| 'message hover tracking'
-	| 'message keyboard focus'
-	| 'blocked message groups'
-	| 'expression info card'
-	| 'guild header collapse'
-	| 'typing indicator rework'
 	| 'instance policy'
 	| 'integrations'
 	| 'media'
@@ -517,36 +514,16 @@ function parseStoredVoiceNoiseSuppressionConfig(raw: string | null): VoiceNoiseS
 	return parseStoredConfigOrDefault(VoiceNoiseSuppressionConfigSchema, raw, 'voice noise suppression');
 }
 
-function parseStoredGuildActivityLogPresentationConfig(raw: string | null): GuildActivityLogPresentationConfig {
-	return parseStoredConfigOrDefault(GuildActivityLogPresentationConfigSchema, raw, 'guild activity log presentation');
+function parseStoredScreenShareDeliveryConfig(raw: string | null): ScreenShareDeliveryConfig {
+	return parseStoredConfigOrDefault(ScreenShareDeliveryConfigSchema, raw, 'screen share delivery');
+}
+
+function parseStoredPushServiceDeliveryConfig(raw: string | null): PushServiceDeliveryConfig {
+	return parseStoredConfigOrDefault(PushServiceDeliveryConfigSchema, raw, 'push service delivery');
 }
 
 function parseStoredExperimentDeliveryConfig(raw: string | null): ExperimentDeliveryConfig {
 	return parseStoredConfigOrDefault(ExperimentDeliveryConfigSchema, raw, 'experiment delivery');
-}
-
-function parseStoredMessageHoverTrackingConfig(raw: string | null): MessageHoverTrackingConfig {
-	return parseStoredConfigOrDefault(MessageHoverTrackingConfigSchema, raw, 'message hover tracking');
-}
-
-function parseStoredMessageKeyboardFocusConfig(raw: string | null): MessageKeyboardFocusConfig {
-	return parseStoredConfigOrDefault(MessageKeyboardFocusConfigSchema, raw, 'message keyboard focus');
-}
-
-function parseStoredBlockedMessageGroupsConfig(raw: string | null): BlockedMessageGroupsConfig {
-	return parseStoredConfigOrDefault(BlockedMessageGroupsConfigSchema, raw, 'blocked message groups');
-}
-
-function parseStoredExpressionInfoCardConfig(raw: string | null): ExpressionInfoCardConfig {
-	return parseStoredConfigOrDefault(ExpressionInfoCardConfigSchema, raw, 'expression info card');
-}
-
-function parseStoredGuildHeaderCollapseConfig(raw: string | null): GuildHeaderCollapseConfig {
-	return parseStoredConfigOrDefault(GuildHeaderCollapseConfigSchema, raw, 'guild header collapse');
-}
-
-function parseStoredTypingIndicatorReworkConfig(raw: string | null): TypingIndicatorReworkConfig {
-	return parseStoredConfigOrDefault(TypingIndicatorReworkConfigSchema, raw, 'typing indicator rework');
 }
 
 function validateStoredCollection<T>(schema: z.ZodType<T>, value: unknown, section: StoredConfigSection): Array<T> {
@@ -589,6 +566,11 @@ function buildAppPublicConfig(config: z.infer<typeof StoredInstanceAppPublicSche
 			wordmark_url: normalizeOptionalPublicString(branding.wordmark_url, defaults.branding.wordmark_url),
 			favicon_url: normalizeOptionalPublicString(branding.favicon_url, defaults.branding.favicon_url),
 			theme_color: normalizeOptionalPublicString(branding.theme_color, defaults.branding.theme_color),
+			status_page_url: normalizeOptionalPublicString(branding.status_page_url, defaults.branding.status_page_url),
+			status_page_incident_history_url: normalizeOptionalPublicString(
+				branding.status_page_incident_history_url,
+				defaults.branding.status_page_incident_history_url,
+			),
 		},
 		setup: {
 			configured: setup.configured ?? defaults.setup.configured,
@@ -963,6 +945,75 @@ function parseStoredSsoAllowedEmailDomains(raw: string | undefined, log = false)
 	return Array.from(domains).slice(0, MAX_SSO_ALLOWED_DOMAINS);
 }
 
+function readStoredSsoConfig(
+	configs: ReadonlyMap<string, string>,
+	options?: {includeSecret?: boolean},
+): InstanceSsoConfig {
+	const flags = readStoredSsoFlags(configs);
+	const read = (key: string): string | null => {
+		const v = configs.get(key);
+		if (!v) return null;
+		const trimmed = v.trim();
+		return trimmed.length === 0 ? null : trimmed;
+	};
+	const allowedDomains = parseStoredSsoAllowedEmailDomains(configs.get('sso_allowed_domains'));
+	const clientSecret = read('sso_client_secret');
+	return {
+		...flags,
+		displayName: read('sso_display_name'),
+		issuer: read('sso_issuer'),
+		authorizationUrl: read('sso_authorization_url'),
+		tokenUrl: read('sso_token_url'),
+		userInfoUrl: read('sso_userinfo_url'),
+		jwksUrl: read('sso_jwks_url'),
+		clientId: read('sso_client_id'),
+		clientSecret: options?.includeSecret ? clientSecret : undefined,
+		clientSecretSet: Boolean(clientSecret),
+		scope: read('sso_scope'),
+		allowedEmailDomains: allowedDomains,
+		redirectUri: null,
+	};
+}
+
+interface SsoRowWrite {
+	key: string;
+	value: string | undefined;
+	unset: string;
+}
+
+function ssoRow<T>(key: string, value: T | undefined, current: T, format: (value: T) => string): SsoRowWrite {
+	return {key, value: value === undefined ? undefined : format(value), unset: format(current)};
+}
+
+function nextSsoRowValue(row: SsoRowWrite, raw: string | null): string | null {
+	const value = row.value ?? raw ?? row.unset;
+	return value === raw ? null : value;
+}
+
+function formatSsoBoolean(value: boolean): string {
+	return value ? 'true' : 'false';
+}
+
+function formatSsoString(value: string | null): string {
+	return value ?? '';
+}
+
+function formatSsoDomains(value: Array<string>): string {
+	return JSON.stringify(value);
+}
+
+function normalizeSsoAllowedEmailDomainsForWrite(domains: Array<string>, enabled: boolean): Array<string> {
+	try {
+		return normalizeSsoAllowedEmailDomains(domains);
+	} catch (error) {
+		if (enabled) {
+			throw error;
+		}
+		Logger.warn({error}, 'Clearing invalid SSO allowed domain config while SSO is disabled');
+		return [];
+	}
+}
+
 export class InstanceConfigRepository {
 	private readonly kvClient: IKVProvider | null;
 	private configCache: InstanceConfigCache;
@@ -1046,6 +1097,57 @@ export class InstanceConfigRepository {
 		);
 	}
 
+	private async updateStoredConfig<T>(key: string, next: (raw: string | null) => T): Promise<T> {
+		const cache = this.configCache;
+		const {result} = await this.compareAndSetStoredValue(cache, key, (raw) => {
+			const config = next(raw);
+			return {value: JSON.stringify(config), result: config};
+		});
+		await this.publishRefresh(cache.sourceId);
+		return result;
+	}
+
+	private async compareAndSetStoredValue<T>(
+		cache: InstanceConfigCache,
+		key: string,
+		next: (raw: string | null) => StoredValueUpdate<T>,
+	): Promise<{result: T; written: boolean}> {
+		await cache.getSnapshot();
+		for (let attempt = 0; attempt < INSTANCE_CONFIG_WRITE_ATTEMPTS; attempt++) {
+			cache.assertActive();
+			const current = await this.fetchConfigForWrite(key);
+			cache.assertActive();
+			const {value, result} = next(current);
+			if (value === null) return {result, written: false};
+			if (await executeConditional(this.compareAndSetConfig(key, current, value))) {
+				cache.update(key, value);
+				return {result, written: true};
+			}
+		}
+		Logger.error(
+			{key, attempts: INSTANCE_CONFIG_WRITE_ATTEMPTS},
+			'Instance config write lost to a concurrent write on every attempt',
+		);
+		throw new InstanceConfigWriteConflictError(key);
+	}
+
+	private compareAndSetConfig(key: string, current: string | null, value: string): PreparedQuery {
+		const updatedAt = new Date();
+		if (current === null) {
+			return InstanceConfiguration.insertIfNotExists({key, value, updated_at: updatedAt});
+		}
+		return InstanceConfiguration.conditionalPatchByPk(
+			{key},
+			{value: Db.set(value), updated_at: Db.set(updatedAt)},
+			{value: current},
+		);
+	}
+
+	private async fetchConfigForWrite(key: string): Promise<string | null> {
+		const [row] = await fetchMany<InstanceConfigurationRow>(FETCH_CONFIG_QUERY, {key}, {consistency: 'serial'});
+		return row?.value ?? null;
+	}
+
 	private async fetchConfigFromDatabase(key: string): Promise<string | null> {
 		const row = await fetchOne<InstanceConfigurationRow>(FETCH_CONFIG_QUERY, {key});
 		return row?.value ?? null;
@@ -1067,14 +1169,9 @@ export class InstanceConfigRepository {
 			parseStoredGatewayRolloutConfig(snapshot.get(GATEWAY_ROLLOUT_CONFIG_KEY) ?? null),
 		);
 		parseStoredVoiceNoiseSuppressionConfig(snapshot.get(VOICE_NOISE_SUPPRESSION_CONFIG_KEY) ?? null);
-		parseStoredGuildActivityLogPresentationConfig(snapshot.get(GUILD_ACTIVITY_LOG_PRESENTATION_CONFIG_KEY) ?? null);
+		parseStoredScreenShareDeliveryConfig(snapshot.get(SCREEN_SHARE_DELIVERY_CONFIG_KEY) ?? null);
+		parseStoredPushServiceDeliveryConfig(snapshot.get(PUSH_SERVICE_DELIVERY_CONFIG_KEY) ?? null);
 		parseStoredExperimentDeliveryConfig(snapshot.get(EXPERIMENT_DELIVERY_CONFIG_KEY) ?? null);
-		parseStoredMessageHoverTrackingConfig(snapshot.get(MESSAGE_HOVER_TRACKING_CONFIG_KEY) ?? null);
-		parseStoredMessageKeyboardFocusConfig(snapshot.get(MESSAGE_KEYBOARD_FOCUS_CONFIG_KEY) ?? null);
-		parseStoredBlockedMessageGroupsConfig(snapshot.get(BLOCKED_MESSAGE_GROUPS_CONFIG_KEY) ?? null);
-		parseStoredExpressionInfoCardConfig(snapshot.get(EXPRESSION_INFO_CARD_CONFIG_KEY) ?? null);
-		parseStoredGuildHeaderCollapseConfig(snapshot.get(GUILD_HEADER_COLLAPSE_CONFIG_KEY) ?? null);
-		parseStoredTypingIndicatorReworkConfig(snapshot.get(TYPING_INDICATOR_REWORK_CONFIG_KEY) ?? null);
 		const policy = parseStoredInstancePolicyConfig(snapshot.get(INSTANCE_POLICY_CONFIG_KEY) ?? null);
 		checkStoredConfig('registration', () =>
 			parseStoredRegistrationConfig(snapshot.get(REGISTRATION_CONFIG_KEY) ?? null),
@@ -1141,8 +1238,12 @@ export class InstanceConfigRepository {
 		return parseStoredGatewayRolloutConfig(raw);
 	}
 
-	async setGatewayRolloutConfig(config: GatewayRolloutConfig): Promise<void> {
-		await this.setConfig(GATEWAY_ROLLOUT_CONFIG_KEY, JSON.stringify(decodeGatewayRolloutConfig(config)));
+	updateGatewayRolloutConfig(
+		update: (current: GatewayRolloutConfig) => GatewayRolloutConfig,
+	): Promise<GatewayRolloutConfig> {
+		return this.updateStoredConfig(GATEWAY_ROLLOUT_CONFIG_KEY, (raw) =>
+			decodeGatewayRolloutConfig(update(parseStoredGatewayRolloutConfig(raw))),
+		);
 	}
 
 	async getVoiceNoiseSuppressionConfig(): Promise<VoiceNoiseSuppressionConfig> {
@@ -1151,22 +1252,57 @@ export class InstanceConfigRepository {
 	}
 
 	async setVoiceNoiseSuppressionConfig(config: VoiceNoiseSuppressionConfig): Promise<void> {
-		const validated = validateStoredConfig(VoiceNoiseSuppressionConfigSchema, config, 'voice noise suppression');
-		await this.setConfig(VOICE_NOISE_SUPPRESSION_CONFIG_KEY, JSON.stringify(validated));
+		await this.updateVoiceNoiseSuppressionConfig(() => config);
 	}
 
-	async getGuildActivityLogPresentationConfig(): Promise<GuildActivityLogPresentationConfig> {
-		const raw = await this.getConfig(GUILD_ACTIVITY_LOG_PRESENTATION_CONFIG_KEY);
-		return parseStoredGuildActivityLogPresentationConfig(raw);
-	}
-
-	async setGuildActivityLogPresentationConfig(config: GuildActivityLogPresentationConfig): Promise<void> {
-		const validated = validateStoredConfig(
-			GuildActivityLogPresentationConfigSchema,
-			config,
-			'guild activity log presentation',
+	updateVoiceNoiseSuppressionConfig(
+		update: (current: VoiceNoiseSuppressionConfig) => VoiceNoiseSuppressionConfig,
+	): Promise<VoiceNoiseSuppressionConfig> {
+		return this.updateStoredConfig(VOICE_NOISE_SUPPRESSION_CONFIG_KEY, (raw) =>
+			validateStoredConfig(
+				VoiceNoiseSuppressionConfigSchema,
+				update(parseStoredVoiceNoiseSuppressionConfig(raw)),
+				'voice noise suppression',
+			),
 		);
-		await this.setConfig(GUILD_ACTIVITY_LOG_PRESENTATION_CONFIG_KEY, JSON.stringify(validated));
+	}
+
+	async getScreenShareDeliveryConfig(): Promise<ScreenShareDeliveryConfig> {
+		const raw = await this.getConfig(SCREEN_SHARE_DELIVERY_CONFIG_KEY);
+		return parseStoredScreenShareDeliveryConfig(raw);
+	}
+
+	async setScreenShareDeliveryConfig(config: ScreenShareDeliveryConfig): Promise<void> {
+		await this.updateScreenShareDeliveryConfig(() => config);
+	}
+
+	updateScreenShareDeliveryConfig(
+		update: (current: ScreenShareDeliveryConfig) => ScreenShareDeliveryConfig,
+	): Promise<ScreenShareDeliveryConfig> {
+		return this.updateStoredConfig(SCREEN_SHARE_DELIVERY_CONFIG_KEY, (raw) =>
+			validateStoredConfig(
+				ScreenShareDeliveryConfigSchema,
+				update(parseStoredScreenShareDeliveryConfig(raw)),
+				'screen share delivery',
+			),
+		);
+	}
+
+	async getPushServiceDeliveryConfig(): Promise<PushServiceDeliveryConfig> {
+		const raw = await this.getConfig(PUSH_SERVICE_DELIVERY_CONFIG_KEY);
+		return parseStoredPushServiceDeliveryConfig(raw);
+	}
+
+	updatePushServiceDeliveryConfig(
+		update: (current: PushServiceDeliveryConfig) => PushServiceDeliveryConfig,
+	): Promise<PushServiceDeliveryConfig> {
+		return this.updateStoredConfig(PUSH_SERVICE_DELIVERY_CONFIG_KEY, (raw) =>
+			validateStoredConfig(
+				PushServiceDeliveryConfigSchema,
+				update(parseStoredPushServiceDeliveryConfig(raw)),
+				'push service delivery',
+			),
+		);
 	}
 
 	async getExperimentDeliveryConfig(): Promise<ExperimentDeliveryConfig> {
@@ -1174,69 +1310,20 @@ export class InstanceConfigRepository {
 		return parseStoredExperimentDeliveryConfig(raw);
 	}
 
-	async getMessageHoverTrackingConfig(): Promise<MessageHoverTrackingConfig> {
-		const raw = await this.getConfig(MESSAGE_HOVER_TRACKING_CONFIG_KEY);
-		return parseStoredMessageHoverTrackingConfig(raw);
-	}
-
-	async setMessageHoverTrackingConfig(config: MessageHoverTrackingConfig): Promise<void> {
-		const validated = validateStoredConfig(MessageHoverTrackingConfigSchema, config, 'message hover tracking');
-		await this.setConfig(MESSAGE_HOVER_TRACKING_CONFIG_KEY, JSON.stringify(validated));
-	}
-
-	async getMessageKeyboardFocusConfig(): Promise<MessageKeyboardFocusConfig> {
-		const raw = await this.getConfig(MESSAGE_KEYBOARD_FOCUS_CONFIG_KEY);
-		return parseStoredMessageKeyboardFocusConfig(raw);
-	}
-
-	async setMessageKeyboardFocusConfig(config: MessageKeyboardFocusConfig): Promise<void> {
-		const validated = validateStoredConfig(MessageKeyboardFocusConfigSchema, config, 'message keyboard focus');
-		await this.setConfig(MESSAGE_KEYBOARD_FOCUS_CONFIG_KEY, JSON.stringify(validated));
-	}
-
-	async getBlockedMessageGroupsConfig(): Promise<BlockedMessageGroupsConfig> {
-		const raw = await this.getConfig(BLOCKED_MESSAGE_GROUPS_CONFIG_KEY);
-		return parseStoredBlockedMessageGroupsConfig(raw);
-	}
-
-	async setBlockedMessageGroupsConfig(config: BlockedMessageGroupsConfig): Promise<void> {
-		const validated = validateStoredConfig(BlockedMessageGroupsConfigSchema, config, 'blocked message groups');
-		await this.setConfig(BLOCKED_MESSAGE_GROUPS_CONFIG_KEY, JSON.stringify(validated));
-	}
-
-	async getExpressionInfoCardConfig(): Promise<ExpressionInfoCardConfig> {
-		const raw = await this.getConfig(EXPRESSION_INFO_CARD_CONFIG_KEY);
-		return parseStoredExpressionInfoCardConfig(raw);
-	}
-
-	async setExpressionInfoCardConfig(config: ExpressionInfoCardConfig): Promise<void> {
-		const validated = validateStoredConfig(ExpressionInfoCardConfigSchema, config, 'expression info card');
-		await this.setConfig(EXPRESSION_INFO_CARD_CONFIG_KEY, JSON.stringify(validated));
-	}
-
-	async getGuildHeaderCollapseConfig(): Promise<GuildHeaderCollapseConfig> {
-		const raw = await this.getConfig(GUILD_HEADER_COLLAPSE_CONFIG_KEY);
-		return parseStoredGuildHeaderCollapseConfig(raw);
-	}
-
-	async setGuildHeaderCollapseConfig(config: GuildHeaderCollapseConfig): Promise<void> {
-		const validated = validateStoredConfig(GuildHeaderCollapseConfigSchema, config, 'guild header collapse');
-		await this.setConfig(GUILD_HEADER_COLLAPSE_CONFIG_KEY, JSON.stringify(validated));
-	}
-
-	async getTypingIndicatorReworkConfig(): Promise<TypingIndicatorReworkConfig> {
-		const raw = await this.getConfig(TYPING_INDICATOR_REWORK_CONFIG_KEY);
-		return parseStoredTypingIndicatorReworkConfig(raw);
-	}
-
-	async setTypingIndicatorReworkConfig(config: TypingIndicatorReworkConfig): Promise<void> {
-		const validated = validateStoredConfig(TypingIndicatorReworkConfigSchema, config, 'typing indicator rework');
-		await this.setConfig(TYPING_INDICATOR_REWORK_CONFIG_KEY, JSON.stringify(validated));
-	}
-
 	async setExperimentDeliveryConfig(config: ExperimentDeliveryConfig): Promise<void> {
-		const validated = validateStoredConfig(ExperimentDeliveryConfigSchema, config, 'experiment delivery');
-		await this.setConfig(EXPERIMENT_DELIVERY_CONFIG_KEY, JSON.stringify(validated));
+		await this.updateExperimentDeliveryConfig(() => config);
+	}
+
+	updateExperimentDeliveryConfig(
+		update: (current: ExperimentDeliveryConfig) => ExperimentDeliveryConfig,
+	): Promise<ExperimentDeliveryConfig> {
+		return this.updateStoredConfig(EXPERIMENT_DELIVERY_CONFIG_KEY, (raw) =>
+			validateStoredConfig(
+				ExperimentDeliveryConfigSchema,
+				update(parseStoredExperimentDeliveryConfig(raw)),
+				'experiment delivery',
+			),
+		);
 	}
 
 	async readLimitConfigInputs(): Promise<LimitConfigInputs> {
@@ -1272,26 +1359,27 @@ export class InstanceConfigRepository {
 		legal?: Partial<InstanceAppPublicConfig['legal']>;
 		registration?: Partial<InstanceAppPublicConfig['registration']>;
 	}): Promise<InstanceAppPublicConfig> {
-		const current = await this.getAppPublicConfig();
-		const next = decodeAppPublicConfig({
-			branding: {
-				...current.branding,
-				...(config.branding ?? {}),
-			},
-			setup: {
-				...current.setup,
-				...(config.setup ?? {}),
-			},
-			legal: {
-				...current.legal,
-				...(config.legal ?? {}),
-			},
-			registration: {
-				...current.registration,
-				...(config.registration ?? {}),
-			},
+		const next = await this.updateStoredConfig(APP_PUBLIC_CONFIG_KEY, (raw) => {
+			const current = parseStoredAppPublicConfig(raw);
+			return decodeAppPublicConfig({
+				branding: {
+					...current.branding,
+					...(config.branding ?? {}),
+				},
+				setup: {
+					...current.setup,
+					...(config.setup ?? {}),
+				},
+				legal: {
+					...current.legal,
+					...(config.legal ?? {}),
+				},
+				registration: {
+					...current.registration,
+					...(config.registration ?? {}),
+				},
+			});
 		});
-		await this.setConfig(APP_PUBLIC_CONFIG_KEY, JSON.stringify(next));
 		setCachedDateOfBirthCollection(next.registration.collect_date_of_birth);
 		return next;
 	}
@@ -1311,10 +1399,21 @@ export class InstanceConfigRepository {
 		return parseStoredInstancePolicyConfig(raw);
 	}
 
-	async setInstancePolicyConfig(config: Partial<InstancePolicyConfig>): Promise<InstancePolicyConfig> {
-		const current = await this.readStoredInstancePolicyConfig();
-		const next = decodeInstancePolicyConfig({...current, ...config});
-		await this.setConfig(INSTANCE_POLICY_CONFIG_KEY, JSON.stringify(next));
+	setInstancePolicyConfig(config: Partial<InstancePolicyConfig>): Promise<InstancePolicyConfig> {
+		return this.updateInstancePolicyConfig(() => config);
+	}
+
+	async updateInstancePolicyConfig(
+		plan: (current: InstancePolicyConfig) => Partial<InstancePolicyConfig>,
+	): Promise<InstancePolicyConfig> {
+		const cache = this.configCache;
+		const {result: next, written} = await this.compareAndSetStoredValue(cache, INSTANCE_POLICY_CONFIG_KEY, (raw) => {
+			const current = parseStoredInstancePolicyConfig(raw);
+			const patch = plan(current);
+			const config = decodeInstancePolicyConfig({...current, ...patch});
+			return {value: Object.keys(patch).length === 0 ? null : JSON.stringify(config), result: config};
+		});
+		if (written) await this.publishRefresh(cache.sourceId);
 		setCachedDeferredPhoneGateEnabled(resolveDeferredPhoneGateEnabled(next));
 		return next;
 	}
@@ -1324,37 +1423,37 @@ export class InstanceConfigRepository {
 		return parseStoredInstanceIntegrationsConfig(raw);
 	}
 
-	async setInstanceIntegrationsConfig(config: InstanceIntegrationsConfigPatch): Promise<InstanceIntegrationsConfig> {
-		const current = await this.getInstanceIntegrationsConfig();
-		const next = decodeInstanceIntegrationsConfig({
-			gif: {
-				...current.gif,
-				...(config.gif ?? {}),
-			},
-			youtube: {
-				...current.youtube,
-				...(config.youtube ?? {}),
-			},
-			captcha: {
-				...current.captcha,
-				...(config.captcha ?? {}),
-			},
-			email: {
-				...current.email,
-				...(config.email ?? {}),
-				smtp: {
-					...current.email.smtp,
-					...(config.email?.smtp ?? {}),
+	setInstanceIntegrationsConfig(config: InstanceIntegrationsConfigPatch): Promise<InstanceIntegrationsConfig> {
+		return this.updateStoredConfig(INSTANCE_INTEGRATIONS_CONFIG_KEY, (raw) => {
+			const current = parseStoredInstanceIntegrationsConfig(raw);
+			return decodeInstanceIntegrationsConfig({
+				gif: {
+					...current.gif,
+					...(config.gif ?? {}),
 				},
-			},
-			bluesky: {
-				...current.bluesky,
-				...(config.bluesky ?? {}),
-				keys: config.bluesky?.keys ?? current.bluesky.keys,
-			},
+				youtube: {
+					...current.youtube,
+					...(config.youtube ?? {}),
+				},
+				captcha: {
+					...current.captcha,
+					...(config.captcha ?? {}),
+				},
+				email: {
+					...current.email,
+					...(config.email ?? {}),
+					smtp: {
+						...current.email.smtp,
+						...(config.email?.smtp ?? {}),
+					},
+				},
+				bluesky: {
+					...current.bluesky,
+					...(config.bluesky ?? {}),
+					keys: config.bluesky?.keys ?? current.bluesky.keys,
+				},
+			});
 		});
-		await this.setConfig(INSTANCE_INTEGRATIONS_CONFIG_KEY, JSON.stringify(next));
-		return next;
 	}
 
 	async getInstanceMediaConfig(): Promise<InstanceMediaConfig> {
@@ -1362,16 +1461,16 @@ export class InstanceConfigRepository {
 		return parseStoredInstanceMediaConfig(raw);
 	}
 
-	async setInstanceMediaConfig(config: InstanceMediaConfigPatch): Promise<InstanceMediaConfig> {
-		const current = await this.getInstanceMediaConfig();
-		const next = decodeInstanceMediaConfig({
-			attachment_decay: {
-				...current.attachment_decay,
-				...(config.attachment_decay ?? {}),
-			},
+	setInstanceMediaConfig(config: InstanceMediaConfigPatch): Promise<InstanceMediaConfig> {
+		return this.updateStoredConfig(INSTANCE_MEDIA_CONFIG_KEY, (raw) => {
+			const current = parseStoredInstanceMediaConfig(raw);
+			return decodeInstanceMediaConfig({
+				attachment_decay: {
+					...current.attachment_decay,
+					...(config.attachment_decay ?? {}),
+				},
+			});
 		});
-		await this.setConfig(INSTANCE_MEDIA_CONFIG_KEY, JSON.stringify(next));
-		return next;
 	}
 
 	async getEffectiveAttachmentDecayConfig(): Promise<InstanceAttachmentDecayEffectiveConfig> {
@@ -1608,15 +1707,15 @@ export class InstanceConfigRepository {
 		return parseStoredRegistrationConfig(raw);
 	}
 
-	async setRegistrationConfig(config: Partial<InstanceRegistrationConfig>): Promise<InstanceRegistrationConfig> {
-		const current = await this.getRegistrationConfig();
-		const next = decodeRegistrationConfig({
-			mode: config.mode ?? current.mode,
-			admin_registration_urls_enabled:
-				config.admin_registration_urls_enabled ?? current.admin_registration_urls_enabled,
+	setRegistrationConfig(config: Partial<InstanceRegistrationConfig>): Promise<InstanceRegistrationConfig> {
+		return this.updateStoredConfig(REGISTRATION_CONFIG_KEY, (raw) => {
+			const current = parseStoredRegistrationConfig(raw);
+			return decodeRegistrationConfig({
+				mode: config.mode ?? current.mode,
+				admin_registration_urls_enabled:
+					config.admin_registration_urls_enabled ?? current.admin_registration_urls_enabled,
+			});
 		});
-		await this.setConfig(REGISTRATION_CONFIG_KEY, JSON.stringify(next));
-		return next;
 	}
 
 	async getRegistrationPublicConfig(): Promise<InstanceRegistrationConfig> {
@@ -1657,16 +1756,20 @@ export class InstanceConfigRepository {
 			last_used_at: null,
 			last_used_by_user_id: null,
 		};
-		const registrationUrls = await this.getRegistrationUrls();
-		await this.setRegistrationUrls([registrationUrl, ...registrationUrls]);
+		await this.updateStoredConfig(REGISTRATION_URLS_KEY, (raw) =>
+			validateStoredCollection(
+				StoredRegistrationUrlSchema,
+				[registrationUrl, ...parseStoredCollection(StoredRegistrationUrlSchema, raw, 'registration URLs')],
+				'registration URLs',
+			),
+		);
 		return {registrationUrl: redactRegistrationUrl(registrationUrl), code};
 	}
 
 	async revokeRegistrationUrl(id: string): Promise<void> {
 		const now = new Date().toISOString();
-		const registrationUrls = await this.getRegistrationUrls();
-		await this.setRegistrationUrls(
-			registrationUrls.map((registrationUrl) =>
+		await this.updateStoredConfig(REGISTRATION_URLS_KEY, (raw) =>
+			parseStoredCollection(StoredRegistrationUrlSchema, raw, 'registration URLs').map((registrationUrl) =>
 				registrationUrl.id === id && !registrationUrl.revoked_at
 					? {...registrationUrl, revoked_at: now}
 					: registrationUrl,
@@ -1679,9 +1782,8 @@ export class InstanceConfigRepository {
 		if (!normalizedCode) return null;
 		const hash = this.hashRegistrationUrlCode(normalizedCode);
 		const now = new Date();
-		const registrationUrls = await this.getRegistrationUrls();
 		return (
-			registrationUrls.find(
+			(await this.fetchRegistrationUrlDefinitions()).find(
 				(registrationUrl) =>
 					(registrationUrl.id === normalizedCode || registrationUrl.code_hash === hash) &&
 					isRegistrationUrlUsable(registrationUrl, now),
@@ -1689,21 +1791,68 @@ export class InstanceConfigRepository {
 		);
 	}
 
-	async recordRegistrationUrlUse(id: string, userId: string): Promise<void> {
-		const now = new Date().toISOString();
-		const registrationUrls = await this.getRegistrationUrls();
-		await this.setRegistrationUrls(
-			registrationUrls.map((registrationUrl) =>
-				registrationUrl.id === id
-					? {
-							...registrationUrl,
-							use_count: registrationUrl.use_count + 1,
-							last_used_at: now,
-							last_used_by_user_id: userId,
-						}
-					: registrationUrl,
-			),
-		);
+	async claimRegistrationUrlUse(registrationUrlId: string, userId: string): Promise<RegistrationUrlClaim | null> {
+		const cache = this.configCache;
+		let claimed: {result: RegistrationUrlClaim | null; written: boolean};
+		try {
+			claimed = await this.compareAndSetStoredValue<RegistrationUrlClaim | null>(
+				cache,
+				REGISTRATION_URLS_KEY,
+				(raw) => {
+					const registrationUrls = parseStoredCollection(StoredRegistrationUrlSchema, raw, 'registration URLs');
+					const now = new Date();
+					const claimable = registrationUrls.find(
+						(registrationUrl) =>
+							registrationUrl.id === registrationUrlId && isRegistrationUrlUsable(registrationUrl, now),
+					);
+					if (!claimable) return {value: null, result: null};
+					const next = registrationUrls.map((registrationUrl) =>
+						registrationUrl === claimable
+							? {
+									...registrationUrl,
+									use_count: registrationUrl.use_count + 1,
+									last_used_at: now.toISOString(),
+									last_used_by_user_id: userId,
+								}
+							: registrationUrl,
+					);
+					return {
+						value: JSON.stringify(validateStoredCollection(StoredRegistrationUrlSchema, next, 'registration URLs')),
+						result: {registration_url_id: registrationUrlId, user_id: userId},
+					};
+				},
+			);
+		} catch (error) {
+			if (error instanceof InstanceConfigWriteConflictError) throw new ServiceUnavailableError();
+			throw error;
+		}
+		if (claimed.written) await this.publishRefresh(cache.sourceId);
+		return claimed.result;
+	}
+
+	async releaseRegistrationUrlUse(claim: RegistrationUrlClaim): Promise<void> {
+		const cache = this.configCache;
+		try {
+			const {written} = await this.compareAndSetStoredValue<null>(cache, REGISTRATION_URLS_KEY, (raw) => {
+				const registrationUrls = parseStoredCollection(StoredRegistrationUrlSchema, raw, 'registration URLs');
+				const released = registrationUrls.find(
+					(registrationUrl) => registrationUrl.id === claim.registration_url_id && registrationUrl.use_count > 0,
+				);
+				if (!released) return {value: null, result: null};
+				const next = registrationUrls.map((registrationUrl) =>
+					registrationUrl === released
+						? {...registrationUrl, use_count: registrationUrl.use_count - 1}
+						: registrationUrl,
+				);
+				return {value: JSON.stringify(next), result: null};
+			});
+			if (written) await this.publishRefresh(cache.sourceId);
+		} catch (error) {
+			Logger.warn(
+				{registrationUrlId: claim.registration_url_id, userId: claim.user_id, error},
+				'Releasing a registration URL use failed',
+			);
+		}
 	}
 
 	async getPendingRegistrations(): Promise<Array<InstancePendingRegistration>> {
@@ -1714,104 +1863,82 @@ export class InstanceConfigRepository {
 	}
 
 	async addPendingRegistration(pendingRegistration: InstancePendingRegistration): Promise<void> {
-		const pendingRegistrations = await this.getPendingRegistrations();
-		const next = [
-			pendingRegistration,
-			...pendingRegistrations.filter((entry) => entry.user_id !== pendingRegistration.user_id),
-		];
-		await this.setPendingRegistrations(next);
+		await this.updateStoredConfig(REGISTRATION_PENDING_APPROVALS_KEY, (raw) =>
+			validateStoredCollection(
+				StoredPendingRegistrationSchema,
+				[
+					pendingRegistration,
+					...parseStoredCollection(StoredPendingRegistrationSchema, raw, 'pending registrations').filter(
+						(entry) => entry.user_id !== pendingRegistration.user_id,
+					),
+				],
+				'pending registrations',
+			),
+		);
 	}
 
 	async removePendingRegistration(userId: string): Promise<void> {
-		const pendingRegistrations = await this.getPendingRegistrations();
-		await this.setPendingRegistrations(pendingRegistrations.filter((entry) => entry.user_id !== userId));
+		await this.updateStoredConfig(REGISTRATION_PENDING_APPROVALS_KEY, (raw) =>
+			parseStoredCollection(StoredPendingRegistrationSchema, raw, 'pending registrations').filter(
+				(entry) => entry.user_id !== userId,
+			),
+		);
 	}
 
 	async getSsoConfig(options?: {includeSecret?: boolean}): Promise<InstanceSsoConfig> {
-		const configs = await this.getAllConfigs();
-		const flags = readStoredSsoFlags(configs);
-		const read = (key: string): string | null => {
-			const v = configs.get(key);
-			if (!v) return null;
-			const trimmed = v.trim();
-			return trimmed.length === 0 ? null : trimmed;
-		};
-		const allowedDomains = parseStoredSsoAllowedEmailDomains(configs.get('sso_allowed_domains'));
-		const clientSecret = read('sso_client_secret');
-		return {
-			...flags,
-			displayName: read('sso_display_name'),
-			issuer: read('sso_issuer'),
-			authorizationUrl: read('sso_authorization_url'),
-			tokenUrl: read('sso_token_url'),
-			userInfoUrl: read('sso_userinfo_url'),
-			jwksUrl: read('sso_jwks_url'),
-			clientId: read('sso_client_id'),
-			clientSecret: options?.includeSecret ? clientSecret : undefined,
-			clientSecretSet: Boolean(clientSecret),
-			scope: read('sso_scope'),
-			allowedEmailDomains: allowedDomains,
-			redirectUri: null,
-		};
+		return readStoredSsoConfig(await this.getAllConfigs(), options);
 	}
 
 	async setSsoConfig(config: Partial<InstanceSsoConfig>): Promise<InstanceSsoConfig> {
-		const current = await this.getSsoConfig({includeSecret: true});
-		const definedConfig = Object.fromEntries(
-			Object.entries(config).filter(([, value]) => value !== undefined),
-		) as Partial<InstanceSsoConfig>;
-		const next: InstanceSsoConfig = {
-			...current,
-			...definedConfig,
-			clientSecret: config.clientSecret !== undefined ? config.clientSecret : current.clientSecret,
-		};
-		if (config.enabled === true && config.enforced === undefined && !current.enabled) {
-			next.enforced = true;
-		}
-		let allowedEmailDomains: Array<string>;
-		try {
-			allowedEmailDomains = normalizeSsoAllowedEmailDomains(next.allowedEmailDomains);
-		} catch (error) {
-			if (next.enabled) {
-				throw error;
-			}
-			Logger.warn({error}, 'Clearing invalid SSO allowed domain config while SSO is disabled');
-			allowedEmailDomains = [];
-		}
-		const entries: Array<[string, string]> = [
-			['sso_enabled', next.enabled ? 'true' : 'false'],
-			['sso_enforced', next.enforced ? 'true' : 'false'],
-			['sso_display_name', next.displayName ?? ''],
-			['sso_issuer', next.issuer ?? ''],
-			['sso_authorization_url', next.authorizationUrl ?? ''],
-			['sso_token_url', next.tokenUrl ?? ''],
-			['sso_userinfo_url', next.userInfoUrl ?? ''],
-			['sso_jwks_url', next.jwksUrl ?? ''],
-			['sso_client_id', next.clientId ?? ''],
-			['sso_scope', next.scope ?? ''],
-			['sso_allowed_domains', JSON.stringify(allowedEmailDomains)],
-			['sso_auto_provision', next.autoProvision ? 'true' : 'false'],
-			['sso_redirect_uri', ''],
+		const configs = await this.getAllConfigs();
+		const current = readStoredSsoConfig(configs, {includeSecret: true});
+		const enabled = config.enabled ?? current.enabled;
+		const allowedEmailDomains =
+			config.allowedEmailDomains === undefined
+				? undefined
+				: normalizeSsoAllowedEmailDomainsForWrite(config.allowedEmailDomains, enabled);
+		const rows: Array<SsoRowWrite> = [
+			ssoRow('sso_enabled', config.enabled, current.enabled, formatSsoBoolean),
+			ssoRow('sso_enforced', config.enforced, current.enforced, formatSsoBoolean),
+			ssoRow('sso_display_name', config.displayName, current.displayName, formatSsoString),
+			ssoRow('sso_issuer', config.issuer, current.issuer, formatSsoString),
+			ssoRow('sso_authorization_url', config.authorizationUrl, current.authorizationUrl, formatSsoString),
+			ssoRow('sso_token_url', config.tokenUrl, current.tokenUrl, formatSsoString),
+			ssoRow('sso_userinfo_url', config.userInfoUrl, current.userInfoUrl, formatSsoString),
+			ssoRow('sso_jwks_url', config.jwksUrl, current.jwksUrl, formatSsoString),
+			ssoRow('sso_client_id', config.clientId, current.clientId, formatSsoString),
+			ssoRow('sso_scope', config.scope, current.scope, formatSsoString),
+			ssoRow('sso_allowed_domains', allowedEmailDomains, current.allowedEmailDomains, formatSsoDomains),
+			ssoRow('sso_auto_provision', config.autoProvision, current.autoProvision, formatSsoBoolean),
+			ssoRow('sso_redirect_uri', undefined, null, formatSsoString),
 		];
 		if (config.clientSecret !== undefined) {
-			entries.push(['sso_client_secret', config.clientSecret ?? '']);
+			rows.push(ssoRow('sso_client_secret', config.clientSecret, current.clientSecret ?? null, formatSsoString));
 		}
-		await this.setConfigs(entries);
+		const cache = this.configCache;
+		const results = await Promise.allSettled(
+			rows
+				.filter((row) => row.value !== undefined || !configs.has(row.key))
+				.map((row) =>
+					this.compareAndSetStoredValue(cache, row.key, (raw) => ({value: nextSsoRowValue(row, raw), result: null})),
+				),
+		);
+		const errors: Array<unknown> = results.flatMap((result) => (result.status === 'rejected' ? [result.reason] : []));
+		if (results.some((result) => result.status === 'fulfilled' && result.value.written)) {
+			try {
+				await this.publishRefresh(cache.sourceId);
+			} catch (error) {
+				errors.push(error);
+			}
+		}
+		if (errors.length === 1) throw errors[0];
+		if (errors.length > 1) throw new AggregateError(errors, 'Failed to write or publish the SSO config');
 		return this.getSsoConfig({includeSecret: true});
 	}
 
-	private async setRegistrationUrls(registrationUrls: Array<InstanceRegistrationUrl>): Promise<void> {
-		const validated = validateStoredCollection(StoredRegistrationUrlSchema, registrationUrls, 'registration URLs');
-		await this.setConfig(REGISTRATION_URLS_KEY, JSON.stringify(validated));
-	}
-
-	private async setPendingRegistrations(pendingRegistrations: Array<InstancePendingRegistration>): Promise<void> {
-		const validated = validateStoredCollection(
-			StoredPendingRegistrationSchema,
-			pendingRegistrations,
-			'pending registrations',
-		);
-		await this.setConfig(REGISTRATION_PENDING_APPROVALS_KEY, JSON.stringify(validated));
+	private async fetchRegistrationUrlDefinitions(): Promise<Array<InstanceRegistrationUrl>> {
+		const raw = await this.fetchConfigFromDatabase(REGISTRATION_URLS_KEY);
+		return parseStoredCollection(StoredRegistrationUrlSchema, raw, 'registration URLs');
 	}
 
 	private hashRegistrationUrlCode(code: string): string {

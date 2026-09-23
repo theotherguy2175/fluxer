@@ -15,6 +15,7 @@ import bulkDeleteUserMessagesScoped from '@app/api/worker/tasks/BulkDeleteUserMe
 import deleteUserMessagesInGuildByTime from '@app/api/worker/tasks/DeleteUserMessagesInGuildByTime';
 import expireAttachments from '@app/api/worker/tasks/ExpireAttachments';
 import expirePolls from '@app/api/worker/tasks/ExpirePolls';
+import expireStaleJobs from '@app/api/worker/tasks/ExpireStaleJobs';
 import extractEmbeds from '@app/api/worker/tasks/ExtractEmbeds';
 import finalizeNcmecAttachmentReport from '@app/api/worker/tasks/FinalizeNcmecAttachmentReport';
 import flushUserActivityBuffer from '@app/api/worker/tasks/FlushUserActivityBuffer';
@@ -61,6 +62,7 @@ export const workerTasks: Record<WorkerTaskName, WorkerTaskHandler> = {
 	deleteUserMessagesInGuildByTime,
 	expireAttachments,
 	expirePolls,
+	expireStaleJobs,
 	extractEmbeds,
 	finalizeNcmecAttachmentReport,
 	handleMentions,

@@ -12,7 +12,9 @@ import {isJsonRecord, parseJsonRecord, parseJsonWithGuard} from '@app/api/utils/
 import type {MessageResponse} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
 import type {INatsConnectionManager} from '@pkgs/nats/src/INatsConnectionManager';
 import {NatsConnectionManager} from '@pkgs/nats/src/NatsConnectionManager';
-import {StringCodec} from 'nats';
+
+const textEncoder = new TextEncoder();
+const textDecoder = new TextDecoder();
 
 const MESSAGE_RESPONSE_SERVICE_SUBJECT = 'svc.messages';
 const MESSAGE_RESPONSE_SERVICE_TIMEOUT_MS = 6000;
@@ -80,8 +82,6 @@ function isMessageServiceResponse(value: unknown): value is MessageServiceRespon
 }
 
 export class MessageResponseDataService {
-	private readonly codec = StringCodec();
-
 	constructor(private readonly connectionManager: INatsConnectionManager) {}
 
 	async listMessages(params: {
@@ -108,6 +108,7 @@ export class MessageResponseDataService {
 			can_read_message_history: params.access.canReadMessageHistory,
 			media_endpoint: Config.endpoints.media,
 			media_proxy_secret_key: Config.mediaProxy.secretKey,
+			attachment_url_secret_base64: Config.mediaProxy.attachmentUrls.secretsBase64[0],
 			include_reactions: true,
 		});
 		if (typeof response === 'object' && 'FoundApiMany' in response) {
@@ -148,6 +149,7 @@ export class MessageResponseDataService {
 			can_read_message_history: params.access.canReadMessageHistory,
 			media_endpoint: Config.endpoints.media,
 			media_proxy_secret_key: Config.mediaProxy.secretKey,
+			attachment_url_secret_base64: Config.mediaProxy.attachmentUrls.secretsBase64[0],
 			include_reactions: true,
 			nonce: params.nonce,
 			tts: params.tts,
@@ -178,6 +180,7 @@ export class MessageResponseDataService {
 			can_read_message_history: params.access.canReadMessageHistory,
 			media_endpoint: Config.endpoints.media,
 			media_proxy_secret_key: Config.mediaProxy.secretKey,
+			attachment_url_secret_base64: Config.mediaProxy.attachmentUrls.secretsBase64[0],
 			include_reactions: params.includeReactions ?? true,
 			nonce: params.nonce,
 			tts: params.tts,
@@ -249,6 +252,7 @@ export class MessageResponseDataService {
 				can_read_message_history: params.access.canReadMessageHistory,
 				media_endpoint: Config.endpoints.media,
 				media_proxy_secret_key: Config.mediaProxy.secretKey,
+				attachment_url_secret_base64: Config.mediaProxy.attachmentUrls.secretsBase64[0],
 				include_reactions: params.includeReactions ?? true,
 			});
 			if (typeof response !== 'object' || !('FoundApiMany' in response)) {
@@ -312,10 +316,10 @@ export class MessageResponseDataService {
 			const connection = this.connectionManager.getConnection();
 			const response = await connection.request(
 				MESSAGE_RESPONSE_SERVICE_SUBJECT,
-				this.codec.encode(JSON.stringify(payload)),
+				textEncoder.encode(JSON.stringify(payload)),
 				{timeout: MESSAGE_RESPONSE_SERVICE_TIMEOUT_MS},
 			);
-			const decoded = this.codec.decode(response.data);
+			const decoded = textDecoder.decode(response.data);
 			const parsed = parseJsonWithGuard(decoded, isMessageServiceResponse);
 			if (!parsed) {
 				throwForSvcErrorReply('message-response-service', parseJsonRecord(decoded));

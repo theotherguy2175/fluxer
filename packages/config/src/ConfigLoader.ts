@@ -92,7 +92,6 @@ function defaultConfig(): MasterConfig {
 			buckets: {
 				cdn: 'fluxer',
 				uploads: 'fluxer-uploads',
-				downloads: 'fluxer-downloads',
 				reports: 'fluxer-reports',
 				harvests: 'fluxer-harvests',
 			},
@@ -105,9 +104,7 @@ function defaultConfig(): MasterConfig {
 				max_inflight_requests: 512,
 				ip_ban_exempt_ips: [],
 				donation_proxy_key: '',
-				desktop_github_redirect_countries: [],
 				presigned_attachment_uploads_enabled: false,
-				presigned_downloads_enabled: false,
 				presigned_harvest_downloads_enabled: true,
 				unfurl_ignored_hosts: [],
 				embeds: {
@@ -121,6 +118,10 @@ function defaultConfig(): MasterConfig {
 				},
 				content_moderation: {
 					nsfw_threshold: 0.7,
+				},
+				storage_change_feed: {
+					enabled: false,
+					stream: 'STORAGE_CHANGES',
 				},
 			},
 			nats: {
@@ -139,6 +140,9 @@ function defaultConfig(): MasterConfig {
 					max_body_bytes: 524_288_000,
 					token_ttl_secs: 900,
 					keep_direct_countries: [],
+				},
+				attachment_urls: {
+					secrets_base64: [],
 				},
 			},
 			gateway: {
@@ -245,15 +249,12 @@ function defaultConfig(): MasterConfig {
 				},
 			},
 			blocklist_feeds: {},
+			tor_exit_list: {},
+			breached_password_check: {},
 			risk_integration: {
 				enabled: false,
 				ipinfo_api_key: '',
 				account_policy_dsl: undefined,
-				tor: {
-					block_all_relays: false,
-					reverse_dns_heuristic: false,
-					reverse_dns_timeout_ms: 750,
-				},
 			},
 			push: {
 				apns: {
@@ -347,6 +348,28 @@ function validateUploadRelaySecret(value: string, mode: string): void {
 	}
 	if (Buffer.from(trimmed, 'base64').length < 32) {
 		throw new Error('FLUXER_MEDIA_PROXY_UPLOAD_RELAY_SECRET_BASE64 must decode to at least 32 bytes');
+	}
+}
+
+function isCanonicalStandardBase64(value: string): boolean {
+	if (!/^[A-Za-z0-9+/]+={0,2}$/u.test(value)) {
+		return false;
+	}
+	return Buffer.from(value, 'base64').toString('base64') === value;
+}
+
+function validateAttachmentUrlSecrets(values: Array<string>): void {
+	for (const value of values) {
+		const trimmed = value.trim();
+		if (trimmed.length === 0) {
+			continue;
+		}
+		if (!isCanonicalStandardBase64(trimmed)) {
+			throw new Error('FLUXER_MEDIA_PROXY_ATTACHMENT_URL_SECRETS_BASE64 entries must be standard base64');
+		}
+		if (Buffer.from(trimmed, 'base64').length < 32) {
+			throw new Error('FLUXER_MEDIA_PROXY_ATTACHMENT_URL_SECRETS_BASE64 entries must decode to at least 32 bytes');
+		}
 	}
 }
 
@@ -453,6 +476,18 @@ function validateApiWorkerConfig(config: MasterConfig): void {
 	}
 }
 
+function validateStorageChangeFeedConfig(config: MasterConfig): void {
+	const feed = config.services.api?.storage_change_feed;
+	if (!feed?.enabled) {
+		return;
+	}
+	if (feed.stream === undefined || !/^[A-Za-z0-9_-]+$/u.test(feed.stream)) {
+		throw new Error(
+			'FLUXER_API_STORAGE_CHANGE_FEED_STREAM must be letters, digits, underscores or hyphens when the storage change feed is enabled',
+		);
+	}
+}
+
 function validateCachePurgeConfig(config: MasterConfig): void {
 	const cachePurge = config.integrations.cache_purge;
 	if (cachePurge.adapter !== 'http') {
@@ -468,7 +503,8 @@ function validateCachePurgeConfig(config: MasterConfig): void {
 	) {
 		throw new Error('FLUXER_CACHE_PURGE_HTTP_ENDPOINT must be an absolute http or https URL without credentials');
 	}
-	if (!/^[\x21-\x7e]*$/u.test(cachePurge.http.token)) {
+	requireString(cachePurge.http.token, 'FLUXER_CACHE_PURGE_HTTP_TOKEN');
+	if (!/^[\x21-\x7e]+$/u.test(cachePurge.http.token)) {
 		throw new Error('FLUXER_CACHE_PURGE_HTTP_TOKEN must contain only visible ASCII characters');
 	}
 	assertIntegerInRange(cachePurge.http.timeout_ms, 'FLUXER_CACHE_PURGE_HTTP_TIMEOUT_MS', 1_000, 10_000);
@@ -541,6 +577,7 @@ function normalizeConfig(config: MasterConfig): MasterConfig {
 	validatePostgresConfig(config);
 	validateCaptchaConfig(config);
 	validateApiWorkerConfig(config);
+	validateStorageChangeFeedConfig(config);
 	validateCachePurgeConfig(config);
 	assertIntegerInRange(config.services.api.max_inflight_requests, 'FLUXER_API_MAX_INFLIGHT_REQUESTS', 1, 100_000);
 	assertIntegerInRange(config.services.api.headers_timeout_ms, 'FLUXER_API_HEADERS_TIMEOUT_MS', 1_000, 3_600_000);
@@ -557,6 +594,7 @@ function normalizeConfig(config: MasterConfig): MasterConfig {
 	requireString(config.s3?.secret_access_key, 'FLUXER_S3_SECRET_ACCESS_KEY');
 	requireString(config.services.media_proxy.secret_key, 'FLUXER_MEDIA_PROXY_SECRET_KEY');
 	validateUploadRelaySecret(config.services.media_proxy.upload_relay.secret_base64, config.services.media_proxy.mode);
+	validateAttachmentUrlSecrets(config.services.media_proxy.attachment_urls.secrets_base64);
 	requireString(config.services.admin.secret_key_base, 'FLUXER_ADMIN_SECRET_KEY_BASE');
 	requireString(config.services.admin.oauth_client_secret, 'FLUXER_ADMIN_OAUTH_CLIENT_SECRET');
 	requireString(config.services.gateway.rpc_auth_token, 'FLUXER_GATEWAY_RPC_AUTH_TOKEN');
@@ -605,10 +643,6 @@ function applyPublicPort(config: MasterConfig, endpoints: DerivedEndpoints): Mas
 		},
 		endpoints: normalizedEndpoints,
 		s3: config.s3 && {...config.s3, presigned_url_base: normalizeOptional(config.s3.presigned_url_base)},
-		s3_downloads: config.s3_downloads && {
-			...config.s3_downloads,
-			presigned_url_base: normalizeOptional(config.s3_downloads.presigned_url_base),
-		},
 		services: {
 			...config.services,
 			media_proxy: {
@@ -652,6 +686,8 @@ function applyPublicPort(config: MasterConfig, endpoints: DerivedEndpoints): Mas
 				logo_url: normalizeOptional(branding.logo_url),
 				wordmark_url: normalizeOptional(branding.wordmark_url),
 				favicon_url: normalizeOptional(branding.favicon_url),
+				status_page_url: normalizeOptional(branding.status_page_url),
+				status_page_incident_history_url: normalizeOptional(branding.status_page_incident_history_url),
 			},
 		},
 	};

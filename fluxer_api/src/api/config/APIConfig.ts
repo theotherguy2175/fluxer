@@ -2,7 +2,6 @@
 
 import type {WorkerTaskName} from '@app/api/worker/WorkerLaneConfig';
 import type {CachePurgeAdapterName} from '@fluxer/config/src/MasterConfig';
-import type {ResolvedDownloadsProvider} from '@fluxer/config/src/S3DownloadsProvider';
 
 export type APIWorkerMode = 'all_lanes' | 'single_lane' | 'single_task';
 export type APIWorkerLaneName = 'realtime' | 'unfurl' | 'lifecycle' | 'batch';
@@ -48,7 +47,6 @@ export interface APIConfig {
 	requestTimeoutMs: number;
 	maxInflightRequests: number;
 	ipBanExemptIps: Array<string>;
-	desktopGitHubRedirectCountries: ReadonlySet<string>;
 	cassandra: {
 		hosts: string;
 		port: number;
@@ -94,6 +92,11 @@ export interface APIConfig {
 		jetStreamUrl: string;
 		authToken: string;
 	};
+	storageChangeFeed: {
+		enabled: boolean;
+		stream: string;
+		skipBuckets: Array<string>;
+	};
 	search: {
 		engine: 'elasticsearch' | 'meilisearch';
 		url: string;
@@ -112,6 +115,9 @@ export interface APIConfig {
 			maxBodyBytes: number;
 			tokenTtlSecs: number;
 			keepDirectCountries: Array<string>;
+		};
+		attachmentUrls: {
+			secretsBase64: Array<string>;
 		};
 	};
 	geoip: APIGeoipConfig;
@@ -137,8 +143,6 @@ export interface APIConfig {
 		donationProxyKey: string;
 	};
 	hosts: {
-		invite: string;
-		gift: string;
 		marketing: string;
 		unfurlIgnored: Array<string>;
 	};
@@ -163,10 +167,8 @@ export interface APIConfig {
 			uploads: string;
 			reports: string;
 			harvests: string;
-			downloads: string;
 		};
 	};
-	s3Downloads: ResolvedDownloadsProvider;
 	email: {
 		enabled: boolean;
 		provider: 'smtp' | 'none';
@@ -197,6 +199,12 @@ export interface APIConfig {
 		accountPolicyDsl?: unknown;
 	};
 	blocklistFeeds: {
+		enabled: boolean;
+	};
+	torExitList: {
+		enabled: boolean;
+	};
+	breachedPasswordCheck: {
 		enabled: boolean;
 	};
 	captcha: {
@@ -319,6 +327,8 @@ export interface APIConfig {
 			wordmarkUrl?: string;
 			faviconUrl?: string;
 			themeColor?: string;
+			statusPageUrl?: string;
+			statusPageIncidentHistoryUrl?: string;
 		};
 		setup: {
 			configured: boolean;
@@ -352,7 +362,6 @@ export interface APIConfig {
 		validateResponses: boolean;
 	};
 	presignedAttachmentUploadsEnabled: boolean;
-	presignedDownloadsEnabled: boolean;
 	presignedHarvestDownloadsEnabled: boolean;
 	attachmentDecayEnabled: boolean;
 	deletionGracePeriodHours: number;

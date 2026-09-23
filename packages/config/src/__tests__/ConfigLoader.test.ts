@@ -309,6 +309,34 @@ describe('ConfigLoader', () => {
 		await expect(loadConfig()).rejects.toThrow('FLUXER_API_WORKER_TASK');
 	});
 
+	test('leaves the storage change feed disabled by default', async () => {
+		stubMinimalEnv();
+		const config = await loadConfig();
+		expect(config.services.api.storage_change_feed).toEqual({enabled: false, stream: 'STORAGE_CHANGES'});
+	});
+
+	test('maps the storage change feed environment variables', async () => {
+		stubMinimalEnv({
+			FLUXER_API_STORAGE_CHANGE_FEED_ENABLED: 'true',
+			FLUXER_API_STORAGE_CHANGE_FEED_STREAM: 'BACKUP_CHANGES',
+			FLUXER_API_STORAGE_CHANGE_FEED_SKIP_BUCKETS: 'fluxer-uploads, fluxer-harvests',
+		});
+		const config = await loadConfig();
+		expect(config.services.api.storage_change_feed).toEqual({
+			enabled: true,
+			stream: 'BACKUP_CHANGES',
+			skip_buckets: ['fluxer-uploads', 'fluxer-harvests'],
+		});
+	});
+
+	test('rejects a storage change feed stream name that JetStream cannot use', async () => {
+		stubMinimalEnv({
+			FLUXER_API_STORAGE_CHANGE_FEED_ENABLED: 'true',
+			FLUXER_API_STORAGE_CHANGE_FEED_STREAM: 'storage.changes',
+		});
+		await expect(loadConfig()).rejects.toThrow('FLUXER_API_STORAGE_CHANGE_FEED_STREAM');
+	});
+
 	test('rejects invalid Postgres typed environment values', async () => {
 		stubMinimalEnv({FLUXER_POSTGRES_PORT: 'abc'});
 		await expect(loadConfig()).rejects.toThrow('FLUXER_POSTGRES_PORT');
@@ -432,6 +460,8 @@ describe('ConfigLoader', () => {
 			FLUXER_APP_WORDMARK_URL: 'https://assets.example/wordmark.png',
 			FLUXER_APP_FAVICON_URL: 'https://assets.example/favicon.png',
 			FLUXER_APP_THEME_COLOR: '#123456',
+			FLUXER_APP_STATUS_PAGE_URL: 'https://status.example',
+			FLUXER_APP_STATUS_PAGE_INCIDENT_HISTORY_URL: 'https://status.example/history',
 			FLUXER_INSTANCE_SETUP_CONFIGURED: 'true',
 			FLUXER_ABUSE_INBOUND_PHONE_COUNTRY_CODES: 'AA,BB',
 			FLUXER_ABUSE_PHONE_INBOUND_REQUIRED_PREFIXES: '+101,+202',
@@ -456,6 +486,8 @@ describe('ConfigLoader', () => {
 			wordmark_url: 'https://assets.example/wordmark.png',
 			favicon_url: 'https://assets.example/favicon.png',
 			theme_color: '#123456',
+			status_page_url: 'https://status.example',
+			status_page_incident_history_url: 'https://status.example/history',
 		});
 		expect(config.instance.setup.configured).toBe(true);
 		expect(config.instance.abuse_policy).toEqual({
@@ -544,6 +576,14 @@ describe('ConfigLoader', () => {
 		await expect(loadConfig()).rejects.toThrow('FLUXER_CACHE_PURGE_HTTP_ENDPOINT is required');
 	});
 
+	test('rejects the http cache purge adapter without a token', async () => {
+		stubMinimalEnv({
+			FLUXER_CACHE_PURGE_ADAPTER: 'http',
+			FLUXER_CACHE_PURGE_HTTP_ENDPOINT: 'https://purge.internal/purge',
+		});
+		await expect(loadConfig()).rejects.toThrow('FLUXER_CACHE_PURGE_HTTP_TOKEN is required');
+	});
+
 	test('rejects a cache purge endpoint that is not an absolute http URL', async () => {
 		for (const endpoint of ['/purge', 'purge.internal/purge', 'ftp://purge.internal/purge']) {
 			stubMinimalEnv({FLUXER_CACHE_PURGE_ADAPTER: 'http', FLUXER_CACHE_PURGE_HTTP_ENDPOINT: endpoint});
@@ -568,6 +608,7 @@ describe('ConfigLoader', () => {
 			stubMinimalEnv({
 				FLUXER_CACHE_PURGE_ADAPTER: 'http',
 				FLUXER_CACHE_PURGE_HTTP_ENDPOINT: 'https://purge.internal/purge',
+				FLUXER_CACHE_PURGE_HTTP_TOKEN: 'purge-token',
 				FLUXER_CACHE_PURGE_HTTP_TIMEOUT_MS: timeout,
 			});
 			await expect(loadConfig()).rejects.toThrow(
@@ -595,6 +636,27 @@ describe('ConfigLoader', () => {
 			FLUXER_CACHE_PURGE_HTTP_TIMEOUT_MS: '1',
 		});
 		expect((await loadConfig()).integrations.cache_purge.adapter).toBe('none');
+	});
+
+	test('leaves the optional outbound lookups unset by default', async () => {
+		stubMinimalEnv();
+
+		const config = await loadConfig();
+
+		expect(config.integrations.tor_exit_list.enabled).toBeUndefined();
+		expect(config.integrations.breached_password_check.enabled).toBeUndefined();
+	});
+
+	test('reads the optional outbound lookup switches from the environment', async () => {
+		stubMinimalEnv({
+			FLUXER_TOR_EXIT_LIST_ENABLED: 'true',
+			FLUXER_BREACHED_PASSWORD_CHECK_ENABLED: 'false',
+		});
+
+		const config = await loadConfig();
+
+		expect(config.integrations.tor_exit_list.enabled).toBe(true);
+		expect(config.integrations.breached_password_check.enabled).toBe(false);
 	});
 
 	test('leaves Bluesky login off with no legal URLs by default', async () => {

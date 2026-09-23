@@ -9,7 +9,6 @@ import {
 	resolveGuildBannerHeaderGlassOpacity,
 } from '@app/features/app/components/layout/GuildBannerCollapse';
 import {useAnimatedImageUrl} from '@app/features/app/hooks/useAnimatedImageUrl';
-import GuildHeaderCollapseRollout from '@app/features/app/state/GuildHeaderCollapseRollout';
 import {clampWideAssetAspectRatio} from '@app/features/expressions/utils/AssetImageGeometry';
 import type {Guild} from '@app/features/guild/models/Guild';
 import MobileLayout from '@app/features/ui/state/MobileLayout';
@@ -29,7 +28,7 @@ interface GuildBannerMeasurements {
 }
 
 export interface GuildBannerPresentation {
-	readonly headerRef: React.RefCallback<HTMLElement>;
+	readonly headerRowRef: React.RefCallback<HTMLElement>;
 	readonly hoverRef: React.RefCallback<HTMLElement>;
 	readonly imageUrl: string | null;
 	readonly hasBanner: boolean;
@@ -37,7 +36,7 @@ export interface GuildBannerPresentation {
 	readonly aspectRatio: number;
 	readonly bannerHeight: number;
 	readonly collapseDistance: number;
-	readonly collapseEnabled: boolean;
+	readonly collapsible: boolean;
 	readonly centerCrop: boolean;
 	readonly frosted: boolean;
 	readonly collapsed: boolean;
@@ -57,9 +56,9 @@ export function useGuildBannerPresentation({
 }): GuildBannerPresentation {
 	const isMobile = MobileLayout.isMobileLayout();
 	const isDetached = guild.features.has(GuildFeatures.DETACHED_BANNER);
-	const [headerNode, setHeaderNode] = useState<HTMLElement | null>(null);
-	const headerRef = useCallback((node: HTMLElement | null) => {
-		setHeaderNode(node);
+	const [headerRowNode, setHeaderRowNode] = useState<HTMLElement | null>(null);
+	const headerRowRef = useCallback((node: HTMLElement | null) => {
+		setHeaderRowNode(node);
 	}, []);
 	const [measurements, setMeasurements] = useState<GuildBannerMeasurements>(() => ({
 		containerWidth: isMobile && typeof window !== 'undefined' ? window.innerWidth : SIDEBAR_WIDTH_DEFAULT,
@@ -67,12 +66,12 @@ export function useGuildBannerPresentation({
 		viewportHeight: typeof window !== 'undefined' ? window.innerHeight : 0,
 	}));
 	useLayoutEffect(() => {
-		if (headerNode == null) return;
+		if (headerRowNode == null) return;
 		const measure = () => {
 			setMeasurements((previous) => {
 				const next: GuildBannerMeasurements = {
-					containerWidth: headerNode.offsetWidth || previous.containerWidth,
-					headerHeight: headerNode.offsetHeight || previous.headerHeight,
+					containerWidth: headerRowNode.offsetWidth || previous.containerWidth,
+					headerHeight: headerRowNode.offsetHeight || previous.headerHeight,
 					viewportHeight: window.innerHeight,
 				};
 				if (
@@ -90,13 +89,13 @@ export function useGuildBannerPresentation({
 		const visualViewport = window.visualViewport;
 		visualViewport?.addEventListener('resize', measure);
 		const resizeObserver = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(measure) : null;
-		resizeObserver?.observe(headerNode);
+		resizeObserver?.observe(headerRowNode);
 		return () => {
 			window.removeEventListener('resize', measure);
 			visualViewport?.removeEventListener('resize', measure);
 			resizeObserver?.disconnect();
 		};
-	}, [headerNode]);
+	}, [headerRowNode]);
 	const aspectRatio = useMemo(() => {
 		if (!guild.bannerWidth || !guild.bannerHeight) return GUILD_BANNER_DEFAULT_ASPECT_RATIO;
 		return clampWideAssetAspectRatio(guild.bannerWidth / guild.bannerHeight) ?? GUILD_BANNER_DEFAULT_ASPECT_RATIO;
@@ -118,8 +117,7 @@ export function useGuildBannerPresentation({
 			aspectRatio,
 		});
 	}, [aspectRatio, measurements, showsIntegratedBanner]);
-	const collapseEnabled = showsIntegratedBanner && GuildHeaderCollapseRollout.collapsesOnScroll;
-	const collapseDistance = collapseEnabled ? geometry.collapseDistance : 0;
+	const collapseDistance = geometry.collapseDistance;
 	const progress = useMotionValue(0);
 	const clipShift = useMotionValue(0);
 	const glassOpacity = useMotionValue(0);
@@ -161,7 +159,7 @@ export function useGuildBannerPresentation({
 		kind: 'gif',
 	});
 	return {
-		headerRef,
+		headerRowRef,
 		hoverRef,
 		imageUrl,
 		hasBanner,
@@ -169,7 +167,7 @@ export function useGuildBannerPresentation({
 		aspectRatio,
 		bannerHeight: geometry.bannerHeight,
 		collapseDistance,
-		collapseEnabled,
+		collapsible: imageUrl != null && collapseDistance > 0,
 		centerCrop: isMobile && geometry.heightCapped,
 		frosted,
 		collapsed,

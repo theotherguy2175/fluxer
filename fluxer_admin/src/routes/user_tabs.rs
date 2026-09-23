@@ -73,15 +73,11 @@ pub async fn render(
                 .map(|r| r.sessions)
                 .map_err(|error| tracing::warn!(%error, user_id, "admin API request failed: list user sessions"))
                 .unwrap_or_default();
-            let webauthn_credentials = if u.authenticator_types.contains(&2) {
-                client
-                    .list_webauthn_credentials(user_id)
-                    .await
-                    .map_err(|error| tracing::warn!(%error, user_id, "admin API request failed: list webauthn credentials"))
-                    .unwrap_or_default()
-            } else {
-                Vec::new()
-            };
+            let webauthn_credentials = client
+                .list_webauthn_credentials(user_id)
+                .await
+                .map_err(|error| tracing::warn!(%error, user_id, "admin API request failed: list webauthn credentials"))
+                .unwrap_or_default();
             Some(tabs::account::account_tab(
                 config,
                 &u,
@@ -245,6 +241,7 @@ pub async fn render(
                     admin_user_id: None,
                     target_id: Some(user_id.to_owned()),
                     target_type: None,
+                    access: Some("write".to_owned()),
                     sort_by: Some("created_at".to_owned()),
                     sort_order: Some("desc".to_owned()),
                     limit,

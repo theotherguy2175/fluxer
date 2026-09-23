@@ -7,51 +7,21 @@ import {HTTP_STATUS} from '@app/api/test/TestConstants';
 import {createBuilder, createBuilderWithoutAuth} from '@app/api/test/TestRequestBuilder';
 import {AdminACLs} from '@fluxer/constants/src/AdminACLs';
 import {
+	DEFAULT_SCREEN_SHARE_DELIVERY_CONFIG,
+	INERT_SCREEN_SHARE_DELIVERY_ASSIGNMENT,
+} from '@fluxer/schema/src/domains/admin/ScreenShareDeliverySchemas';
+import {
 	DEFAULT_VOICE_NOISE_SUPPRESSION_CONFIG,
 	INERT_VOICE_NOISE_SUPPRESSION_ASSIGNMENT,
 } from '@fluxer/schema/src/domains/admin/VoiceNoiseSuppressionSchemas';
-import {
-	DEFAULT_BLOCKED_MESSAGE_GROUPS_CONFIG,
-	INERT_BLOCKED_MESSAGE_GROUPS_ASSIGNMENT,
-} from '@fluxer/schema/src/domains/experiment/BlockedMessageGroupsSchemas';
 import {
 	DEFAULT_EXPERIMENT_POLL_INTERVAL_SECONDS,
 	DEFAULT_EXPERIMENT_POLL_JITTER_PERCENT,
 	type ExperimentAssignmentsResponse,
 	type ExperimentDeliveryConfigResponse,
-	readBlockedMessageGroupsAssignment,
-	readExpressionInfoCardAssignment,
-	readGuildActivityLogPresentationAssignment,
-	readGuildHeaderCollapseAssignment,
-	readMessageHoverTrackingAssignment,
-	readMessageKeyboardFocusAssignment,
-	readTypingIndicatorReworkAssignment,
+	readScreenShareDeliveryAssignment,
 	readVoiceNoiseSuppressionAssignment,
 } from '@fluxer/schema/src/domains/experiment/ExperimentSchemas';
-import {
-	DEFAULT_EXPRESSION_INFO_CARD_CONFIG,
-	INERT_EXPRESSION_INFO_CARD_ASSIGNMENT,
-} from '@fluxer/schema/src/domains/experiment/ExpressionInfoCardSchemas';
-import {
-	DEFAULT_GUILD_ACTIVITY_LOG_PRESENTATION_CONFIG,
-	INERT_GUILD_ACTIVITY_LOG_PRESENTATION_ASSIGNMENT,
-} from '@fluxer/schema/src/domains/experiment/GuildActivityLogPresentationSchemas';
-import {
-	DEFAULT_GUILD_HEADER_COLLAPSE_CONFIG,
-	INERT_GUILD_HEADER_COLLAPSE_ASSIGNMENT,
-} from '@fluxer/schema/src/domains/experiment/GuildHeaderCollapseSchemas';
-import {
-	DEFAULT_MESSAGE_HOVER_TRACKING_CONFIG,
-	INERT_MESSAGE_HOVER_TRACKING_ASSIGNMENT,
-} from '@fluxer/schema/src/domains/experiment/MessageHoverTrackingSchemas';
-import {
-	DEFAULT_MESSAGE_KEYBOARD_FOCUS_CONFIG,
-	INERT_MESSAGE_KEYBOARD_FOCUS_ASSIGNMENT,
-} from '@fluxer/schema/src/domains/experiment/MessageKeyboardFocusSchemas';
-import {
-	DEFAULT_TYPING_INDICATOR_REWORK_CONFIG,
-	INERT_TYPING_INDICATOR_REWORK_ASSIGNMENT,
-} from '@fluxer/schema/src/domains/experiment/TypingIndicatorReworkSchemas';
 import {afterAll, beforeAll, beforeEach, describe, expect, it} from 'vitest';
 
 const NOT_MODIFIED = 304;
@@ -86,13 +56,7 @@ describe('GET /experiments', () => {
 			poll_jitter_percent: DEFAULT_EXPERIMENT_POLL_JITTER_PERCENT,
 			assignments: {
 				voice_noise_suppression: INERT_VOICE_NOISE_SUPPRESSION_ASSIGNMENT,
-				message_hover_tracking: INERT_MESSAGE_HOVER_TRACKING_ASSIGNMENT,
-				message_keyboard_focus: INERT_MESSAGE_KEYBOARD_FOCUS_ASSIGNMENT,
-				blocked_message_groups: INERT_BLOCKED_MESSAGE_GROUPS_ASSIGNMENT,
-				guild_activity_log_presentation: INERT_GUILD_ACTIVITY_LOG_PRESENTATION_ASSIGNMENT,
-				expression_info_card: INERT_EXPRESSION_INFO_CARD_ASSIGNMENT,
-				guild_header_collapse: INERT_GUILD_HEADER_COLLAPSE_ASSIGNMENT,
-				typing_indicator_rework: INERT_TYPING_INDICATOR_REWORK_ASSIGNMENT,
+				screen_share_delivery: INERT_SCREEN_SHARE_DELIVERY_ASSIGNMENT,
 			},
 		});
 	});
@@ -124,426 +88,50 @@ describe('GET /experiments', () => {
 		expect(readVoiceNoiseSuppressionAssignment(body).enabled).toBe(false);
 	});
 
-	it('populates the message hover tracking key even when the rollout is disabled', async () => {
+	it('populates the screen share assignment key even when the rollout is disabled', async () => {
 		const account = await createTestAccount(harness);
 
 		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
 
-		expect(Object.hasOwn(body.assignments, 'message_hover_tracking')).toBe(true);
-		expect(readMessageHoverTrackingAssignment(body)).toEqual(INERT_MESSAGE_HOVER_TRACKING_ASSIGNMENT);
+		expect(Object.hasOwn(body.assignments, 'screen_share_delivery')).toBe(true);
+		expect(readScreenShareDeliveryAssignment(body).enabled).toBe(false);
 	});
 
-	it('targets an allowlisted account for message hover tracking', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setMessageHoverTrackingConfig({
-			...DEFAULT_MESSAGE_HOVER_TRACKING_CONFIG,
-			enabled: true,
-			config_version: 4,
-			included_user_ids: [account.userId],
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readMessageHoverTrackingAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 4,
-			user_targeted: true,
-			source: 'user_rule',
-		});
-	});
-
-	it('leaves an account outside a zero-width message hover tracking rollout', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setMessageHoverTrackingConfig({
-			...DEFAULT_MESSAGE_HOVER_TRACKING_CONFIG,
-			enabled: true,
-			config_version: 2,
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readMessageHoverTrackingAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 2,
-			user_targeted: false,
-			source: null,
-		});
-	});
-
-	it('populates the message keyboard focus key even when the rollout is disabled', async () => {
-		const account = await createTestAccount(harness);
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(Object.hasOwn(body.assignments, 'message_keyboard_focus')).toBe(true);
-		expect(readMessageKeyboardFocusAssignment(body)).toEqual(INERT_MESSAGE_KEYBOARD_FOCUS_ASSIGNMENT);
-	});
-
-	it('targets an allowlisted account for message keyboard focus', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setMessageKeyboardFocusConfig({
-			...DEFAULT_MESSAGE_KEYBOARD_FOCUS_CONFIG,
-			enabled: true,
-			config_version: 4,
-			included_user_ids: [account.userId],
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readMessageKeyboardFocusAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 4,
-			user_targeted: true,
-			source: 'user_rule',
-		});
-	});
-
-	it('leaves an account outside a zero-width message keyboard focus rollout', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setMessageKeyboardFocusConfig({
-			...DEFAULT_MESSAGE_KEYBOARD_FOCUS_CONFIG,
-			enabled: true,
-			config_version: 2,
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readMessageKeyboardFocusAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 2,
-			user_targeted: false,
-			source: null,
-		});
-	});
-
-	it('populates the blocked message groups key even when the rollout is disabled', async () => {
-		const account = await createTestAccount(harness);
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(Object.hasOwn(body.assignments, 'blocked_message_groups')).toBe(true);
-		expect(readBlockedMessageGroupsAssignment(body)).toEqual(INERT_BLOCKED_MESSAGE_GROUPS_ASSIGNMENT);
-	});
-
-	it('targets an allowlisted account for blocked message groups', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setBlockedMessageGroupsConfig({
-			...DEFAULT_BLOCKED_MESSAGE_GROUPS_CONFIG,
-			enabled: true,
-			config_version: 4,
-			included_user_ids: [account.userId],
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readBlockedMessageGroupsAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 4,
-			user_targeted: true,
-			source: 'user_rule',
-		});
-	});
-
-	it('leaves an account outside a zero-width blocked message groups rollout', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setBlockedMessageGroupsConfig({
-			...DEFAULT_BLOCKED_MESSAGE_GROUPS_CONFIG,
-			enabled: true,
-			config_version: 2,
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readBlockedMessageGroupsAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 2,
-			user_targeted: false,
-			source: null,
-		});
-	});
-
-	it('populates the guild activity log presentation key even when the rollout is disabled', async () => {
-		const account = await createTestAccount(harness);
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(Object.hasOwn(body.assignments, 'guild_activity_log_presentation')).toBe(true);
-		expect(readGuildActivityLogPresentationAssignment(body)).toEqual(INERT_GUILD_ACTIVITY_LOG_PRESENTATION_ASSIGNMENT);
-	});
-
-	it('targets an allowlisted account for guild activity log presentation', async () => {
+	it('resolves the screen share caller through the allowlist', async () => {
 		const targeted = await createTestAccount(harness);
 		const untargeted = await createTestAccount(harness);
-		await getInstanceConfigRepository().setGuildActivityLogPresentationConfig({
-			...DEFAULT_GUILD_ACTIVITY_LOG_PRESENTATION_CONFIG,
+		await getInstanceConfigRepository().setScreenShareDeliveryConfig({
+			...DEFAULT_SCREEN_SHARE_DELIVERY_CONFIG,
 			enabled: true,
-			config_version: 6,
+			config_version: 4,
+			rollout_basis_points: 0,
 			included_user_ids: [targeted.userId],
 		});
 
 		const targetedBody = await createBuilder<ExperimentAssignmentsResponse>(harness, targeted.token)
 			.get(ENDPOINT)
 			.execute();
-		expect(readGuildActivityLogPresentationAssignment(targetedBody)).toEqual({
-			enabled: true,
-			config_version: 6,
-			user_targeted: true,
-			source: 'user_rule',
-		});
+		expect(targetedBody.assignments.screen_share_delivery).toEqual({enabled: true});
 
 		const untargetedBody = await createBuilder<ExperimentAssignmentsResponse>(harness, untargeted.token)
 			.get(ENDPOINT)
 			.execute();
-		expect(readGuildActivityLogPresentationAssignment(untargetedBody)).toEqual({
-			enabled: true,
-			config_version: 6,
-			user_targeted: false,
-			source: null,
-		});
+		expect(untargetedBody.assignments.screen_share_delivery).toEqual({enabled: false});
 	});
 
-	it('bumps the guild activity log presentation config version on every admin update', async () => {
-		const admin = await setUserACLs(harness, await createTestAccount(harness), [
-			AdminACLs.AUTHENTICATE,
-			AdminACLs.INSTANCE_CONFIG_VIEW,
-			AdminACLs.INSTANCE_CONFIG_UPDATE,
-		]);
-
-		const updated = await createBuilder<{
-			guild_activity_log_presentation: {config_version: number; enabled: boolean; rollout_basis_points: number};
-		}>(harness, admin.token)
-			.patch('/admin/instance/config')
-			.body({guild_activity_log_presentation: {enabled: true, rollout_basis_points: 10000}})
-			.execute();
-		expect(updated.guild_activity_log_presentation).toMatchObject({
-			config_version: 1,
+	it('keeps the screen share exclusion ahead of a full rollout', async () => {
+		const excluded = await createTestAccount(harness);
+		await getInstanceConfigRepository().setScreenShareDeliveryConfig({
+			...DEFAULT_SCREEN_SHARE_DELIVERY_CONFIG,
 			enabled: true,
 			rollout_basis_points: 10000,
+			included_user_ids: [excluded.userId],
+			excluded_user_ids: [excluded.userId],
 		});
 
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, admin.token).get(ENDPOINT).execute();
-		expect(readGuildActivityLogPresentationAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 1,
-			user_targeted: true,
-			source: 'canary',
-		});
-	});
+		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, excluded.token).get(ENDPOINT).execute();
 
-	it('populates the expression info card key even when the rollout is disabled', async () => {
-		const account = await createTestAccount(harness);
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(Object.hasOwn(body.assignments, 'expression_info_card')).toBe(true);
-		expect(readExpressionInfoCardAssignment(body)).toEqual(INERT_EXPRESSION_INFO_CARD_ASSIGNMENT);
-	});
-
-	it('targets an allowlisted account for the expression info card', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setExpressionInfoCardConfig({
-			...DEFAULT_EXPRESSION_INFO_CARD_CONFIG,
-			enabled: true,
-			config_version: 4,
-			included_user_ids: [account.userId],
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readExpressionInfoCardAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 4,
-			user_targeted: true,
-			source: 'user_rule',
-		});
-	});
-
-	it('leaves an account outside a zero-width expression info card rollout', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setExpressionInfoCardConfig({
-			...DEFAULT_EXPRESSION_INFO_CARD_CONFIG,
-			enabled: true,
-			config_version: 2,
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readExpressionInfoCardAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 2,
-			user_targeted: false,
-			source: null,
-		});
-	});
-
-	it('populates the guild header collapse key even when the rollout is disabled', async () => {
-		const account = await createTestAccount(harness);
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(Object.hasOwn(body.assignments, 'guild_header_collapse')).toBe(true);
-		expect(readGuildHeaderCollapseAssignment(body)).toEqual(INERT_GUILD_HEADER_COLLAPSE_ASSIGNMENT);
-	});
-
-	it('targets an allowlisted account for guild header collapse', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setGuildHeaderCollapseConfig({
-			...DEFAULT_GUILD_HEADER_COLLAPSE_CONFIG,
-			enabled: true,
-			config_version: 4,
-			included_user_ids: [account.userId],
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readGuildHeaderCollapseAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 4,
-			user_targeted: true,
-			source: 'user_rule',
-		});
-	});
-
-	it('leaves an account outside a zero-width guild header collapse rollout', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setGuildHeaderCollapseConfig({
-			...DEFAULT_GUILD_HEADER_COLLAPSE_CONFIG,
-			enabled: true,
-			config_version: 2,
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readGuildHeaderCollapseAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 2,
-			user_targeted: false,
-			source: null,
-		});
-	});
-
-	it('populates the typing indicator rework key even when the rollout is disabled', async () => {
-		const account = await createTestAccount(harness);
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(Object.hasOwn(body.assignments, 'typing_indicator_rework')).toBe(true);
-		expect(readTypingIndicatorReworkAssignment(body)).toEqual(INERT_TYPING_INDICATOR_REWORK_ASSIGNMENT);
-	});
-
-	it('targets an allowlisted account for typing indicator rework', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setTypingIndicatorReworkConfig({
-			...DEFAULT_TYPING_INDICATOR_REWORK_CONFIG,
-			enabled: true,
-			config_version: 6,
-			included_user_ids: [account.userId],
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readTypingIndicatorReworkAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 6,
-			user_targeted: true,
-			source: 'user_rule',
-		});
-	});
-
-	it('leaves an account outside a zero-width typing indicator rework rollout', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setTypingIndicatorReworkConfig({
-			...DEFAULT_TYPING_INDICATOR_REWORK_CONFIG,
-			enabled: true,
-			config_version: 2,
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readTypingIndicatorReworkAssignment(body)).toEqual({
-			enabled: true,
-			config_version: 2,
-			user_targeted: false,
-			source: null,
-		});
-	});
-
-	it('serves a fresh body once the typing indicator rework config changes', async () => {
-		const account = await createTestAccount(harness);
-
-		const first = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token)
-			.get(ENDPOINT)
-			.executeWithResponse();
-		const staleEtag = first.response.headers.get('etag') as string;
-
-		await getInstanceConfigRepository().setTypingIndicatorReworkConfig({
-			...DEFAULT_TYPING_INDICATOR_REWORK_CONFIG,
-			enabled: true,
-			config_version: 1,
-			rollout_basis_points: 10000,
-		});
-
-		const refreshed = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token)
-			.get(ENDPOINT)
-			.header('If-None-Match', staleEtag)
-			.executeWithResponse();
-		expect(refreshed.response.status).toBe(HTTP_STATUS.OK);
-		expect(refreshed.response.headers.get('etag')).not.toBe(staleEtag);
-		expect(refreshed.json?.assignments.typing_indicator_rework).toMatchObject({
-			enabled: true,
-			config_version: 1,
-			user_targeted: true,
-		});
-	});
-
-	it('resolves all eight experiments independently', async () => {
-		const account = await createTestAccount(harness);
-		await getInstanceConfigRepository().setMessageHoverTrackingConfig({
-			...DEFAULT_MESSAGE_HOVER_TRACKING_CONFIG,
-			enabled: true,
-			rollout_basis_points: 10000,
-		});
-		await getInstanceConfigRepository().setMessageKeyboardFocusConfig({
-			...DEFAULT_MESSAGE_KEYBOARD_FOCUS_CONFIG,
-			enabled: true,
-			rollout_basis_points: 10000,
-		});
-		await getInstanceConfigRepository().setBlockedMessageGroupsConfig({
-			...DEFAULT_BLOCKED_MESSAGE_GROUPS_CONFIG,
-			enabled: true,
-			rollout_basis_points: 10000,
-		});
-		await getInstanceConfigRepository().setGuildActivityLogPresentationConfig({
-			...DEFAULT_GUILD_ACTIVITY_LOG_PRESENTATION_CONFIG,
-			enabled: true,
-			rollout_basis_points: 10000,
-		});
-		await getInstanceConfigRepository().setExpressionInfoCardConfig({
-			...DEFAULT_EXPRESSION_INFO_CARD_CONFIG,
-			enabled: true,
-			rollout_basis_points: 10000,
-		});
-		await getInstanceConfigRepository().setGuildHeaderCollapseConfig({
-			...DEFAULT_GUILD_HEADER_COLLAPSE_CONFIG,
-			enabled: true,
-			rollout_basis_points: 10000,
-		});
-		await getInstanceConfigRepository().setTypingIndicatorReworkConfig({
-			...DEFAULT_TYPING_INDICATOR_REWORK_CONFIG,
-			enabled: true,
-			rollout_basis_points: 10000,
-		});
-
-		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token).get(ENDPOINT).execute();
-
-		expect(readMessageHoverTrackingAssignment(body).user_targeted).toBe(true);
-		expect(readMessageKeyboardFocusAssignment(body).user_targeted).toBe(true);
-		expect(readBlockedMessageGroupsAssignment(body).user_targeted).toBe(true);
-		expect(readGuildActivityLogPresentationAssignment(body).user_targeted).toBe(true);
-		expect(readExpressionInfoCardAssignment(body).user_targeted).toBe(true);
-		expect(readGuildHeaderCollapseAssignment(body).user_targeted).toBe(true);
-		expect(readTypingIndicatorReworkAssignment(body).user_targeted).toBe(true);
-		expect(readVoiceNoiseSuppressionAssignment(body).enabled).toBe(false);
+		expect(body.assignments.screen_share_delivery).toEqual({enabled: false});
 	});
 
 	it('serves the delivery cadence from the delivery config and not from the voice config', async () => {
@@ -660,6 +248,30 @@ describe('GET /experiments', () => {
 		});
 	});
 
+	it('serves a fresh body once the screen share config changes', async () => {
+		const account = await createTestAccount(harness);
+
+		const first = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token)
+			.get(ENDPOINT)
+			.executeWithResponse();
+		const staleEtag = first.response.headers.get('etag') as string;
+
+		await getInstanceConfigRepository().setScreenShareDeliveryConfig({
+			...DEFAULT_SCREEN_SHARE_DELIVERY_CONFIG,
+			enabled: true,
+			config_version: 1,
+			rollout_basis_points: 10000,
+		});
+
+		const refreshed = await createBuilder<ExperimentAssignmentsResponse>(harness, account.token)
+			.get(ENDPOINT)
+			.header('If-None-Match', staleEtag)
+			.executeWithResponse();
+		expect(refreshed.response.status).toBe(HTTP_STATUS.OK);
+		expect(refreshed.response.headers.get('etag')).not.toBe(staleEtag);
+		expect(refreshed.json?.assignments.screen_share_delivery).toEqual({enabled: true});
+	});
+
 	it('serves a fresh body once the delivery config changes', async () => {
 		const account = await createTestAccount(harness);
 
@@ -714,6 +326,44 @@ describe('GET /experiments', () => {
 			config_version: 2,
 			suppression_strength: 42,
 		});
+	});
+
+	it('bumps the screen share config version on every admin update without the client sending one', async () => {
+		const admin = await setUserACLs(harness, await createTestAccount(harness), [
+			AdminACLs.AUTHENTICATE,
+			AdminACLs.INSTANCE_CONFIG_VIEW,
+			AdminACLs.INSTANCE_CONFIG_UPDATE,
+		]);
+
+		const afterFirst = await createBuilder<{screen_share_delivery: {config_version: number; enabled: boolean}}>(
+			harness,
+			admin.token,
+		)
+			.patch('/admin/instance/config')
+			.body({screen_share_delivery: {enabled: true, rollout_basis_points: 10000}})
+			.execute();
+		expect(afterFirst.screen_share_delivery).toMatchObject({config_version: 1, enabled: true});
+
+		const afterSecond = await createBuilder<{screen_share_delivery: {config_version: number; enabled: boolean}}>(
+			harness,
+			admin.token,
+		)
+			.patch('/admin/instance/config')
+			.body({screen_share_delivery: {rollout_salt: 'screen-share-delivery-v2'}})
+			.execute();
+		expect(afterSecond.screen_share_delivery).toMatchObject({config_version: 2, enabled: true});
+
+		const afterEmpty = await createBuilder<{screen_share_delivery: {config_version: number; enabled: boolean}}>(
+			harness,
+			admin.token,
+		)
+			.patch('/admin/instance/config')
+			.body({screen_share_delivery: {}})
+			.execute();
+		expect(afterEmpty.screen_share_delivery).toMatchObject({config_version: 2, enabled: true});
+
+		const body = await createBuilder<ExperimentAssignmentsResponse>(harness, admin.token).get(ENDPOINT).execute();
+		expect(body.assignments.screen_share_delivery).toEqual({enabled: true});
 	});
 
 	it('leaves the config version alone for an admin update that sets no field', async () => {

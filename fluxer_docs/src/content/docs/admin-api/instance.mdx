@@ -10,13 +10,13 @@ Instance configuration is everything an operator can change at runtime. It cover
 
 Every write is a merge over the stored configuration, and an omitted key leaves the stored value unchanged. The limit configuration write is the one exception and replaces the stored document.
 
-Reading configuration requires the [Admin ACL](/admin-api/#acl-registry) `instance:config:view`, and writing it requires `instance:config:update`. The limit configuration has its own pair, `instance:limit_config:view` and `instance:limit_config:update`. The heap snapshot requires `system:heap_snapshot`.
+Reading configuration requires the [Admin ACL](/admin-api/#acl-registry) `instance:config:view`, and writing it requires `instance:config:update`. The limit configuration has its own pair, `instance:limit_config:view` and `instance:limit_config:update`.
 
 :::note[Initial setup accepts a plain session credential]
 Until setup is marked complete, [Get instance configuration](#get-instance-configuration), [Update instance configuration](#update-instance-configuration), [Create branding asset](#create-branding-asset), and [Create SMTP test](#create-smtp-test) also accept a session credential holding no Admin ACL.
 :::
 
-That relaxation applies only to a session credential, so an Admin API key and a bearer token are evaluated normally even before setup is complete. Completing setup grants the acting session the wildcard ACL. Registration URLs, pending registrations, limit configuration, and the heap snapshot always need their own ACL.
+That relaxation applies only to a session credential, so an Admin API key and a bearer token are evaluated normally even before setup is complete. Completing setup grants the acting session the wildcard ACL. Registration URLs, pending registrations, and limit configuration always need their own ACL.
 
 :::caution[No read returns a stored secret]
 A secret is reported by a companion boolean such as `client_secret_set`. Except for the single sign-on client secret, that boolean is true whether the value is stored here or supplied by deployment configuration.
@@ -24,7 +24,7 @@ A secret is reported by a companion boolean such as `client_secret_set`. Except 
 
 ## Instance configuration object
 
-The complete runtime configuration of the deployment. Every configuration operation here except the limit configuration and the heap snapshot returns it.
+The complete runtime configuration of the deployment. Every configuration operation here except the limit configuration returns it.
 
 Missing settings use the defaults documented below. Invalid stored configuration causes an error rather than silently resetting a policy. Operators can find recovery guidance under [stored instance policy](/operator/configuration/#stored-instance-policy).
 
@@ -35,14 +35,9 @@ Missing settings use the defaults documented below. Invalid stored configuration
 | sso | [SSO configuration](#sso-configuration-object) object | Single sign-on settings |
 | gateway_rollout | [Gateway rollout configuration](#gateway-rollout-configuration-object) object | Gateway admission and dispatch tuning |
 | voice_noise_suppression | [voice noise suppression configuration](#voice-noise-suppression-configuration-object) object | Client-side noise suppression rollout |
-| guild_activity_log_presentation | [guild activity log presentation configuration](#guild-activity-log-presentation-configuration-object) object | Activity log rendering rollout |
+| screen_share_delivery | [screen share delivery configuration](#screen-share-delivery-configuration-object) object | Reworked screen share delivery rollout |
+| push_service_delivery | [push service delivery configuration](#push-service-delivery-configuration-object) object | Push service delivery rollout |
 | experiment_delivery | [experiment delivery configuration](#experiment-delivery-configuration-object) object | Cadence every client polls the experiments route on |
-| message_hover_tracking | [message hover tracking configuration](#message-hover-tracking-configuration-object) object | Message hover implementation rollout |
-| message_keyboard_focus | [message keyboard focus configuration](#message-keyboard-focus-configuration-object) object | Message list keyboard navigation rollout |
-| blocked_message_groups | [blocked message groups configuration](#blocked-message-groups-configuration-object) object | Blocked message block rendering rollout |
-| expression_info_card | [expression info card configuration](#expression-info-card-configuration-object) object | Emoji and sticker info card rollout |
-| guild_header_collapse | [guild header collapse configuration](#guild-header-collapse-configuration-object) object | Collapsing guild header rollout |
-| typing_indicator_rework | [typing indicator rework configuration](#typing-indicator-rework-configuration-object) object | Reworked typing indicator rollout |
 | registration | [registration configuration](#registration-configuration-object) object | Registration policy, issued URLs, and pending registrations |
 | self_hosted | boolean | Whether the deployment runs in self-hosted mode |
 | app_public | [public application configuration](#public-application-configuration-object) object | Branding, legal, setup, and registration field policy |
@@ -119,7 +114,6 @@ The instance rollout of client-side noise suppression. [Experiments](/http-api/e
 | included_user_ids | array[snowflake] | Accounts the rollout always selects, up to 1000 entries (default empty) |
 | excluded_user_ids | array[snowflake] | Accounts the rollout never selects, up to 1000 entries (default empty) |
 | guild_overrides | array[[guild override](/http-api/experiments/#noise-suppression-guild-override-object) object] | Per-guild replacements, up to 200 entries (default empty) |
-| stereo_enabled | boolean | Whether a client the rollout selects publishes a stereo microphone track (default false) |
 | suppression_strength | integer | Suppression strength (0-100, default 80) |
 
 Every field is present on read. An absent document or missing field uses the defaults above.
@@ -128,9 +122,9 @@ Every field is present on read. An absent document or missing field uses the def
 
 How often a client revalidates this rollout is not set here. It is set once for every experiment in the [experiment delivery configuration](#experiment-delivery-configuration-object) below.
 
-## Guild activity log presentation configuration object
+## Screen share delivery configuration object
 
-The instance rollout of the activity log rendering the client runs in community settings. [Experiments](/http-api/experiments/) defines what a client resolves from it.
+The instance rollout of the reworked screen share delivery path. [Experiments](/http-api/experiments/) defines what a client resolves from it.
 
 ### Structure
 
@@ -138,16 +132,33 @@ The instance rollout of the activity log rendering the client runs in community 
 | --- | --- | --- |
 | enabled | boolean | Whether the rollout runs at all (default false) |
 | config_version | integer | Revision counter, raised by Fluxer and never accepted from a request |
-| rollout_basis_points | integer | Share of accounts drawn, in basis points (0-10000, default 0) |
-| rollout_salt | string | Salt of the sampling hash (1-64 characters, default `guild-activity-log-presentation-v1`) |
-| included_user_ids | array[snowflake] | Accounts always drawn, up to 1000 entries (default empty) |
-| excluded_user_ids | array[snowflake] | Accounts never drawn, up to 1000 entries (default empty) |
+| rollout_basis_points | integer | Share of accounts the rollout selects, in basis points (0-10000, default 0) |
+| rollout_salt | string | Salt of the sampling hash (1-64 characters, default `screen-share-delivery-v1`) |
+| included_user_ids | array[snowflake] | Accounts the rollout always selects, up to 1000 entries (default empty) |
+| excluded_user_ids | array[snowflake] | Accounts the rollout never selects, up to 1000 entries (default empty) |
 
 Every field is present on read. An absent document or missing field uses the defaults above.
 
-`excluded_user_ids` is applied before `included_user_ids`, so an account in both is never drawn. A drawn client renders each activity log entry as a summary sentence followed by its recorded changes, and a client that is not drawn keeps the activity log rendering it ships with. Neither arm changes any response this API produces.
+`excluded_user_ids` is applied before `included_user_ids`, so the rollout never selects an account in both.
 
-How often a client revalidates this rollout is set once for every experiment in the [experiment delivery configuration](#experiment-delivery-configuration-object) below.
+How often a client revalidates this rollout is not set here. It is set once for every experiment in the [experiment delivery configuration](#experiment-delivery-configuration-object) below.
+
+## Push service delivery configuration object
+
+The instance rollout of push service delivery.
+
+### Structure
+
+| Field | Type | Description |
+| --- | --- | --- |
+| enabled | boolean | Whether the rollout runs at all (default false) |
+| config_version | integer | Revision counter, raised by Fluxer and never accepted from a request |
+| rollout_basis_points | integer | Share of accounts the rollout selects, in basis points (0-10000, default 0) |
+| rollout_salt | string | Salt of the sampling hash (1-64 printable ASCII characters, default `push-service-delivery-v1`) |
+| included_user_ids | array[snowflake] | Accounts the rollout always selects, up to 1000 entries (default empty) |
+| excluded_user_ids | array[snowflake] | Accounts the rollout never selects, up to 1000 entries (default empty) |
+
+Every field is present on read. An absent document or missing field uses the defaults above.
 
 ## Experiment delivery configuration object
 
@@ -163,132 +174,6 @@ How often a client polls [Get experiment assignments](/http-api/experiments/#get
 Every field is present on read. An absent document or missing field uses the defaults above.
 
 Both fields are served to every account, whether or not any experiment targets that account, and neither one is versioned by `config_version`. A client that has never received a response from the experiments route uses built-in defaults of 300 seconds and 15 percent, which equal the defaults above. A client that cannot read the route never receives either field.
-
-## Message hover tracking configuration object
-
-The instance rollout of the message hover implementation the client runs in the message list. [Experiments](/http-api/experiments/) defines what a client resolves from it.
-
-### Structure
-
-| Field | Type | Description |
-| --- | --- | --- |
-| enabled | boolean | Whether the rollout runs at all (default false) |
-| config_version | integer | Revision counter, raised by Fluxer and never accepted from a request |
-| rollout_basis_points | integer | Share of accounts drawn, in basis points (0-10000, default 0) |
-| rollout_salt | string | Salt of the sampling hash (1-64 characters, default `message-hover-tracking-v1`) |
-| included_user_ids | array[snowflake] | Accounts always drawn, up to 1000 entries (default empty) |
-| excluded_user_ids | array[snowflake] | Accounts never drawn, up to 1000 entries (default empty) |
-
-Every field is present on read. An absent document or missing field uses the defaults above.
-
-`excluded_user_ids` is applied before `included_user_ids`, so an account in both is never drawn. A drawn client resolves the hovered message from one shared pointer oracle, and a client that is not drawn keeps the per-row implementation it ships with. Neither arm changes any response this API produces.
-
-How often a client revalidates this rollout is set once for every experiment in the [experiment delivery configuration](#experiment-delivery-configuration-object) above.
-
-## Message keyboard focus configuration object
-
-The instance rollout of the keyboard navigation implementation the client runs in the message list. [Experiments](/http-api/experiments/) defines what a client resolves from it.
-
-### Structure
-
-| Field | Type | Description |
-| --- | --- | --- |
-| enabled | boolean | Whether the rollout runs at all (default false) |
-| config_version | integer | Revision counter, raised by Fluxer and never accepted from a request |
-| rollout_basis_points | integer | Share of accounts drawn, in basis points (0-10000, default 0) |
-| rollout_salt | string | Salt of the sampling hash (1-64 characters, default `message-keyboard-focus-v1`) |
-| included_user_ids | array[snowflake] | Accounts always drawn, up to 1000 entries (default empty) |
-| excluded_user_ids | array[snowflake] | Accounts never drawn, up to 1000 entries (default empty) |
-
-Every field is present on read. An absent document or missing field uses the defaults above.
-
-`excluded_user_ids` is applied before `included_user_ids`, so an account in both is never drawn. A drawn client reaches the message list from the composer with one Tab and walks it with the arrow keys, and a client that is not drawn keeps the keyboard navigation it ships with. Neither arm changes any response this API produces.
-
-How often a client revalidates this rollout is set once for every experiment in the [experiment delivery configuration](#experiment-delivery-configuration-object) above.
-
-## Blocked message groups configuration object
-
-The instance rollout of how a client renders a revealed block of blocked messages. [Experiments](/http-api/experiments/) defines what a client resolves from it.
-
-### Structure
-
-| Field | Type | Description |
-| --- | --- | --- |
-| enabled | boolean | Whether the rollout runs at all (default false) |
-| config_version | integer | Revision counter, raised by Fluxer and never accepted from a request |
-| rollout_basis_points | integer | Share of accounts drawn, in basis points (0-10000, default 0) |
-| rollout_salt | string | Salt of the sampling hash (1-64 characters, default `blocked-message-groups-v1`) |
-| included_user_ids | array[snowflake] | Accounts always drawn, up to 1000 entries (default empty) |
-| excluded_user_ids | array[snowflake] | Accounts never drawn, up to 1000 entries (default empty) |
-
-Every field is present on read. An absent document or missing field uses the defaults above.
-
-`excluded_user_ids` is applied before `included_user_ids`, so an account in both is never drawn. A drawn client draws a revealed block full width and spaces the message groups inside it, and a client that is not drawn keeps the rendering it ships with. Neither arm changes any response this API produces.
-
-How often a client revalidates this rollout is set once for every experiment in the [experiment delivery configuration](#experiment-delivery-configuration-object) above.
-
-## Expression info card configuration object
-
-The instance rollout of what a client shows for an emoji or a sticker in a message. [Experiments](/http-api/experiments/) defines what a client resolves from it.
-
-### Structure
-
-| Field | Type | Description |
-| --- | --- | --- |
-| enabled | boolean | Whether the rollout runs at all (default false) |
-| config_version | integer | Revision counter, raised by Fluxer and never accepted from a request |
-| rollout_basis_points | integer | Share of accounts drawn, in basis points (0-10000, default 0) |
-| rollout_salt | string | Salt of the sampling hash (1-64 characters, default `expression-info-card-v1`) |
-| included_user_ids | array[snowflake] | Accounts always drawn, up to 1000 entries (default empty) |
-| excluded_user_ids | array[snowflake] | Accounts never drawn, up to 1000 entries (default empty) |
-
-Every field is present on read. An absent document or missing field uses the defaults above.
-
-`excluded_user_ids` is applied before `included_user_ids`, so an account in both is never drawn. A drawn client opens an info card on click that names the expression, says where it comes from, and offers a row for the source community the reader can open, and a client that is not drawn keeps the hover tooltip it ships with. Neither arm changes any response this API produces.
-
-How often a client revalidates this rollout is set once for every experiment in the [experiment delivery configuration](#experiment-delivery-configuration-object) above.
-
-## Guild header collapse configuration object
-
-The instance rollout of how a client draws the guild banner above the channel list. [Experiments](/http-api/experiments/) defines what a client resolves from it.
-
-### Structure
-
-| Field | Type | Description |
-| --- | --- | --- |
-| enabled | boolean | Whether the rollout runs at all (default false) |
-| config_version | integer | Revision counter, raised by Fluxer and never accepted from a request |
-| rollout_basis_points | integer | Share of accounts drawn, in basis points (0-10000, default 0) |
-| rollout_salt | string | Salt of the sampling hash (1-64 characters, default `guild-header-collapse-v1`) |
-| included_user_ids | array[snowflake] | Accounts always drawn, up to 1000 entries (default empty) |
-| excluded_user_ids | array[snowflake] | Accounts never drawn, up to 1000 entries (default empty) |
-
-Every field is present on read. An absent document or missing field uses the defaults above.
-
-`excluded_user_ids` is applied before `included_user_ids`, so an account in both is never drawn. A drawn client reduces the banner to the height of the header as the channel list scrolls down, and a client that is not drawn keeps the fixed banner height it ships with. Neither arm changes any response this API produces.
-
-How often a client revalidates this rollout is set once for every experiment in the [experiment delivery configuration](#experiment-delivery-configuration-object) above.
-
-## Typing indicator rework configuration object
-
-The instance rollout of how a client sends and shows typing indicators. [Experiments](/http-api/experiments/) defines what a client resolves from it.
-
-### Structure
-
-| Field | Type | Description |
-| --- | --- | --- |
-| enabled | boolean | Whether the rollout runs at all (default false) |
-| config_version | integer | Revision counter, raised by Fluxer and never accepted from a request |
-| rollout_basis_points | integer | Share of accounts drawn, in basis points (0-10000, default 0) |
-| rollout_salt | string | Salt of the sampling hash (1-64 characters, default `typing-indicator-rework-v1`) |
-| included_user_ids | array[snowflake] | Accounts always drawn, up to 1000 entries (default empty) |
-| excluded_user_ids | array[snowflake] | Accounts never drawn, up to 1000 entries (default empty) |
-
-Every field is present on read. An absent document or missing field uses the defaults above.
-
-`excluded_user_ids` is applied before `included_user_ids`, so an account in both is never drawn. A drawn client sends at most one typing signal every 8 seconds, names up to three people who are typing, and announces those names to screen readers, and a client that is not drawn keeps the typing indicators it ships with. Neither arm changes any response this API produces.
-
-How often a client revalidates this rollout is set once for every experiment in the [experiment delivery configuration](#experiment-delivery-configuration-object) above.
 
 ## Registration configuration object
 
@@ -648,7 +533,7 @@ Display metadata for one [limit key](/http-api/instance/#limit-keys), which an e
 
 ## Get instance configuration
 
-<RouteHeader method="GET" path="/v1/admin/instance/config" />
+<RouteHeader method="GET" path="/v1/admin/instance/config" auditReason />
 
 Returns the [instance configuration](#instance-configuration-object) object. Requires `instance:config:view`, or a session credential until setup is marked complete.
 
@@ -658,13 +543,17 @@ Returns the [instance configuration](#instance-configuration-object) object. Req
 | --- | --- | --- |
 | 200 | [instance configuration](#instance-configuration-object) object | Configuration was returned |
 
+### Side effects
+
+The operation records one [Admin audit entry](/admin-api/#admin-audit-entry-object) with action `get_instance_config`, target type `instance_config`, target ID `0`, and metadata keys `registration_url_count` and `pending_registration_count`. Before setup is complete, a session credential holding no Admin ACL records the entry with its own account as the acting Admin.
+
 ### Rate limit
 
 200 requests per minute for each authenticated user, on the `admin:lookup` bucket.
 
 ## Update instance configuration
 
-<RouteHeader method="PATCH" path="/v1/admin/instance/config" />
+<RouteHeader method="PATCH" path="/v1/admin/instance/config" auditReason />
 
 Applies a merge patch to the stored configuration and returns the resulting [instance configuration](#instance-configuration-object) object. Requires `instance:config:update`, or a session credential until setup is marked complete.
 
@@ -679,14 +568,9 @@ The body has one optional object for each section. Fluxer leaves an absent secti
 | sso?<sup>1</sup> | object | Every [SSO configuration](#sso-configuration-object) field except `client_secret_set` and `redirect_uri`, plus `client_secret` |
 | gateway_rollout? | object | Any subset of the [Gateway rollout configuration](#gateway-rollout-configuration-object) fields, each bound as documented there |
 | voice_noise_suppression? | object | Any subset of the [noise suppression](#voice-noise-suppression-configuration-object) fields |
-| guild_activity_log_presentation? | object | Any subset of the [guild activity log presentation](#guild-activity-log-presentation-configuration-object) fields |
+| screen_share_delivery? | object | Any subset of the [screen share delivery](#screen-share-delivery-configuration-object) fields |
+| push_service_delivery? | object | Any subset of the [push service delivery](#push-service-delivery-configuration-object) fields |
 | experiment_delivery? | object | Any subset of the [experiment delivery](#experiment-delivery-configuration-object) fields |
-| message_hover_tracking? | object | Any subset of the [message hover tracking](#message-hover-tracking-configuration-object) fields |
-| message_keyboard_focus? | object | Any subset of the [message keyboard focus](#message-keyboard-focus-configuration-object) fields |
-| blocked_message_groups? | object | Any subset of the [blocked message groups](#blocked-message-groups-configuration-object) fields |
-| expression_info_card? | object | Any subset of the [expression info card](#expression-info-card-configuration-object) fields |
-| guild_header_collapse? | object | Any subset of the [guild header collapse](#guild-header-collapse-configuration-object) fields |
-| typing_indicator_rework? | object | Any subset of the [typing indicator rework](#typing-indicator-rework-configuration-object) fields |
 | registration? | object | `mode` and `admin_registration_urls_enabled` |
 | app_public?<sup>2</sup> | object | `branding`, `setup`, `legal`, and `registration` sub-objects, each merged field by field |
 | integrations?<sup>3</sup> | object | `gif`, `youtube`, `captcha`, `email`, and `bluesky` sub-objects, the last of which also has the `keys` array |
@@ -699,14 +583,9 @@ The body has one optional object for each section. Fluxer leaves an absent secti
 
 `voice_noise_suppression` takes every [voice noise suppression configuration](#voice-noise-suppression-configuration-object) field except `config_version`, each bound as documented there. Fluxer raises `config_version` by one on each request that supplies at least one of them. A section that is absent, or present with no field set, writes nothing and leaves `config_version` alone.
 
-`guild_activity_log_presentation` takes every [guild activity log presentation configuration](#guild-activity-log-presentation-configuration-object) field except `config_version`, each bound as documented there. Fluxer raises that section's own `config_version` by one on each request that supplies at least one of them, independently of the noise suppression revision. A section that is absent, or present with no field set, writes nothing and leaves `config_version` alone.
+`screen_share_delivery` works the same way, over the [screen share delivery configuration](#screen-share-delivery-configuration-object) fields and its own `config_version`.
 
-`message_hover_tracking` takes every [message hover tracking configuration](#message-hover-tracking-configuration-object) field except `config_version`, each bound as documented there. Fluxer raises that section's own `config_version` by one on each request that supplies at least one of them, independently of the noise suppression revision. A section that is absent, or present with no field set, writes nothing and leaves `config_version` alone.
-`message_keyboard_focus` takes every [message keyboard focus configuration](#message-keyboard-focus-configuration-object) field except `config_version`, each bound as documented there. Fluxer raises that section's own `config_version` by one on each request that supplies at least one of them, independently of the noise suppression revision. A section that is absent, or present with no field set, writes nothing and leaves `config_version` alone.
-`blocked_message_groups` takes every [blocked message groups configuration](#blocked-message-groups-configuration-object) field except `config_version`, each bound as documented there. Fluxer raises that section's own `config_version` by one on each request that supplies at least one of them, independently of the noise suppression revision. A section that is absent, or present with no field set, writes nothing and leaves `config_version` alone.
-`expression_info_card` takes every [expression info card configuration](#expression-info-card-configuration-object) field except `config_version`, each bound as documented there. Fluxer raises that section's own `config_version` by one on each request that supplies at least one of them, independently of the noise suppression revision. A section that is absent, or present with no field set, writes nothing and leaves `config_version` alone.
-`guild_header_collapse` takes every [guild header collapse configuration](#guild-header-collapse-configuration-object) field except `config_version`, each bound as documented there. Fluxer raises that section's own `config_version` by one on each request that supplies at least one of them, independently of the noise suppression revision. A section that is absent, or present with no field set, writes nothing and leaves `config_version` alone.
-`typing_indicator_rework` takes every [typing indicator rework configuration](#typing-indicator-rework-configuration-object) field except `config_version`, each bound as documented there. Fluxer raises that section's own `config_version` by one on each request that supplies at least one of them, independently of the noise suppression revision. A section that is absent, or present with no field set, writes nothing and leaves `config_version` alone.
+`push_service_delivery` works the same way, over the [push service delivery configuration](#push-service-delivery-configuration-object) fields and its own `config_version`.
 
 `experiment_delivery` takes both [experiment delivery configuration](#experiment-delivery-configuration-object) fields, each bound as documented there. It is a section of its own, so a write to it changes no `config_version` and changes no assignment, only the cadence on which clients ask for one.
 
@@ -744,7 +623,7 @@ Fluxer skips URL validation while the merged configuration leaves single sign-on
 | 400 | [error response](/admin-api/#error-response) | A policy transition is refused, returned as `INSTANCE_POLICY_TRANSITION_NOT_ALLOWED` |
 
 :::caution[Sections are applied one after another]
-The order is `gateway_rollout`, `voice_noise_suppression`, `guild_activity_log_presentation`, `message_hover_tracking`, `message_keyboard_focus`, `blocked_message_groups`, `expression_info_card`, `guild_header_collapse`, `typing_indicator_rework`, `experiment_delivery`, `sso`, `registration`, `app_public` branding, legal, and registration fields, `integrations`, `media`, `policy`, and finally `app_public.setup`. A failure part way through leaves the earlier sections written.
+The order is `gateway_rollout`, `voice_noise_suppression`, `screen_share_delivery`, `push_service_delivery`, `experiment_delivery`, `sso`, `registration`, `app_public` branding, legal, and registration fields, `integrations`, `media`, `policy`, and finally `app_public.setup`. A failure part way through leaves the earlier sections written.
 :::
 
 ### Side effects
@@ -753,7 +632,7 @@ Fluxer publishes a `gateway_rollout` change to the Gateway cluster. Premium mode
 
 Initial setup completes on the first update that sets `app_public.setup.configured` to true from a session credential whose account holds neither `admin:authenticate` nor the wildcard. That update grants the account the wildcard Admin ACL and marks the deployment as bootstrapped.
 
-The operation records no Admin audit entry of its own.
+The operation records one [Admin audit entry](/admin-api/#admin-audit-entry-object) with action `update_instance_config`, target type `instance_config`, and target ID `0`. The metadata key `sections` lists the names of the non-null top-level sections in the body, comma-separated in alphabetical order, and is absent when the body supplies none. The update that completes initial setup and grants the wildcard ACL also records `granted_acls` as `*`. No value from the body is recorded. A request that fails part way records no entry.
 
 ### Rate limit
 
@@ -761,7 +640,7 @@ The operation records no Admin audit entry of its own.
 
 ## Create branding asset
 
-<RouteHeader method="POST" path="/v1/admin/instance/config/branding-assets" />
+<RouteHeader method="POST" path="/v1/admin/instance/config/branding-assets" auditReason />
 
 Uploads an image, stores its [Media Proxy](/media-proxy/overview/) URL in the selected branding slot, and returns the resulting [instance configuration](#instance-configuration-object) object. Requires `instance:config:update`, or a session credential until setup is marked complete.
 
@@ -789,13 +668,15 @@ Uploads an image, stores its [Media Proxy](/media-proxy/overview/) URL in the se
 
 The stored image is served through the Media Proxy. Non-JPEG images are re-encoded to strip metadata and JPEG images are re-encoded at quality 100. The previously referenced image is not deleted.
 
+The operation records one [Admin audit entry](/admin-api/#admin-audit-entry-object) with action `upload_branding_asset`, target type `instance_config`, target ID `0`, and metadata keys `kind` and `cleared`. `cleared` is `true` when the request cleared the slot.
+
 ### Rate limit
 
 100 requests per minute for each authenticated user, on the `admin:user:modify` bucket.
 
 ## Create SMTP test
 
-<RouteHeader method="POST" path="/v1/admin/instance/config/smtp-tests" />
+<RouteHeader method="POST" path="/v1/admin/instance/config/smtp-tests" auditReason />
 
 Opens a connection to the supplied SMTP server, authenticates against it, and reports the outcome as an [SMTP test result](#smtp-test-result-object) object without storing anything. Requires `instance:config:update`, or a session credential until setup is marked complete.
 
@@ -823,13 +704,15 @@ A test that runs to completion answers 200 whether or not the server accepted th
 
 No configuration is written and the supplied credentials are discarded when the request completes. The connection, greeting, and socket each have a ten-second deadline.
 
+The operation records one [Admin audit entry](/admin-api/#admin-audit-entry-object) with action `test_smtp_connection`, target type `instance_config`, target ID `0`, and metadata keys `port`, `secure`, and `ok`. The host, username, password, and failure text are not recorded.
+
 ### Rate limit
 
 100 requests per minute for each authenticated user, on the `admin:user:modify` bucket.
 
 ## Create registration URL
 
-<RouteHeader method="POST" path="/v1/admin/instance/registration-urls" />
+<RouteHeader method="POST" path="/v1/admin/instance/registration-urls" auditReason />
 
 Issues a registration URL an Admin can hand out while the registration mode is `closed` or `approval`, and returns a [registration URL creation](#registration-url-creation-object) object. Requires `instance:config:update`.
 
@@ -856,7 +739,9 @@ The returned `code` is the same value as `registration_url.id`, and every [Get i
 
 ### Side effects
 
-A newly issued URL has a use count of zero, no revocation time, and the acting Admin as its issuer. It is the first entry of `registration.urls` on the next configuration read. The operation records no Admin audit entry and changes no account.
+A newly issued URL has a use count of zero, no revocation time, and the acting Admin as its issuer. It is the first entry of `registration.urls` on the next configuration read. The operation changes no account.
+
+The operation records one [Admin audit entry](/admin-api/#admin-audit-entry-object) with action `create_registration_url`, target type `registration_url`, target ID `0`, and metadata key `approval_required`, plus `max_uses` when the body sets it. The label is not recorded. The entry has no registration URL identifier, because the identifier is the bearer code.
 
 ### Rate limit
 
@@ -864,7 +749,7 @@ A newly issued URL has a use count of zero, no revocation time, and the acting A
 
 ## Revoke registration URL
 
-<RouteHeader method="DELETE" path="/v1/admin/instance/registration-urls/{registration_url_id}" />
+<RouteHeader method="DELETE" path="/v1/admin/instance/registration-urls/{registration_url_id}" auditReason />
 
 Revokes one registration URL so it can no longer be redeemed and returns the resulting [instance configuration](#instance-configuration-object) object. Requires `instance:config:update`.
 
@@ -888,7 +773,9 @@ An account that registered through the URL keeps its access, membership, and dec
 
 ### Side effects
 
-The URL records its revocation time and stays in the configuration response afterwards. The operation records no Admin audit entry and changes no account.
+The URL records its revocation time and stays in the configuration response afterwards. The operation changes no account.
+
+The operation records one [Admin audit entry](/admin-api/#admin-audit-entry-object) with action `revoke_registration_url`, target type `registration_url`, target ID `0`, and no metadata, including for an identifier that names no registration URL. The entry has no registration URL identifier, because the identifier is the bearer code.
 
 ### Rate limit
 
@@ -918,7 +805,7 @@ Approves or rejects one pending registration and returns the resulting [instance
 | --- | --- | --- |
 | 200<sup>1</sup> | [instance configuration](#instance-configuration-object) object | The decision was applied |
 
-<sup>1</sup> An account that no longer exists still answers 200. The pending registration is removed, no trait is written, and no audit entry is recorded
+<sup>1</sup> An account that no longer exists still answers 200. The pending registration is removed and no trait is written
 
 :::caution[Decisions apply even without a pending entry]
 Both decisions remove the pending registration, but the endpoint does not require the account to be in that list. Rejecting writes the `registration_rejected` trait. A later approval can clear it again. The trait can also be changed through [Set user traits](/admin-api/users/#set-user-traits).
@@ -930,7 +817,7 @@ Approval removes both the `registration_pending_approval` trait and the `registr
 
 When the stored pending registration list fails validation, the request fails before Fluxer changes the account. A failure after Fluxer writes the account traits leaves those traits written and can leave the entry in the pending list. Check the account traits and the pending list before retrying.
 
-One Admin audit entry with the action `approve_registration` or `reject_registration` targets the account, records the audit reason, and has no metadata.
+One Admin audit entry with the action `approve_registration` or `reject_registration` targets the account and records the audit reason. It has no metadata, except for an account that no longer exists, whose entry has the metadata key `account_found` set to `false`.
 
 ### Rate limit
 
@@ -938,7 +825,7 @@ One Admin audit entry with the action `approve_registration` or `reject_registra
 
 ## Get limit configuration
 
-<RouteHeader method="GET" path="/v1/admin/limit-config" />
+<RouteHeader method="GET" path="/v1/admin/limit-config" auditReason />
 
 Returns the [limit configuration response](#limit-configuration-response-object) object. Requires `instance:limit_config:view`.
 
@@ -952,13 +839,15 @@ Returns the [limit configuration response](#limit-configuration-response-object)
 
 The response reflects the configuration in force on the node that serves the request, so two nodes can report different values while a change propagates.
 
+The operation records one [Admin audit entry](/admin-api/#admin-audit-entry-object) with action `get_limit_config`, target type `limit_config`, target ID `0`, and metadata key `rule_count`.
+
 ### Rate limit
 
 200 requests per minute for each authenticated user, on the `admin:lookup` bucket.
 
 ## Replace limit configuration
 
-<RouteHeader method="PUT" path="/v1/admin/limit-config" />
+<RouteHeader method="PUT" path="/v1/admin/limit-config" auditReason />
 
 Replaces the stored limit configuration with the supplied document and returns the resulting [limit configuration response](#limit-configuration-response-object) object. Requires `instance:limit_config:update`.
 
@@ -991,42 +880,8 @@ On a self-hosted deployment whose premium mode is `everyone`, Fluxer drops the `
 
 Each rule's `modifiedFields` is then recomputed and the merged document replaces the stored one. Every API node adopts the new configuration. Clients observe it through the published [limit configuration](/http-api/instance/#limit-configuration-object).
 
-The operation records no Admin audit entry.
+The operation records one [Admin audit entry](/admin-api/#admin-audit-entry-object) with action `update_limit_config`, target type `limit_config`, target ID `0`, and metadata keys `rule_count`, `changed_rule_count`, and `trait_definition_count`, each taken from the stored document. `changed_rule_count` is the number of rule identifiers added, removed, or stored with different filters or limits, compared with the configuration the serving node held before the write.
 
 ### Rate limit
 
 100 requests per minute for each authenticated user, on the `admin:user:modify` bucket.
-
-## Create heap snapshot
-
-<RouteHeader method="POST" path="/v1/admin/system/heap-snapshots" />
-
-Writes a V8 heap snapshot of the API process that serves the request and returns the file. Requires `system:heap_snapshot`.
-
-### Response
-
-| Status | Body | Condition |
-| --- | --- | --- |
-| 200<sup>1</sup> | heap snapshot file | The snapshot was written |
-
-<sup>1</sup> The body is the raw `.heapsnapshot` file streamed as an attachment. The filename is `heap-` followed by the Unix time in milliseconds at which the snapshot was taken
-
-The 200 has `Content-Type: application/octet-stream`, `Content-Disposition: attachment`, and `Content-Length`.
-
-A client MUST NOT decode the body as JSON. The published OpenAPI document declares a JSON object of `success`, `filename`, and `size_bytes` here, so a generated client has to be overridden.
-
-:::danger[A snapshot stalls the process and exposes memory]
-Writing a snapshot blocks the serving process until the dump finishes. The file contains whatever that process held in memory, including message content, tokens, and personal data.
-:::
-
-:::caution[Only the serving node is captured]
-A deployment behind a load balancer needs several attempts to reach a particular node, and the file grows with that process heap.
-:::
-
-### Side effects
-
-No configuration is changed and no Admin audit entry is recorded.
-
-### Rate limit
-
-2 requests per five minutes for each authenticated user, on the `admin:system:heap_snapshot` bucket.

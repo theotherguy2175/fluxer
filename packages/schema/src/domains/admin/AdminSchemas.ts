@@ -16,41 +16,21 @@ import {
 	GatewayRolloutConfigUpdateRequest,
 } from '@fluxer/schema/src/domains/admin/GatewayRolloutSchemas';
 import {
+	PushServiceDeliveryConfigResponse,
+	PushServiceDeliveryConfigUpdateRequest,
+} from '@fluxer/schema/src/domains/admin/PushServiceDeliverySchemas';
+import {
+	ScreenShareDeliveryConfigResponse,
+	ScreenShareDeliveryConfigUpdateRequest,
+} from '@fluxer/schema/src/domains/admin/ScreenShareDeliverySchemas';
+import {
 	VoiceNoiseSuppressionConfigResponse,
 	VoiceNoiseSuppressionConfigUpdateRequest,
 } from '@fluxer/schema/src/domains/admin/VoiceNoiseSuppressionSchemas';
 import {
-	BlockedMessageGroupsConfigResponse,
-	BlockedMessageGroupsConfigUpdateRequest,
-} from '@fluxer/schema/src/domains/experiment/BlockedMessageGroupsSchemas';
-import {
 	ExperimentDeliveryConfigResponse,
 	ExperimentDeliveryConfigUpdateRequest,
 } from '@fluxer/schema/src/domains/experiment/ExperimentSchemas';
-import {
-	ExpressionInfoCardConfigResponse,
-	ExpressionInfoCardConfigUpdateRequest,
-} from '@fluxer/schema/src/domains/experiment/ExpressionInfoCardSchemas';
-import {
-	GuildActivityLogPresentationConfigResponse,
-	GuildActivityLogPresentationConfigUpdateRequest,
-} from '@fluxer/schema/src/domains/experiment/GuildActivityLogPresentationSchemas';
-import {
-	GuildHeaderCollapseConfigResponse,
-	GuildHeaderCollapseConfigUpdateRequest,
-} from '@fluxer/schema/src/domains/experiment/GuildHeaderCollapseSchemas';
-import {
-	MessageHoverTrackingConfigResponse,
-	MessageHoverTrackingConfigUpdateRequest,
-} from '@fluxer/schema/src/domains/experiment/MessageHoverTrackingSchemas';
-import {
-	MessageKeyboardFocusConfigResponse,
-	MessageKeyboardFocusConfigUpdateRequest,
-} from '@fluxer/schema/src/domains/experiment/MessageKeyboardFocusSchemas';
-import {
-	TypingIndicatorReworkConfigResponse,
-	TypingIndicatorReworkConfigUpdateRequest,
-} from '@fluxer/schema/src/domains/experiment/TypingIndicatorReworkSchemas';
 import {GuildMemberResponse} from '@fluxer/schema/src/domains/guild/GuildMemberSchemas';
 import {
 	InstanceCaptchaProviderSchema,
@@ -121,6 +101,14 @@ const AuditLogSortByEnum = createNamedStringLiteralUnion(
 	],
 	'Field to sort audit logs by',
 );
+const AdminAuditAccessEnum = createNamedStringLiteralUnion(
+	[
+		['read', 'read', 'An entry recorded by an operation that only reads data'],
+		['write', 'write', 'An entry recorded by an operation that changes data or triggers work'],
+	],
+	'Whether the recorded operation read data or changed it',
+);
+export type AdminAuditAccess = z.infer<typeof AdminAuditAccessEnum>;
 const ReportSortByEnum = createNamedStringLiteralUnion(
 	[
 		['createdAt', 'createdAt', 'Sort by creation timestamp'],
@@ -161,6 +149,9 @@ export const ListAdminAuditLogsQuery = z.object({
 	admin_user_id: SnowflakeType.optional().describe('Filter by admin user who performed the action'),
 	target_type: createStringType(1, 64).optional().describe('Filter by target entity type'),
 	target_id: z.string().optional().describe('Filter by target entity ID (user, channel, role, invite code, etc.)'),
+	access: AdminAuditAccessEnum.optional().describe(
+		'Only return entries recorded by reads or only entries recorded by writes',
+	),
 	sort_by: AuditLogSortByEnum.default('createdAt'),
 	sort_order: SortOrderEnum.default('desc'),
 	limit: createQueryIntegerType({defaultValue: 50, minValue: 1, maxValue: 200}).describe(
@@ -506,6 +497,8 @@ const AppPublicConfigResponse = z.object({
 		wordmark_url: z.string().nullable(),
 		favicon_url: z.string().nullable(),
 		theme_color: z.string().nullable(),
+		status_page_url: z.string().nullable(),
+		status_page_incident_history_url: z.string().nullable(),
 	}),
 	setup: z.object({
 		configured: z.boolean(),
@@ -529,6 +522,8 @@ const AppPublicConfigUpdateRequest = z.object({
 			wordmark_url: z.string().trim().max(2048).nullish(),
 			favicon_url: z.string().trim().max(2048).nullish(),
 			theme_color: z.string().trim().max(64).nullish(),
+			status_page_url: z.string().trim().max(2048).nullish(),
+			status_page_incident_history_url: z.string().trim().max(2048).nullish(),
 		})
 		.nullish(),
 	setup: z
@@ -657,14 +652,9 @@ export const InstanceConfigResponse = z.object({
 	sso: SsoConfigResponse,
 	gateway_rollout: GatewayRolloutConfigResponse,
 	voice_noise_suppression: VoiceNoiseSuppressionConfigResponse,
-	guild_activity_log_presentation: GuildActivityLogPresentationConfigResponse,
+	screen_share_delivery: ScreenShareDeliveryConfigResponse,
+	push_service_delivery: PushServiceDeliveryConfigResponse,
 	experiment_delivery: ExperimentDeliveryConfigResponse,
-	message_hover_tracking: MessageHoverTrackingConfigResponse,
-	message_keyboard_focus: MessageKeyboardFocusConfigResponse,
-	blocked_message_groups: BlockedMessageGroupsConfigResponse,
-	expression_info_card: ExpressionInfoCardConfigResponse,
-	guild_header_collapse: GuildHeaderCollapseConfigResponse,
-	typing_indicator_rework: TypingIndicatorReworkConfigResponse,
 	registration: InstanceRegistrationResponse,
 	self_hosted: z.boolean(),
 	app_public: AppPublicConfigResponse,
@@ -700,14 +690,9 @@ const InstancePolicyUpdateSchema = z.object({
 export const InstanceConfigUpdateRequest = z.object({
 	gateway_rollout: GatewayRolloutConfigUpdateRequest.nullish(),
 	voice_noise_suppression: VoiceNoiseSuppressionConfigUpdateRequest.nullish(),
-	guild_activity_log_presentation: GuildActivityLogPresentationConfigUpdateRequest.nullish(),
+	screen_share_delivery: ScreenShareDeliveryConfigUpdateRequest.nullish(),
+	push_service_delivery: PushServiceDeliveryConfigUpdateRequest.nullish(),
 	experiment_delivery: ExperimentDeliveryConfigUpdateRequest.nullish(),
-	message_hover_tracking: MessageHoverTrackingConfigUpdateRequest.nullish(),
-	message_keyboard_focus: MessageKeyboardFocusConfigUpdateRequest.nullish(),
-	blocked_message_groups: BlockedMessageGroupsConfigUpdateRequest.nullish(),
-	expression_info_card: ExpressionInfoCardConfigUpdateRequest.nullish(),
-	guild_header_collapse: GuildHeaderCollapseConfigUpdateRequest.nullish(),
-	typing_indicator_rework: TypingIndicatorReworkConfigUpdateRequest.nullish(),
 	registration: z
 		.object({
 			mode: InstanceRegistrationModeSchema.optional(),
@@ -1082,6 +1067,7 @@ export const AdminAuditLogResponseSchema = z.object({
 	related_guilds: z.record(SnowflakeStringType, AdminAuditLogGuildSummarySchema),
 	related_channels: z.record(SnowflakeStringType, AdminAuditLogChannelSummarySchema),
 	action: createStringType(1, 256),
+	access: AdminAuditAccessEnum,
 	audit_log_reason: createStringType(1, 4000).nullable(),
 	metadata: z.record(createStringType(1, 256), createStringType(0, 4000)),
 	created_at: z.string(),
@@ -1515,6 +1501,5 @@ export const LimitConfigGetResponse = z.object({
 export const DeleteApiKeyResponse = z.object({
 	success: z.literal(true),
 });
-export const HeapSnapshotResponse = z.file().describe('V8 heap snapshot file');
 
 export const AdminApiKeyListResponse = z.array(ListAdminApiKeyResponse);

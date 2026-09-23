@@ -71,7 +71,7 @@ export class GuildSoundboardPlayService {
 		this.soundboardService.assertEnabled();
 		await this.assertWithinPlayRate(userId, channelId);
 		const channel = await this.channelRepository.findUnique(channelId);
-		if (!channel || !channel.guildId) {
+		if (!channel?.guildId) {
 			throw new UnknownChannelError();
 		}
 		const guildId = channel.guildId;

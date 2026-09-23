@@ -23,11 +23,12 @@ import * as InviteCommands from '@app/features/invite/commands/InviteCommands';
 import * as InviteUtils from '@app/features/invite/utils/InviteUtils';
 import jumpLinkStyles from '@app/features/messaging/components/markdown/renderers/MessageJumpLink.module.css';
 import {
-	MarkdownContext,
+	isRestrictedInlineContext,
 	type MarkdownRenderOptions,
 	type RendererProps,
 } from '@app/features/messaging/components/markdown/renderers/RendererTypes';
 import {ExternalLinkWarningModal} from '@app/features/messaging/components/modals/ExternalLinkWarningModal';
+import AttachmentUrlRefresher from '@app/features/messaging/state/AttachmentUrlRefresher';
 import {openExternalUrlWithWarning} from '@app/features/messaging/utils/ExternalLinkUtils';
 import {goToMessage} from '@app/features/messaging/utils/MessageNavigator';
 import type {LinkNode} from '@app/features/messaging/utils/markdown/parser/Nodes';
@@ -647,7 +648,7 @@ export const LinkRenderer = observer(function LinkRenderer({
 	const jumpChannel = jumpTarget ? (Channels.getChannel(jumpTarget.channelId) ?? null) : null;
 	const jumpGuild = jumpChannel?.guildId ? (Guilds.getGuild(jumpChannel.guildId) ?? null) : null;
 	const settingsTarget = isAppProtocolUrl(url) ? parseUserSettingsDeepLink(url) : null;
-	const isInlineReplyContext = options.context === MarkdownContext.RESTRICTED_INLINE_REPLY;
+	const isInlineReplyContext = isRestrictedInlineContext(options.context);
 	const shouldDisableInteractions = options.disableInteractions === true;
 	if (inviteCode && StreamerMode.shouldHideInviteLinks) {
 		return (
@@ -889,12 +890,16 @@ export const LinkRenderer = observer(function LinkRenderer({
 			logger.warn('Invalid URL in link:', url);
 		}
 	}
+	const href = AttachmentUrlRefresher.fresh(url);
+	const warmAttachmentUrl = () => AttachmentUrlRefresher.warm(url);
 	return (
 		<FocusRing key={id} offset={-2} data-flx="messaging.markdown.renderers.link-renderer.focus-ring--2">
 			<a
-				href={url}
+				href={href}
 				target={isInternal ? undefined : '_blank'}
 				rel={isInternal ? undefined : 'noopener noreferrer'}
+				onPointerEnter={warmAttachmentUrl}
+				onFocus={warmAttachmentUrl}
 				onClick={(e) => {
 					e.stopPropagation();
 					if (handleClick) {

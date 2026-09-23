@@ -68,6 +68,7 @@ const LANE_CONFIG = {
 		tasks: [
 			'expireAttachments',
 			'expirePolls',
+			'expireStaleJobs',
 			'indexChannelMessages',
 			'indexGuildMembers',
 			'processAssetDeletionQueue',

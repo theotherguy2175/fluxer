@@ -6,12 +6,10 @@ use crate::{
         types::{
             AppBrandingConfigUpdateRequest, AppLegalConfigUpdateRequest,
             AppPublicConfigUpdateRequest, AppRegistrationConfigUpdateRequest,
-            AppSetupConfigUpdateRequest, BlockedMessageGroupsConfigUpdateRequest,
-            CreateRegistrationUrlRequest, DeferredPhoneGateUpdateRequest,
-            ExperimentDeliveryConfigUpdateRequest, ExpressionInfoCardConfigUpdateRequest,
-            GatewayRolloutConfigUpdateRequest, GatewayRolloutMode,
-            GuildActivityLogPresentationConfigUpdateRequest,
-            GuildHeaderCollapseConfigUpdateRequest, InstanceAttachmentDecayUpdateRequest,
+            AppSetupConfigUpdateRequest, CreateRegistrationUrlRequest,
+            DeferredPhoneGateUpdateRequest, EXPERIMENT_MAX_TARGETED_USERS,
+            ExperimentDeliveryConfigUpdateRequest, GatewayRolloutConfigUpdateRequest,
+            GatewayRolloutMode, InstanceAttachmentDecayUpdateRequest,
             InstanceBlueskyIntegrationUpdateRequest, InstanceBlueskyKeyIntegrationUpdateRequest,
             InstanceCaptchaIntegrationUpdateRequest, InstanceConfigUpdateRequest,
             InstanceEmailIntegrationUpdateRequest, InstanceEmailSmtpIntegrationUpdateRequest,
@@ -19,11 +17,10 @@ use crate::{
             InstanceIntegrationsUpdateRequest, InstanceMediaUpdateRequest,
             InstancePolicyUpdateRequest, InstanceRegistrationConfigUpdateRequest,
             InstanceServicesUpdateRequest, InstanceYoutubeIntegrationUpdateRequest,
-            LimitConfigUpdateRequest, LimitRule, LimitRuleFilters,
-            MessageHoverTrackingConfigUpdateRequest, MessageKeyboardFocusConfigUpdateRequest,
-            NoiseSuppressionBackend, PremiumMode, RegistrationMode, SsoConfigUpdateRequest,
-            TypingIndicatorReworkConfigUpdateRequest, VOICE_NS_MAX_GUILD_OVERRIDES,
-            VOICE_NS_MAX_TARGETED_USERS, VoiceE2eeScope, VoiceNoiseSuppressionConfigUpdateRequest,
+            LimitConfigUpdateRequest, LimitRule, LimitRuleFilters, NoiseSuppressionBackend,
+            PremiumMode, PushServiceDeliveryConfigUpdateRequest, RegistrationMode,
+            ScreenShareDeliveryConfigUpdateRequest, SsoConfigUpdateRequest,
+            VOICE_NS_MAX_GUILD_OVERRIDES, VoiceE2eeScope, VoiceNoiseSuppressionConfigUpdateRequest,
             VoiceNoiseSuppressionGuildOverride,
         },
     },
@@ -211,33 +208,11 @@ pub async fn instance_config_post(
             Ok(update) => instance_config_result(client.update_instance_config(&update).await),
             Err(message) => FlashData::error(message),
         },
-        "update_message_hover_tracking" => match build_message_hover_tracking_update(&form) {
+        "update_screen_share_delivery" => match build_screen_share_delivery_update(&form) {
             Ok(update) => instance_config_result(client.update_instance_config(&update).await),
             Err(message) => FlashData::error(message),
         },
-        "update_message_keyboard_focus" => match build_message_keyboard_focus_update(&form) {
-            Ok(update) => instance_config_result(client.update_instance_config(&update).await),
-            Err(message) => FlashData::error(message),
-        },
-        "update_blocked_message_groups" => match build_blocked_message_groups_update(&form) {
-            Ok(update) => instance_config_result(client.update_instance_config(&update).await),
-            Err(message) => FlashData::error(message),
-        },
-        "update_guild_activity_log_presentation" => {
-            match build_guild_activity_log_presentation_update(&form) {
-                Ok(update) => instance_config_result(client.update_instance_config(&update).await),
-                Err(message) => FlashData::error(message),
-            }
-        }
-        "update_expression_info_card" => match build_expression_info_card_update(&form) {
-            Ok(update) => instance_config_result(client.update_instance_config(&update).await),
-            Err(message) => FlashData::error(message),
-        },
-        "update_guild_header_collapse" => match build_guild_header_collapse_update(&form) {
-            Ok(update) => instance_config_result(client.update_instance_config(&update).await),
-            Err(message) => FlashData::error(message),
-        },
-        "update_typing_indicator_rework" => match build_typing_indicator_rework_update(&form) {
+        "update_push_service_delivery" => match build_push_service_delivery_update(&form) {
             Ok(update) => instance_config_result(client.update_instance_config(&update).await),
             Err(message) => FlashData::error(message),
         },
@@ -526,6 +501,21 @@ fn parse_experiment_rollout_salt(
     Ok(Some(salt.to_owned()))
 }
 
+fn parse_push_service_delivery_rollout_salt(
+    form: &MultiValueForm,
+    key: &str,
+) -> Result<Option<String>, String> {
+    let salt = parse_experiment_rollout_salt(form, key)?;
+    if let Some(value) = salt.as_deref()
+        && !value
+            .bytes()
+            .all(|byte| byte.is_ascii_graphic() || byte == b' ')
+    {
+        return Err("Rollout salt must use printable ASCII".to_owned());
+    }
+    Ok(salt)
+}
+
 fn is_experiment_snowflake(value: &str) -> bool {
     !value.is_empty()
         && value.len() <= EXPERIMENT_MAX_SNOWFLAKE_LENGTH
@@ -548,9 +538,9 @@ fn parse_experiment_user_ids(value: &str, label: &str) -> Result<Vec<String>, St
         if ids.iter().any(|existing| existing == candidate) {
             continue;
         }
-        if ids.len() == VOICE_NS_MAX_TARGETED_USERS {
+        if ids.len() == EXPERIMENT_MAX_TARGETED_USERS {
             return Err(format!(
-                "{label} must contain at most {VOICE_NS_MAX_TARGETED_USERS} unique IDs"
+                "{label} must contain at most {EXPERIMENT_MAX_TARGETED_USERS} unique IDs"
             ));
         }
         ids.push(candidate.to_owned());
@@ -651,7 +641,6 @@ fn build_voice_noise_suppression_update(
             guild_overrides: Some(parse_voice_noise_suppression_guild_overrides(
                 form.first("voice_ns_guild_overrides").unwrap_or_default(),
             )?),
-            stereo_enabled: Some(form.bool_value("voice_ns_stereo_enabled")),
             suppression_strength: parse_form_number(
                 form,
                 "voice_ns_suppression_strength",
@@ -664,59 +653,30 @@ fn build_voice_noise_suppression_update(
     })
 }
 
-fn build_message_hover_tracking_update(
+fn build_screen_share_delivery_update(
     form: &MultiValueForm,
 ) -> Result<InstanceConfigUpdateRequest, String> {
     Ok(InstanceConfigUpdateRequest {
-        message_hover_tracking: Some(MessageHoverTrackingConfigUpdateRequest {
-            enabled: Some(form.bool_value("message_hover_enabled")),
+        screen_share_delivery: Some(ScreenShareDeliveryConfigUpdateRequest {
+            enabled: Some(form.bool_value("screen_share_delivery_enabled")),
             rollout_basis_points: parse_form_number(
                 form,
-                "message_hover_rollout_basis_points",
-                "Rollout basis points",
-                0,
-                EXPERIMENT_ROLLOUT_BASIS_POINTS_MAX,
-            )?,
-            rollout_salt: parse_experiment_rollout_salt(form, "message_hover_rollout_salt")?,
-            included_user_ids: Some(parse_experiment_user_ids(
-                form.first("message_hover_included_user_ids")
-                    .unwrap_or_default(),
-                "Included user IDs",
-            )?),
-            excluded_user_ids: Some(parse_experiment_user_ids(
-                form.first("message_hover_excluded_user_ids")
-                    .unwrap_or_default(),
-                "Excluded user IDs",
-            )?),
-        }),
-        ..Default::default()
-    })
-}
-
-fn build_message_keyboard_focus_update(
-    form: &MultiValueForm,
-) -> Result<InstanceConfigUpdateRequest, String> {
-    Ok(InstanceConfigUpdateRequest {
-        message_keyboard_focus: Some(MessageKeyboardFocusConfigUpdateRequest {
-            enabled: Some(form.bool_value("message_keyboard_focus_enabled")),
-            rollout_basis_points: parse_form_number(
-                form,
-                "message_keyboard_focus_rollout_basis_points",
+                "screen_share_delivery_rollout_basis_points",
                 "Rollout basis points",
                 0,
                 EXPERIMENT_ROLLOUT_BASIS_POINTS_MAX,
             )?,
             rollout_salt: parse_experiment_rollout_salt(
                 form,
-                "message_keyboard_focus_rollout_salt",
+                "screen_share_delivery_rollout_salt",
             )?,
             included_user_ids: Some(parse_experiment_user_ids(
-                form.first("message_keyboard_focus_included_user_ids")
+                form.first("screen_share_delivery_included_user_ids")
                     .unwrap_or_default(),
                 "Included user IDs",
             )?),
             excluded_user_ids: Some(parse_experiment_user_ids(
-                form.first("message_keyboard_focus_excluded_user_ids")
+                form.first("screen_share_delivery_excluded_user_ids")
                     .unwrap_or_default(),
                 "Excluded user IDs",
             )?),
@@ -725,152 +685,30 @@ fn build_message_keyboard_focus_update(
     })
 }
 
-fn build_blocked_message_groups_update(
+fn build_push_service_delivery_update(
     form: &MultiValueForm,
 ) -> Result<InstanceConfigUpdateRequest, String> {
     Ok(InstanceConfigUpdateRequest {
-        blocked_message_groups: Some(BlockedMessageGroupsConfigUpdateRequest {
-            enabled: Some(form.bool_value("blocked_groups_enabled")),
+        push_service_delivery: Some(PushServiceDeliveryConfigUpdateRequest {
+            enabled: Some(form.bool_value("push_service_delivery_enabled")),
             rollout_basis_points: parse_form_number(
                 form,
-                "blocked_groups_rollout_basis_points",
+                "push_service_delivery_rollout_basis_points",
                 "Rollout basis points",
                 0,
                 EXPERIMENT_ROLLOUT_BASIS_POINTS_MAX,
             )?,
-            rollout_salt: parse_experiment_rollout_salt(form, "blocked_groups_rollout_salt")?,
+            rollout_salt: parse_push_service_delivery_rollout_salt(
+                form,
+                "push_service_delivery_rollout_salt",
+            )?,
             included_user_ids: Some(parse_experiment_user_ids(
-                form.first("blocked_groups_included_user_ids")
+                form.first("push_service_delivery_included_user_ids")
                     .unwrap_or_default(),
                 "Included user IDs",
             )?),
             excluded_user_ids: Some(parse_experiment_user_ids(
-                form.first("blocked_groups_excluded_user_ids")
-                    .unwrap_or_default(),
-                "Excluded user IDs",
-            )?),
-        }),
-        ..Default::default()
-    })
-}
-
-fn build_guild_activity_log_presentation_update(
-    form: &MultiValueForm,
-) -> Result<InstanceConfigUpdateRequest, String> {
-    Ok(InstanceConfigUpdateRequest {
-        guild_activity_log_presentation: Some(GuildActivityLogPresentationConfigUpdateRequest {
-            enabled: Some(form.bool_value("guild_activity_log_presentation_enabled")),
-            rollout_basis_points: parse_form_number(
-                form,
-                "guild_activity_log_presentation_rollout_basis_points",
-                "Rollout basis points",
-                0,
-                EXPERIMENT_ROLLOUT_BASIS_POINTS_MAX,
-            )?,
-            rollout_salt: parse_experiment_rollout_salt(
-                form,
-                "guild_activity_log_presentation_rollout_salt",
-            )?,
-            included_user_ids: Some(parse_experiment_user_ids(
-                form.first("guild_activity_log_presentation_included_user_ids")
-                    .unwrap_or_default(),
-                "Included user IDs",
-            )?),
-            excluded_user_ids: Some(parse_experiment_user_ids(
-                form.first("guild_activity_log_presentation_excluded_user_ids")
-                    .unwrap_or_default(),
-                "Excluded user IDs",
-            )?),
-        }),
-        ..Default::default()
-    })
-}
-
-fn build_expression_info_card_update(
-    form: &MultiValueForm,
-) -> Result<InstanceConfigUpdateRequest, String> {
-    Ok(InstanceConfigUpdateRequest {
-        expression_info_card: Some(ExpressionInfoCardConfigUpdateRequest {
-            enabled: Some(form.bool_value("expression_card_enabled")),
-            rollout_basis_points: parse_form_number(
-                form,
-                "expression_card_rollout_basis_points",
-                "Rollout basis points",
-                0,
-                EXPERIMENT_ROLLOUT_BASIS_POINTS_MAX,
-            )?,
-            rollout_salt: parse_experiment_rollout_salt(form, "expression_card_rollout_salt")?,
-            included_user_ids: Some(parse_experiment_user_ids(
-                form.first("expression_card_included_user_ids")
-                    .unwrap_or_default(),
-                "Included user IDs",
-            )?),
-            excluded_user_ids: Some(parse_experiment_user_ids(
-                form.first("expression_card_excluded_user_ids")
-                    .unwrap_or_default(),
-                "Excluded user IDs",
-            )?),
-        }),
-        ..Default::default()
-    })
-}
-
-fn build_guild_header_collapse_update(
-    form: &MultiValueForm,
-) -> Result<InstanceConfigUpdateRequest, String> {
-    Ok(InstanceConfigUpdateRequest {
-        guild_header_collapse: Some(GuildHeaderCollapseConfigUpdateRequest {
-            enabled: Some(form.bool_value("guild_header_collapse_enabled")),
-            rollout_basis_points: parse_form_number(
-                form,
-                "guild_header_collapse_rollout_basis_points",
-                "Rollout basis points",
-                0,
-                EXPERIMENT_ROLLOUT_BASIS_POINTS_MAX,
-            )?,
-            rollout_salt: parse_experiment_rollout_salt(
-                form,
-                "guild_header_collapse_rollout_salt",
-            )?,
-            included_user_ids: Some(parse_experiment_user_ids(
-                form.first("guild_header_collapse_included_user_ids")
-                    .unwrap_or_default(),
-                "Included user IDs",
-            )?),
-            excluded_user_ids: Some(parse_experiment_user_ids(
-                form.first("guild_header_collapse_excluded_user_ids")
-                    .unwrap_or_default(),
-                "Excluded user IDs",
-            )?),
-        }),
-        ..Default::default()
-    })
-}
-
-fn build_typing_indicator_rework_update(
-    form: &MultiValueForm,
-) -> Result<InstanceConfigUpdateRequest, String> {
-    Ok(InstanceConfigUpdateRequest {
-        typing_indicator_rework: Some(TypingIndicatorReworkConfigUpdateRequest {
-            enabled: Some(form.bool_value("typing_indicator_rework_enabled")),
-            rollout_basis_points: parse_form_number(
-                form,
-                "typing_indicator_rework_rollout_basis_points",
-                "Rollout basis points",
-                0,
-                EXPERIMENT_ROLLOUT_BASIS_POINTS_MAX,
-            )?,
-            rollout_salt: parse_experiment_rollout_salt(
-                form,
-                "typing_indicator_rework_rollout_salt",
-            )?,
-            included_user_ids: Some(parse_experiment_user_ids(
-                form.first("typing_indicator_rework_included_user_ids")
-                    .unwrap_or_default(),
-                "Included user IDs",
-            )?),
-            excluded_user_ids: Some(parse_experiment_user_ids(
-                form.first("typing_indicator_rework_excluded_user_ids")
+                form.first("push_service_delivery_excluded_user_ids")
                     .unwrap_or_default(),
                 "Excluded user IDs",
             )?),
@@ -933,6 +771,8 @@ fn build_app_public_update(form: &MultiValueForm) -> InstanceConfigUpdateRequest
                 wordmark_url: optional("app_wordmark_url"),
                 favicon_url: optional("app_favicon_url"),
                 theme_color: optional("app_theme_color"),
+                status_page_url: optional("app_status_page_url"),
+                status_page_incident_history_url: optional("app_status_page_incident_history_url"),
             }),
             setup: Some(AppSetupConfigUpdateRequest {
                 configured: Some(form.bool_value("app_setup_configured")),
@@ -1494,7 +1334,6 @@ mod tests {
             .expect("voice noise suppression update");
         assert_eq!(update.enabled, Some(true));
         assert_eq!(update.allow_user_override, Some(true));
-        assert_eq!(update.stereo_enabled, Some(false));
         assert_eq!(
             update.default_backend,
             Some(NoiseSuppressionBackend::Rnnoise)
@@ -1520,7 +1359,6 @@ mod tests {
             serde_json::json!({"voice_noise_suppression": {
                 "enabled": false,
                 "allow_user_override": false,
-                "stereo_enabled": false,
                 "enabled_backends": [],
                 "included_user_ids": [],
                 "excluded_user_ids": [],
@@ -1598,13 +1436,13 @@ mod tests {
 
     #[test]
     fn parse_experiment_user_ids_rejects_exceeding_the_cap() {
-        let value = (0..VOICE_NS_MAX_TARGETED_USERS)
+        let value = (0..EXPERIMENT_MAX_TARGETED_USERS)
             .map(|index| index.to_string())
             .collect::<Vec<_>>()
             .join("\n");
         let ids = parse_experiment_user_ids(&format!("{value}\n999"), "Included user IDs")
             .expect("valid IDs at cap");
-        assert_eq!(ids.len(), VOICE_NS_MAX_TARGETED_USERS);
+        assert_eq!(ids.len(), EXPERIMENT_MAX_TARGETED_USERS);
         assert_eq!(ids.last(), Some(&"999".to_owned()));
         assert_eq!(
             parse_experiment_user_ids(&format!("{value}\n1000"), "Included user IDs")
@@ -1801,40 +1639,43 @@ mod tests {
     }
 
     #[test]
-    fn build_guild_header_collapse_update_reads_the_whole_form() {
+    fn build_screen_share_delivery_update_reads_the_rollout_fields() {
         let form = MultiValueForm::parse(
-            b"guild_header_collapse_enabled=true&guild_header_collapse_rollout_basis_points=2500&guild_header_collapse_rollout_salt=%20guild-header-collapse-v2%20&guild_header_collapse_included_user_ids=1500000000000000001%0A1500000000000000001&guild_header_collapse_excluded_user_ids=1500000000000000002%2C%201500000000000000003",
+            b"screen_share_delivery_enabled=true&screen_share_delivery_rollout_basis_points=%20250%20&screen_share_delivery_rollout_salt=%20screen-share-delivery-v2%20&screen_share_delivery_included_user_ids=1500000000000000001%0A1500000000000000002&screen_share_delivery_excluded_user_ids=1500000000000000003%2C%201500000000000000004",
         );
-        let update = build_guild_header_collapse_update(&form)
+        let update = build_screen_share_delivery_update(&form)
             .expect("valid form")
-            .guild_header_collapse
-            .expect("guild header collapse update");
+            .screen_share_delivery
+            .expect("screen share delivery update");
         assert_eq!(update.enabled, Some(true));
-        assert_eq!(update.rollout_basis_points, Some(2_500));
+        assert_eq!(update.rollout_basis_points, Some(250));
         assert_eq!(
             update.rollout_salt,
-            Some("guild-header-collapse-v2".to_owned())
+            Some("screen-share-delivery-v2".to_owned())
         );
         assert_eq!(
             update.included_user_ids,
-            Some(vec!["1500000000000000001".to_owned()])
+            Some(vec![
+                "1500000000000000001".to_owned(),
+                "1500000000000000002".to_owned()
+            ])
         );
         assert_eq!(
             update.excluded_user_ids,
             Some(vec![
-                "1500000000000000002".to_owned(),
-                "1500000000000000003".to_owned()
+                "1500000000000000003".to_owned(),
+                "1500000000000000004".to_owned()
             ])
         );
     }
 
     #[test]
-    fn build_guild_header_collapse_update_leaves_the_rollout_inert_when_nothing_is_submitted() {
+    fn build_screen_share_delivery_update_leaves_the_feature_inert_when_nothing_is_submitted() {
         let form = MultiValueForm::parse(b"_csrf=token");
-        let request = build_guild_header_collapse_update(&form).expect("valid form");
+        let request = build_screen_share_delivery_update(&form).expect("valid form");
         assert_eq!(
             serde_json::to_value(request).expect("serializable update"),
-            serde_json::json!({"guild_header_collapse": {
+            serde_json::json!({"screen_share_delivery": {
                 "enabled": false,
                 "included_user_ids": [],
                 "excluded_user_ids": [],
@@ -1843,107 +1684,35 @@ mod tests {
     }
 
     #[test]
-    fn build_guild_header_collapse_update_rejects_a_rollout_above_the_maximum() {
-        let form = MultiValueForm::parse(b"guild_header_collapse_rollout_basis_points=10001");
-        assert_eq!(
-            build_guild_header_collapse_update(&form).expect_err("invalid rollout"),
-            "Rollout basis points must be a whole number between 0 and 10000"
-        );
-    }
-
-    #[test]
-    fn build_guild_header_collapse_update_reads_only_its_own_prefix() {
-        let form = MultiValueForm::parse(
-            b"guild_header_collapse_enabled=true&guild_header_collapse_rollout_basis_points=2500&guild_header_collapse_rollout_salt=guild-header-collapse-v2&guild_header_collapse_included_user_ids=1500000000000000001&expression_card_rollout_basis_points=750&expression_card_rollout_salt=expression-info-card-v2&expression_card_excluded_user_ids=1500000000000000009",
-        );
-        let update = build_guild_header_collapse_update(&form)
-            .expect("valid form")
-            .guild_header_collapse
-            .expect("guild header collapse update");
-        assert_eq!(update.enabled, Some(true));
-        assert_eq!(update.rollout_basis_points, Some(2_500));
-        assert_eq!(
-            update.rollout_salt,
-            Some("guild-header-collapse-v2".to_owned())
-        );
-        assert_eq!(
-            update.included_user_ids,
-            Some(vec!["1500000000000000001".to_owned()])
-        );
-        assert_eq!(update.excluded_user_ids, Some(Vec::new()));
-    }
-
-    #[test]
-    fn build_typing_indicator_rework_update_reads_the_whole_form() {
-        let form = MultiValueForm::parse(
-            b"typing_indicator_rework_enabled=true&typing_indicator_rework_rollout_basis_points=2500&typing_indicator_rework_rollout_salt=%20typing-indicator-rework-v2%20&typing_indicator_rework_included_user_ids=1500000000000000001%0A1500000000000000001&typing_indicator_rework_excluded_user_ids=1500000000000000002%2C%201500000000000000003",
-        );
-        let update = build_typing_indicator_rework_update(&form)
-            .expect("valid form")
-            .typing_indicator_rework
-            .expect("typing indicator rework update");
-        assert_eq!(update.enabled, Some(true));
-        assert_eq!(update.rollout_basis_points, Some(2_500));
-        assert_eq!(
-            update.rollout_salt,
-            Some("typing-indicator-rework-v2".to_owned())
-        );
-        assert_eq!(
-            update.included_user_ids,
-            Some(vec!["1500000000000000001".to_owned()])
-        );
-        assert_eq!(
-            update.excluded_user_ids,
-            Some(vec![
-                "1500000000000000002".to_owned(),
-                "1500000000000000003".to_owned()
-            ])
-        );
-    }
-
-    #[test]
-    fn build_typing_indicator_rework_update_leaves_the_rollout_inert_when_nothing_is_submitted() {
-        let form = MultiValueForm::parse(b"_csrf=token");
-        let request = build_typing_indicator_rework_update(&form).expect("valid form");
-        assert_eq!(
-            serde_json::to_value(request).expect("serializable update"),
-            serde_json::json!({"typing_indicator_rework": {
-                "enabled": false,
-                "included_user_ids": [],
-                "excluded_user_ids": [],
-            }})
-        );
-    }
-
-    #[test]
-    fn build_typing_indicator_rework_update_rejects_a_rollout_above_the_maximum() {
-        let form = MultiValueForm::parse(b"typing_indicator_rework_rollout_basis_points=10001");
-        assert_eq!(
-            build_typing_indicator_rework_update(&form).expect_err("invalid rollout"),
-            "Rollout basis points must be a whole number between 0 and 10000"
-        );
-    }
-
-    #[test]
-    fn build_typing_indicator_rework_update_reads_only_its_own_prefix() {
-        let form = MultiValueForm::parse(
-            b"expression_card_enabled=true&expression_card_rollout_basis_points=2500&expression_card_rollout_salt=expression-info-card-v2&expression_card_included_user_ids=1500000000000000001&typing_indicator_rework_rollout_basis_points=750&typing_indicator_rework_rollout_salt=typing-indicator-rework-v2&typing_indicator_rework_excluded_user_ids=1500000000000000009",
-        );
-        let update = build_typing_indicator_rework_update(&form)
-            .expect("valid form")
-            .typing_indicator_rework
-            .expect("typing indicator rework update");
-        assert_eq!(update.enabled, Some(false));
-        assert_eq!(update.rollout_basis_points, Some(750));
-        assert_eq!(
-            update.rollout_salt,
-            Some("typing-indicator-rework-v2".to_owned())
-        );
-        assert_eq!(update.included_user_ids, Some(Vec::new()));
-        assert_eq!(
-            update.excluded_user_ids,
-            Some(vec!["1500000000000000009".to_owned()])
-        );
+    fn build_screen_share_delivery_update_rejects_invalid_rollout_fields() {
+        for (form, message) in [
+            (
+                "screen_share_delivery_rollout_basis_points=10001",
+                "Rollout basis points must be a whole number between 0 and 10000",
+            ),
+            (
+                "screen_share_delivery_rollout_basis_points=abc",
+                "Rollout basis points must be a whole number between 0 and 10000",
+            ),
+            (
+                "screen_share_delivery_rollout_salt=%20%20",
+                "Rollout salt must be between 1 and 64 characters",
+            ),
+            (
+                "screen_share_delivery_included_user_ids=123%2Cinvalid",
+                "Included user IDs entry 2 must contain 1 to 20 decimal digits",
+            ),
+            (
+                "screen_share_delivery_excluded_user_ids=123%2Cinvalid",
+                "Excluded user IDs entry 2 must contain 1 to 20 decimal digits",
+            ),
+        ] {
+            let form = MultiValueForm::parse(form.as_bytes());
+            assert_eq!(
+                build_screen_share_delivery_update(&form).expect_err("invalid rollout field"),
+                message
+            );
+        }
     }
 
     #[test]

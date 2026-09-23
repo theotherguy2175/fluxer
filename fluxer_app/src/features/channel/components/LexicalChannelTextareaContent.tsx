@@ -89,7 +89,6 @@ import {
 } from '@app/features/messaging/state/MentionConfirmationStateMachine';
 import MessageEdit from '@app/features/messaging/state/MessageEdit';
 import MessageEditMobile from '@app/features/messaging/state/MessageEditMobile';
-import MessageKeyboardFocusRollout from '@app/features/messaging/state/MessageKeyboardFocusRollout';
 import MessageReply from '@app/features/messaging/state/MessageReply';
 import Messages from '@app/features/messaging/state/MessagingMessages';
 import {CloudUpload} from '@app/features/messaging/upload/CloudUpload';
@@ -710,7 +709,8 @@ export const LexicalChannelTextareaContent = observer(
 			const stickerBoundaryChanged = isSameChannel && previous.hasPendingSticker !== hasPendingSticker;
 			if (
 				wasAtBottomBeforeComposerBoundaryChange.current &&
-				(stickerBoundaryChanged || (attachmentBoundaryChanged && Messages.getMessages(channel.id).hasMoreAfter))
+				(stickerBoundaryChanged || attachmentBoundaryChanged) &&
+				Messages.getMessages(channel.id).hasMoreAfter
 			) {
 				ComponentBus.dispatch('FORCE_JUMP_TO_PRESENT', {channelId: channel.id});
 			}
@@ -889,17 +889,16 @@ export const LexicalChannelTextareaContent = observer(
 			onSubmit();
 		}, [canSubmit, channel, hasAttachments, onSubmit]);
 		const handleArrowUpEmpty = useCallback(() => {
-			const claimsArrowUp = MessageKeyboardFocusRollout.enabled;
 			if (KeyboardMode.keyboardModeEnabled) {
 				ComponentBus.dispatch('FOCUS_BOTTOMMOST_MESSAGE', {channelId: channel.id});
-				return claimsArrowUp;
+				return true;
 			}
 			const message = Messages.getLastEditableMessage(channel.id);
 			if (!message) {
 				return false;
 			}
 			MessageCommands.startEdit(channel.id, message.id, message.content);
-			return claimsArrowUp;
+			return true;
 		}, [channel.id]);
 		useTextareaDraftAndTyping({
 			channelId: channel.id,
@@ -909,7 +908,6 @@ export const LexicalChannelTextareaContent = observer(
 			draftSegments,
 			previousValueRef,
 			segmentManagerRef,
-			isAutocompleteAttached,
 			enabled: !disabled,
 			typingEnabled: !textareaInputDisabled,
 			isEditingMessageInComposer,

@@ -28,9 +28,9 @@ f:media_proxy:
 f:messages:
   - changed-files:
     - any-glob-to-any-file: fluxer_messages/**/*
-f:recon:
+f:push:
   - changed-files:
-    - any-glob-to-any-file: fluxer_recon/**/*
+    - any-glob-to-any-file: fluxer_push/**/*
 f:snowflakes:
   - changed-files:
     - any-glob-to-any-file: fluxer_snowflakes/**/*
