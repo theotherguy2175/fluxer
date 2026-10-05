@@ -25,6 +25,11 @@ permissions:
   pull-requests: write
   issues: write
 
+# This repo is a GitHub fork, so gh defaults to the parent (fluxerapp/fluxer), where
+# the token has no access ("Resource not accessible by integration"). Pin it to us.
+env:
+  GH_REPO: ${{ github.repository }}
+
 concurrency:
   group: upstream-sync
   cancel-in-progress: false
@@ -73,7 +78,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh pr create --base main --head "${{ steps.sync.outputs.branch }}" \
-            --title "Merge upstream ${{ steps.sync.outputs.upstream_sha }}" \
+            --title "chore(upstream): merge upstream ${{ steps.sync.outputs.upstream_sha }}" \
             --body-file "${{ steps.sync.outputs.report }}"
 
       - name: Report a problem
