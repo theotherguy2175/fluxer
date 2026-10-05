@@ -13,11 +13,11 @@ The fork carries three things upstream does not: a **guild soundboard**,
 **message polls**, and **per-user soundboard hotkeys**. `main` is the
 release branch; upstream is taken in by **merge**, not rebase.
 
-- Last upstream merge: `18c303abf` (2026-09-23), on branch
-  `feature/upstream-merge-2026-09-23`. 82 upstream commits.
-- Prod (`fluxer` ns) runs `sb-20260916-b7bd210`. Dev (`fluxer-dev` ns)
-  runs `sb-20260923-1d3bb42` — i.e. dev is one upstream merge ahead of
-  prod, which is the point of having it.
+- Last upstream merge: `upstream/main` as of 2026-10-05 (210 commits since
+  `18c303abf`), on branch `feature/upstream-merge-2026-10-05`, image tag
+  `sb-20261005-a0b88c3`. **Prod runs it** (deployed 2026-10-05, straight to
+  prod without a dev soak). Dev (`fluxer-dev` ns) is still on
+  `sb-20260923-1d3bb42` until its overlay is bumped.
 - The fork is a **public** GitHub repo. Nothing secret belongs in it,
   including in this file.
 
@@ -502,6 +502,50 @@ cd fluxer_api && npx vitest run && cd ../fluxer_app && npx vitest run
 - MobX no longer uses `@action` decorators anywhere in
   `MessagingMessages.ts` (dropped in upstream's dependency upgrade).
   `makeAutoObservable` wraps methods anyway — don't reintroduce them.
+
+### Gotchas found in the 2026-10-05 merge (210 commits)
+
+- **New required secret `FLUXER_PROFILE_PSEUDONYM_SECRET`** (upstream #3215-era
+  hidden-profile placeholders). `api` and `worker` crash on boot with
+  `FLUXER_PROFILE_PSEUDONYM_SECRET is required` when `FLUXER_ENV=production`;
+  `users-shard` wants the same value (must be byte-identical on all three).
+  Typecheck and tests do NOT catch this, only a real prod start does. It is
+  not in git: add a 64-hex value (`openssl rand -hex 32`) to the out-of-band
+  `fluxer-secrets` Secret in the deploy repo's namespace BEFORE bumping image
+  tags, then restart `users-shard`. Changing it later renames every hidden
+  profile's placeholder. The k8s manifests read the whole Secret via `envFrom`,
+  so adding the key is enough. **Check upstream's `operator/upgrading.mdx` and
+  `configuration.mdx` for new required env vars on every merge**, and diff
+  `deploy/self-hosting/docker-compose.yml` for new `${VAR:?...}` entries.
+- **Local `fluxer_app` typecheck needs a wasm-capable clang.** `pnpm
+  typecheck` fails in `libfluxcore` (`undefined symbol: ZSTD_compressStream2`)
+  because Apple's clang cannot build zstd's C code for wasm32. Put Homebrew
+  LLVM first: `export PATH=/opt/homebrew/opt/llvm/bin:$PATH`, then rerun.
+  CI builds in Docker and is unaffected.
+- **Error-string i18n conflicts are mechanical.** `packages/errors/src/i18n/
+  locales/*.ts`, `weblate/locales/*.json` and `weblate/messages.json` conflict
+  in ~67 files, always in one block: keep ONLY our `polls.*` and
+  `soundboard_sounds.*` lines from our side and take everything else from
+  upstream (upstream deleted `phone.*` and reworded `premium_and_plans.*`;
+  keeping our copies of those resurrects removed keys).
+- **OpenAPI specs and `.po` catalogs are generated:** take upstream's side
+  (`git checkout --theirs`), then `pnpm openapi:generate` and
+  `cd fluxer_app && pnpm lingui:extract`, then seed the ~132 fork strings per
+  locale (only msgids absent from `upstream/main`'s catalog, copy msgid into the
+  empty msgstr). Extract should then report 0 missing.
+- **Native mobile app vs. discovery schema.** The store build of the Fluxer
+  mobile app validates `/.well-known/fluxer` strictly and shows "Invalid
+  instance discovery response" when the server is older than the app. Being
+  far behind upstream breaks mobile, so merge regularly.
+- **`docker manifest inspect` against GHCR is flaky** (intermittent `manifest
+  unknown`). Verify tags with an anonymous registry token and `curl` against
+  `https://ghcr.io/v2/<repo>/manifests/<tag>` instead; the packages are public.
+- **`gh` defaults to the wrong repo** here (two remotes): always pass
+  `-R theotherguy2175/fluxer`. The ArgoDeploy remote is Gitea, not GitHub, so
+  PRs there do not go through `gh`.
+- Merge result facts: no database migrations in this window (storage is the
+  generic `fluxer_kv` table), account identity defaults to `email`, and
+  `fluxer_api` now has 581 test files / 5747 tests.
 
 ## Deploying a merged build to dev
 

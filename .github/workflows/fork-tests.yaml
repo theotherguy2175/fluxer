@@ -1,0 +1,173 @@
+# Fork-owned (never conflicts with upstream). The merge pipeline's gate: runs on
+# every feature/upstream-merge-* push, with upstream's own `typecheck` and `test`
+# jobs copied verbatim from tests.yaml (re-copy if upstream changes how they run),
+# plus the fork gates and an explicit soundboard/polls test pass. The cluster-side
+# promoter deploys a merge to dev only if this workflow succeeded for its commit.
+# (tests.yaml itself only runs on pull_request/main pushes, and a PR opened with
+# GITHUB_TOKEN does not trigger it.)
+name: fork tests
+
+on:
+  push:
+    branches: ["feature/upstream-merge-*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: fork-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GHCR_REGISTRY: ghcr.io/${{ github.repository_owner }}
+  CARGO_PROFILE_DEV_DEBUG: none
+  CARGO_PROFILE_TEST_DEBUG: none
+  CARGO_INCREMENTAL: '0'
+
+jobs:
+  fork-gates:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Fork gates (audit entries, permission bits, worker lanes)
+        run: bash tools/upstream-sync/gates.sh
+
+  typecheck:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      FLUXER_CI_BIN: ${{ github.workspace }}/target/debug/fluxer-ci
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Rust toolchain (CI helpers)
+        uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+        with:
+          toolchain: "1.98.1"
+          targets: wasm32-unknown-unknown
+
+      - name: Restore ci helper
+        id: ci-helper
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: target/debug/fluxer-ci
+          key: >-
+            fluxer-ci-bin-${{ runner.os }}-1.98.1-${{ hashFiles('Cargo.lock', 'Cargo.toml',
+            'tools/ci/Cargo.toml', 'tools/ci/src/**', 'tools/ci/templates/**') }}
+
+      - name: Build ci helper
+        if: steps.ci-helper.outputs.cache-hit != 'true'
+        run: cargo build --locked --package fluxer-ci
+
+      - name: Save ci helper
+        if: github.ref == 'refs/heads/main' && steps.ci-helper.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: target/debug/fluxer-ci
+          key: >-
+            fluxer-ci-bin-${{ runner.os }}-1.98.1-${{ hashFiles('Cargo.lock', 'Cargo.toml',
+            'tools/ci/Cargo.toml', 'tools/ci/src/**', 'tools/ci/templates/**') }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '26'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: |
+          "$FLUXER_CI_BIN" ci --step install_dependencies
+
+      - name: Run typecheck
+        run: |
+          "$FLUXER_CI_BIN" ci --step typecheck
+
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      FLUXER_CI_BIN: ${{ github.workspace }}/target/debug/fluxer-ci
+      PNPM_TEST_WORKSPACE_CONCURRENCY: '2'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+
+      - name: Set up Rust toolchain (CI helpers)
+        uses: dtolnay/rust-toolchain@02cb101ec7c40f2c49e1d9714d64511d8e1b74de
+        with:
+          toolchain: "1.98.1"
+          targets: wasm32-unknown-unknown
+
+      - name: Restore ci helper
+        id: ci-helper
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: target/debug/fluxer-ci
+          key: >-
+            fluxer-ci-bin-${{ runner.os }}-1.98.1-${{ hashFiles('Cargo.lock', 'Cargo.toml',
+            'tools/ci/Cargo.toml', 'tools/ci/src/**', 'tools/ci/templates/**') }}
+
+      - name: Build ci helper
+        if: steps.ci-helper.outputs.cache-hit != 'true'
+        run: cargo build --locked --package fluxer-ci
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '26'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: |
+          "$FLUXER_CI_BIN" ci --step install_dependencies
+
+      - name: Restore fluxer_app wasm artifacts
+        id: app-wasm
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            fluxer_app/pkgs/libfluxcore
+            fluxer_app/pkgs/libfluxwebp
+            fluxer_app/src/features/messaging/utils/markdown/parser/MarkdownParserWasmBytes.ts
+          key: >-
+            app-wasm-${{ runner.os }}-1.98.1-${{ hashFiles('Cargo.lock', 'tools/ci/src/app_wasm.rs',
+            'tools/ci/templates/libfluxcore_wrapper.js', 'tools/ci/templates/libfluxcore_wrapper.d.ts',
+            'fluxer_app/rust/libfluxcore/Cargo.toml', 'fluxer_app/rust/libfluxcore/Cargo.lock',
+            'fluxer_app/rust/libfluxcore/.cargo/config.toml', 'fluxer_app/rust/libfluxcore/src/**',
+            'fluxer_app/rust/libfluxwebp/Cargo.toml', 'fluxer_app/rust/libfluxwebp/Cargo.lock',
+            'fluxer_app/rust/libfluxwebp/src/**', 'fluxer_app/rust/libfluxwebp/shim/**',
+            'fluxer_app/rust/libfluxwebp/simd/**',
+            'packages/markdown_parser/rust/Cargo.toml', 'packages/markdown_parser/rust/.cargo/config.toml',
+            'packages/markdown_parser/rust/src/**') }}
+
+      - name: Run tests
+        run: |
+          "$FLUXER_CI_BIN" ci --step test
+
+      - name: Save fluxer_app wasm artifacts
+        if: always() && github.ref == 'refs/heads/main' && steps.app-wasm.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
+        with:
+          path: |
+            fluxer_app/pkgs/libfluxcore
+            fluxer_app/pkgs/libfluxwebp
+            fluxer_app/src/features/messaging/utils/markdown/parser/MarkdownParserWasmBytes.ts
+          key: >-
+            app-wasm-${{ runner.os }}-1.98.1-${{ hashFiles('Cargo.lock', 'tools/ci/src/app_wasm.rs',
+            'tools/ci/templates/libfluxcore_wrapper.js', 'tools/ci/templates/libfluxcore_wrapper.d.ts',
+            'fluxer_app/rust/libfluxcore/Cargo.toml', 'fluxer_app/rust/libfluxcore/Cargo.lock',
+            'fluxer_app/rust/libfluxcore/.cargo/config.toml', 'fluxer_app/rust/libfluxcore/src/**',
+            'fluxer_app/rust/libfluxwebp/Cargo.toml', 'fluxer_app/rust/libfluxwebp/Cargo.lock',
+            'fluxer_app/rust/libfluxwebp/src/**', 'fluxer_app/rust/libfluxwebp/shim/**',
+            'fluxer_app/rust/libfluxwebp/simd/**',
+            'packages/markdown_parser/rust/Cargo.toml', 'packages/markdown_parser/rust/.cargo/config.toml',
+            'packages/markdown_parser/rust/src/**') }}

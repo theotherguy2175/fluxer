@@ -5,6 +5,7 @@ use thiserror::Error;
 
 pub const SUBJECT_MESSAGE: &str = "push.job.message";
 pub const SUBJECT_CLEAR: &str = "push.job.clear";
+pub const SUBJECT_RING: &str = "push.job.ring";
 pub const QUEUE_GROUP: &str = "fluxer-push";
 
 const SUPPORTED_VERSION: u8 = 1;
@@ -13,7 +14,6 @@ const DIRECT_MESSAGE_GUILD_ID: &str = "0";
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 pub struct MessageJob {
     pub v: u8,
-    pub config_version: u64,
     pub guild_id: String,
     pub channel_id: String,
     pub message_id: String,
@@ -37,10 +37,27 @@ pub struct NotificationFields {
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
 pub struct ClearJob {
     pub v: u8,
-    pub config_version: u64,
     pub user_id: String,
     pub channel_id: String,
     pub message_id: String,
+    #[serde(default)]
+    pub after_message_id: Option<String>,
+}
+
+#[derive(Clone, Debug, Deserialize, Eq, PartialEq)]
+pub struct RingJob {
+    pub v: u8,
+    pub user_id: String,
+    pub channel_id: String,
+    pub message_id: String,
+    pub started_at_ms: i64,
+    pub expires_at_ms: i64,
+    #[serde(default)]
+    pub caller_id: Option<String>,
+    #[serde(default)]
+    pub caller_name: Option<String>,
+    #[serde(default)]
+    pub caller_avatar_url: Option<String>,
 }
 
 #[derive(Debug, Error)]
@@ -69,9 +86,50 @@ pub fn decode_clear(bytes: &[u8]) -> Result<ClearJob, JobError> {
     Ok(job)
 }
 
+pub fn decode_ring(bytes: &[u8]) -> Result<RingJob, JobError> {
+    let job: RingJob = serde_json::from_slice(bytes)?;
+    supported(job.v)?;
+    Ok(job)
+}
+
 fn supported(version: u8) -> Result<(), JobError> {
     if version == SUPPORTED_VERSION {
         return Ok(());
     }
     Err(JobError::UnsupportedVersion(version))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::{Value, json};
+
+    fn clear_job(config_version: Option<u64>) -> Vec<u8> {
+        let mut job = json!({
+            "v": 1,
+            "user_id": "1",
+            "channel_id": "2",
+            "message_id": "3",
+        });
+        if let Some(version) = config_version {
+            job["config_version"] = Value::from(version);
+        }
+        job.to_string().into_bytes()
+    }
+
+    #[test]
+    fn a_job_from_a_gateway_that_sends_a_config_version_decodes() {
+        assert_eq!(
+            decode_clear(&clear_job(Some(7))).expect("decodes").user_id,
+            "1"
+        );
+    }
+
+    #[test]
+    fn a_job_without_a_config_version_decodes() {
+        assert_eq!(
+            decode_clear(&clear_job(None)).expect("decodes").user_id,
+            "1"
+        );
+    }
 }

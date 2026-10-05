@@ -3,6 +3,7 @@
 import type {ChannelID, GuildID, MessageID, UserID} from '@app/api/BrandedTypes';
 import {createMessageID, createUserID} from '@app/api/BrandedTypes';
 import type {IChannelRepositoryAggregate} from '@app/api/channel/repositories/IChannelRepositoryAggregate';
+import type {CrosspostPropagation} from '@app/api/channel/services/message/CrosspostPropagation';
 import type {MessageChannelAuthService} from '@app/api/channel/services/message/MessageChannelAuthService';
 import type {MessageDispatchService} from '@app/api/channel/services/message/MessageDispatchService';
 import {isOperationDisabled, purgeMessageAttachments} from '@app/api/channel/services/message/MessageHelpers';
@@ -41,6 +42,7 @@ interface MessageDeleteServiceDeps {
 	searchService: MessageSearchService;
 	gatewayService: IGatewayService;
 	guildAuditLogService: GuildAuditLogService;
+	crosspostPropagation: CrosspostPropagation;
 }
 
 export class MessageDeleteService {
@@ -92,6 +94,11 @@ export class MessageDeleteService {
 				.catch((error) => Logger.warn({error, messageId: messageId.toString()}, 'Failed to delete poll rows'));
 		}
 		await this.deps.dispatchService.dispatchMessageDelete({channel, messageId, message});
+		await this.deps.crosspostPropagation.enqueueCrosspostSourceRemoval({
+			messages: [message],
+			mode: 'source_deleted',
+			channel,
+		});
 		if (message.pinnedTimestamp) {
 			await this.deps.dispatchService.dispatchEvent({
 				channel,
@@ -148,6 +155,11 @@ export class MessageDeleteService {
 				.catch((error) => Logger.warn({error, messageId: messageId.toString()}, 'Failed to delete poll rows'));
 		}
 		await this.deps.dispatchService.dispatchMessageDelete({channel, messageId, message});
+		await this.deps.crosspostPropagation.enqueueCrosspostSourceRemoval({
+			messages: [message],
+			mode: 'source_deleted',
+			channel,
+		});
 		if (message.pinnedTimestamp) {
 			await this.deps.dispatchService.dispatchEvent({
 				channel,
@@ -196,6 +208,11 @@ export class MessageDeleteService {
 		);
 		await this.deps.channelRepository.messages.bulkDeleteMessages(channelId, messageIds);
 		await this.deps.dispatchService.dispatchMessageDeleteBulk({channel, messageIds});
+		await this.deps.crosspostPropagation.enqueueCrosspostSourceRemoval({
+			messages: existingMessages,
+			mode: 'source_deleted',
+			channel,
+		});
 		if (channel.guildId && existingMessages.length > 0) {
 			await this.guildAuditLogService
 				.createBuilder(channel.guildId, userId)
@@ -274,6 +291,11 @@ export class MessageDeleteService {
 						);
 						await this.deps.channelRepository.messages.bulkDeleteMessages(channel.id, messageIds);
 						await this.deps.dispatchService.dispatchMessageDeleteBulk({channel, messageIds});
+						await this.deps.crosspostPropagation.enqueueCrosspostSourceRemoval({
+							messages: userMessages,
+							mode: 'source_deleted',
+							channel,
+						});
 						await this.deps.searchService.deleteMessagesIndex(messageIds);
 					}
 					if (inWindow.length < messages.length || messages.length < batchSize) break;

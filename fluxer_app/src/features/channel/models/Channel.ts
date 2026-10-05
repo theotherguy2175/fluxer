@@ -160,6 +160,10 @@ export class Channel {
 		return this.type === ChannelTypes.GUILD_TEXT;
 	}
 
+	isGuildAnnouncement(): boolean {
+		return this.type === ChannelTypes.GUILD_ANNOUNCEMENT;
+	}
+
 	isGuildVoice(): boolean {
 		return this.type === ChannelTypes.GUILD_VOICE;
 	}
@@ -184,6 +188,7 @@ export class Channel {
 		if (
 			this.guildId == null ||
 			(this.type !== ChannelTypes.GUILD_TEXT &&
+				this.type !== ChannelTypes.GUILD_ANNOUNCEMENT &&
 				this.type !== ChannelTypes.GUILD_VOICE &&
 				this.type !== ChannelTypes.GUILD_LINK)
 		) {
@@ -303,7 +308,8 @@ export class Channel {
 		const otherOverwrites = Object.keys(other.permissionOverwrites);
 		if (thisOverwrites.length !== otherOverwrites.length) return false;
 		for (const key of thisOverwrites) {
-			if (!this.permissionOverwrites[key].equals(other.permissionOverwrites[key])) {
+			const otherOverwrite = other.permissionOverwrites[key];
+			if (otherOverwrite == null || !this.permissionOverwrites[key].equals(otherOverwrite)) {
 				return false;
 			}
 		}

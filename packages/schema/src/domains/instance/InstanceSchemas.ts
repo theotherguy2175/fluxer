@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import {AccountIdentityModes, TagStyles} from '@fluxer/constants/src/AccountIdentityConstants';
+import {DomainMigrationDiscoveryResponse} from '@fluxer/schema/src/domains/admin/DomainMigrationSchemas';
 import {SsoStatusResponse} from '@fluxer/schema/src/domains/auth/AuthSchemas';
 import {createNamedStringLiteralUnion} from '@fluxer/schema/src/primitives/SchemaPrimitives';
 import {z} from 'zod';
@@ -38,6 +40,8 @@ export const InstanceBrandingSchema = z
 			.string()
 			.nullable()
 			.describe('Optional public status page incident history URL'),
+		premium_product_name: z.string().describe('Name of the premium tier shown by client applications'),
+		premium_info_url: z.string().nullable().describe('Optional absolute URL of a page describing the premium tier'),
 	})
 	.describe('Branding values safe to expose to clients');
 export type InstanceBranding = z.infer<typeof InstanceBrandingSchema>;
@@ -46,6 +50,12 @@ export const InstanceSetupSchema = z
 	.object({
 		configured: z.boolean().describe('Whether the instance administrator has completed initial setup'),
 		admin_url: z.string().nullable().describe('Admin panel URL to continue instance setup'),
+		account_identity_locked: z
+			.boolean()
+			.optional()
+			.describe(
+				'Present only while a self-hosted instance is unconfigured. True when the sign-in method can no longer change',
+			),
 	})
 	.describe('Initial setup state for self-hosted instances');
 export type InstanceSetup = z.infer<typeof InstanceSetupSchema>;
@@ -71,8 +81,7 @@ export const InstanceAppPublicSchema = z.object({
 });
 export type InstanceAppPublic = z.infer<typeof InstanceAppPublicSchema>;
 
-export const InstanceCaptchaProviderSchema = z.enum(['hcaptcha', 'turnstile', 'none']);
-export type InstanceCaptchaProvider = z.infer<typeof InstanceCaptchaProviderSchema>;
+export const InstanceCaptchaProviderSchema = z.enum(['altcha', 'none']);
 
 export const InstanceEndpointsSchema = z
 	.object({
@@ -93,20 +102,45 @@ export type InstanceEndpoints = z.infer<typeof InstanceEndpointsSchema>;
 
 export const InstanceCaptchaSchema = z
 	.object({
-		provider: InstanceCaptchaProviderSchema.describe('Captcha provider name (hcaptcha, turnstile, none)'),
-		hcaptcha_site_key: z.string().nullable().describe('hCaptcha site key if using hCaptcha'),
-		turnstile_site_key: z.string().nullable().describe('Cloudflare Turnstile site key if using Turnstile'),
+		provider: InstanceCaptchaProviderSchema.describe('Captcha provider (altcha or none)'),
 	})
 	.describe('Captcha configuration');
 export type InstanceCaptcha = z.infer<typeof InstanceCaptchaSchema>;
 
+export const AccountIdentityModeSchema = createNamedStringLiteralUnion(
+	[
+		[AccountIdentityModes.EMAIL, 'EMAIL', 'People sign in with an email address'],
+		[AccountIdentityModes.USERNAME, 'USERNAME', 'People sign in with a username and no email is collected'],
+	],
+	'How people identify themselves when they sign in',
+);
+
+export const TagStyleSchema = createNamedStringLiteralUnion(
+	[
+		[TagStyles.NONE, 'NONE', 'Usernames are unique and shown without a tag'],
+		[TagStyles.RANDOM, 'RANDOM', 'Every account gets a random tag'],
+	],
+	'How usernames are tagged',
+);
+
 export const InstanceFeaturesSchema = z
 	.object({
 		voice_enabled: z.boolean().describe('Whether voice/video calling is enabled'),
-		stripe_enabled: z.boolean().describe('Whether Stripe payments are enabled'),
+		stripe_enabled: z.boolean().describe('Whether premium purchases through Stripe are available'),
+		premium_enabled: z
+			.boolean()
+			.describe('Whether this instance has a premium tier, so premium status, gifts and perks apply'),
+		stripe_serviceable: z
+			.boolean()
+			.describe('Whether existing Stripe subscriptions can be managed, cancelled and billed on this instance'),
 		self_hosted: z.boolean().describe('Whether this is a self-hosted instance'),
 		presigned_attachment_uploads: z.boolean().describe('Whether clients can request presigned attachment upload URLs'),
 		emails_enabled: z.boolean().describe('Whether the instance sends emails (verification, password reset, etc.)'),
+		phone_verification_enabled: z.boolean().describe('Deprecated. Always false.'),
+		account_identity: AccountIdentityModeSchema.optional().describe(
+			'How people sign in on this instance. Clients treat a missing value as email',
+		),
+		tag_style: TagStyleSchema.optional().describe('How usernames are tagged. Clients treat a missing value as random'),
 	})
 	.describe('Feature flags for this instance');
 export type InstanceFeatures = z.infer<typeof InstanceFeaturesSchema>;
@@ -154,6 +188,11 @@ export const InstanceCommunitySchema = z
 		direct_messages_disabled: z
 			.boolean()
 			.describe('Whether direct messages and friend requests are disabled instance-wide'),
+		guild_create_access: z
+			.boolean()
+			.describe(
+				'Whether every account can create communities. When false, only admins and accounts granted the feature_guild_create limit can',
+			),
 	})
 	.describe('Community topology and direct-message policy for this instance');
 export type InstanceCommunity = z.infer<typeof InstanceCommunitySchema>;
@@ -187,6 +226,25 @@ export const WellKnownFluxerResponse = z.object({
 	limits: LimitConfigResponse.describe('Limit configuration with rules and trait definitions'),
 	push: InstancePushSchema,
 	app_public: InstanceAppPublicSchema.describe('Public application configuration for client-side features'),
+	domain_migration: DomainMigrationDiscoveryResponse.optional().describe(
+		'Web domain migration switch and anonymous rollout, only acted on by official instance clients',
+	),
 });
 
 export type WellKnownFluxerResponse = z.infer<typeof WellKnownFluxerResponse>;
+
+export const InstanceAccountIdentityUpdateRequest = z.object({
+	mode: AccountIdentityModeSchema.describe('Sign-in method for the new instance'),
+	tag_style: TagStyleSchema.optional().describe(
+		'How usernames are tagged. Defaults to none. Username sign-in accepts only none',
+	),
+});
+
+export type InstanceAccountIdentityUpdateRequest = z.infer<typeof InstanceAccountIdentityUpdateRequest>;
+
+export const InstanceAccountIdentityResponse = z.object({
+	mode: AccountIdentityModeSchema.describe('Sign-in method now in effect'),
+	tag_style: TagStyleSchema.describe('How usernames are tagged'),
+});
+
+export type InstanceAccountIdentityResponse = z.infer<typeof InstanceAccountIdentityResponse>;
