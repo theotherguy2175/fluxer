@@ -1,22 +1,23 @@
 # Fork-owned (upstream has no such file, so it never conflicts on a merge).
 #
-# Twice a week: try to merge fluxerapp/fluxer main into a feature/upstream-merge-*
-# branch. Clean + gates pass -> push the branch (soundboard-images builds it) and
-# open a PR. Otherwise -> open an issue labelled `upstream-sync`; the in-cluster
+# Daily at 03:00 EDT (07:00 UTC; GitHub cron is UTC-only, so 02:00 EST after the
+# November clock change): merge fluxerapp/fluxer main into a feature/upstream-merge-*
+# branch. Conflicts are resolved hunk by hunk: upstream wins everywhere except where
+# the fork's soundboard/polls work is involved (tools/upstream-sync/resolve-conflicts.py).
+# Clean + gates pass -> push the branch (soundboard-images and fork-tests build/verify it)
+# and open a PR. Otherwise -> open an issue labelled `upstream-sync`; the in-cluster
 # fluxer-promoter turns open issues into a Pushover alert.
 #
-# Needs repo secret SYNC_PAT: a fine-grained PAT for THIS repo only with
-# Contents: write, Pull requests: write, Issues: write, Workflows: write.
-# GITHUB_TOKEN cannot do this job: it cannot push changes to .github/workflows/*
-# (upstream's merges touch them) and what it pushes does not trigger other
-# workflows, so no images would build.
+# Pushing uses secret SYNC_DEPLOY_KEY (a write deploy key) rather than GITHUB_TOKEN:
+# GITHUB_TOKEN cannot push changes to .github/workflows/* (upstream's merges touch
+# them) and what it pushes does not trigger other workflows, so no images would build.
 #
 # NOTE: scheduled workflows only run from the default branch (main).
 name: upstream sync
 
 on:
   schedule:
-    - cron: "17 8 * * 1,4"
+    - cron: "0 7 * * *"
   workflow_dispatch:
 
 permissions:
@@ -39,7 +40,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
-          token: ${{ secrets.SYNC_PAT }}
+          ssh-key: ${{ secrets.SYNC_DEPLOY_KEY }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
@@ -63,7 +64,7 @@ jobs:
       - name: Open PR
         if: steps.sync.outputs.status == 'pushed'
         env:
-          GH_TOKEN: ${{ secrets.SYNC_PAT }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh pr create --base main --head "${{ steps.sync.outputs.branch }}" \
             --title "Merge upstream ${{ steps.sync.outputs.upstream_sha }}" \
@@ -72,7 +73,7 @@ jobs:
       - name: Report a problem
         if: steps.sync.outputs.status == 'conflict' || steps.sync.outputs.status == 'gates'
         env:
-          GH_TOKEN: ${{ secrets.SYNC_PAT }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh label create upstream-sync --color D93F0B --description "upstream merge needs a human" 2>/dev/null || true
           title="Upstream sync needs you: ${{ steps.sync.outputs.upstream_sha }} (${{ steps.sync.outputs.status }})"
@@ -85,7 +86,7 @@ jobs:
       - name: Report a crashed run
         if: failure() && steps.sync.outcome == 'failure'
         env:
-          GH_TOKEN: ${{ secrets.SYNC_PAT }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh label create upstream-sync --color D93F0B --description "upstream merge needs a human" 2>/dev/null || true
           printf 'The upstream-sync run itself failed (not a merge conflict): %s/%s/actions/runs/%s\n' \

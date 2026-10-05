@@ -38,15 +38,23 @@ set +e
 git merge --no-ff --no-commit upstream/main >/dev/null 2>&1
 set -e
 
-manual=""
+# 1. generated files: take upstream, regenerate below
+regen_openapi=0
 while IFS= read -r f; do
   [ -n "$f" ] || continue
   case "$f" in
-    *messages.po) git checkout --theirs -- "$f" 2>/dev/null && git add "$f" || manual+="$f"$'\n' ;;
-    .gitignore)   git checkout --ours   -- "$f" 2>/dev/null && git add "$f" || manual+="$f"$'\n' ;;
-    *)            manual+="$f"$'\n' ;;
+    *messages.po)                 git checkout --theirs -- "$f" 2>/dev/null && git add "$f" ;;
+    .gitignore)                   git checkout --ours   -- "$f" 2>/dev/null && git add "$f" ;;  # CLAUDE.md is tracked in the fork
+    *openapi*.json)               git checkout --theirs -- "$f" 2>/dev/null && git add "$f" && regen_openapi=1 ;;
   esac
 done < <(git diff --name-only --diff-filter=U)
+
+# 2. everything else, hunk by hunk: upstream wins unless the fork's soundboard/polls
+#    work is in the hunk (see resolve-conflicts.py); those files stay conflicted
+resolved_log=$(python3 "$here/resolve-conflicts.py")
+echo "$resolved_log"
+manual=$(git diff --name-only --diff-filter=U)
+[ -n "$manual" ] && manual=$(grep '^MANUAL' <<<"$resolved_log" | sed 's/^MANUAL //')$'\n'
 
 if [ -n "$manual" ]; then
   {
@@ -62,6 +70,7 @@ fi
 # when the merge was textually clean (a clean merge can still leave raw
 # {placeholders} in prod).
 CI=true pnpm install --frozen-lockfile
+[ "$regen_openapi" = 1 ] && pnpm openapi:generate && git add -A
 ( cd fluxer_app && pnpm lingui:extract )
 python3 "$here/seed-po.py" upstream/main
 git add -A fluxer_app/src/features/i18n
@@ -80,6 +89,6 @@ git commit -q -m "Merge upstream/main ($up7, $(date -u +%F)) into the fork [auto
 
 $n upstream commits. Mechanical conflicts auto-resolved (.po -> upstream +
 re-extract + re-seed fork strings; .gitignore -> ours). Fork gates passed."
-git push -q origin "$branch"
+if [ -z "${NO_PUSH:-}" ]; then git push -q origin "$branch"; fi
 echo "Pushed \`$branch\`: upstream \`$up7\` ($n commits) merged cleanly and passed the fork gates." > "$REPORT"
 finish pushed
