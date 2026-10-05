@@ -74,6 +74,11 @@ CI=true pnpm install --frozen-lockfile
 ( cd fluxer_app && pnpm lingui:extract )
 python3 "$here/seed-po.py" upstream/main
 git add -A fluxer_app/src/features/i18n
+# compiled locale modules (packages/errors, @fluxer/i18n) are generated from the
+# catalogs: left stale they fail upstream's i18n drift check and ship old strings
+pnpm i18n:compile
+cargo fmt --all
+git add -A
 
 if ! bash "$here/gates.sh" > "$REPORT.gates" 2>&1; then
   {
