@@ -1,0 +1,81 @@
+# Fork-owned (upstream has no such file, so it never conflicts on a merge).
+#
+# Twice a week: try to merge fluxerapp/fluxer main into a feature/upstream-merge-*
+# branch. Clean + gates pass -> push the branch (soundboard-images builds it) and
+# open a PR. Otherwise -> open an issue labelled `upstream-sync`; the in-cluster
+# fluxer-promoter turns open issues into a Pushover alert.
+#
+# Needs repo secret SYNC_PAT: a fine-grained PAT for THIS repo only with
+# Contents: write, Pull requests: write, Issues: write, Workflows: write.
+# GITHUB_TOKEN cannot do this job: it cannot push changes to .github/workflows/*
+# (upstream's merges touch them) and what it pushes does not trigger other
+# workflows, so no images would build.
+#
+# NOTE: scheduled workflows only run from the default branch (main).
+name: upstream sync
+
+on:
+  schedule:
+    - cron: "17 8 * * 1,4"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository_owner == 'theotherguy2175'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_PAT }}
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+
+      - name: Install Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '26'
+          cache: 'pnpm'
+
+      - name: Configure git
+        run: |
+          git config user.name "Cody Casteel"
+          git config user.email "codycasteel2178.5@gmail.com"
+          git remote add upstream https://github.com/fluxerapp/fluxer.git
+
+      - name: Merge upstream
+        id: sync
+        run: tools/upstream-sync/sync.sh
+
+      - name: Open PR
+        if: steps.sync.outputs.status == 'pushed'
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_PAT }}
+        run: |
+          gh pr create --base main --head "${{ steps.sync.outputs.branch }}" \
+            --title "Merge upstream ${{ steps.sync.outputs.upstream_sha }}" \
+            --body-file "${{ steps.sync.outputs.report }}"
+
+      - name: Report a problem
+        if: steps.sync.outputs.status == 'conflict' || steps.sync.outputs.status == 'gates'
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_PAT }}
+        run: |
+          gh label create upstream-sync --color D93F0B --description "upstream merge needs a human" 2>/dev/null || true
+          title="Upstream sync needs you: ${{ steps.sync.outputs.upstream_sha }} (${{ steps.sync.outputs.status }})"
+          if [ -z "$(gh issue list --label upstream-sync --state open --search "\"$title\" in:title" --json number --jq '.[0].number')" ]; then
+            gh issue create --label upstream-sync --title "$title" --body-file "${{ steps.sync.outputs.report }}"
+          fi
