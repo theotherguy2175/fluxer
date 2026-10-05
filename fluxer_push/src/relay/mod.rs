@@ -5,7 +5,7 @@ pub mod envelope;
 mod quota;
 pub mod reject;
 
-use crate::config::{ProviderEnvironment, RelayConfig};
+use crate::config::{FcmConfig, ProviderEnvironment, RelayConfig};
 use crate::metrics::{Metrics, RelayLeg, RelayResult};
 use crate::server::{Sidecar, serve, sidecar_router};
 use crate::tokens::{TokenCache, TokenError};
@@ -21,14 +21,16 @@ use base64::prelude::*;
 use envelope::Urgency;
 use fluxer_svc::shutdown::wait_for_shutdown;
 use quota::Quota;
+use rand::Rng as _;
 use reject::{Reason, Rejection};
 use sha2::{Digest as _, Sha256};
 use std::net::SocketAddr;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::time::{Duration, Instant};
 use tracing::{info, warn};
 
 pub const APNS_ROUTE: &str = "/relay/v1/apns/{app_id}/{environment}/{device_token}";
+pub const APNS_VOIP_ROUTE: &str = "/relay/v1/apns-voip/{app_id}/{environment}/{device_token}";
 pub const FCM_ROUTE: &str = "/relay/v1/fcm/{app_id}/{device_token}";
 
 const AES128GCM: &str = "aes128gcm";
@@ -36,7 +38,15 @@ const TTL_HEADER: &str = "ttl";
 const URGENCY_HEADER: &str = "urgency";
 const JSON_CONTENT_TYPE: &str = "application/json";
 const DIGEST_BYTES: usize = 8;
-const APNS_DEVICE_TOKEN_LEN: usize = 64;
+const LOG_SALT_BYTES: usize = 16;
+
+static LOG_SALT: LazyLock<[u8; LOG_SALT_BYTES]> = LazyLock::new(|| {
+    let mut salt = [0u8; LOG_SALT_BYTES];
+    rand::rng().fill_bytes(&mut salt);
+    salt
+});
+const MIN_APNS_DEVICE_TOKEN_LEN: usize = 64;
+const MAX_APNS_DEVICE_TOKEN_LEN: usize = 256;
 const MAX_FCM_DEVICE_TOKEN_LEN: usize = 512;
 const MAX_TTL_SECONDS: i64 = 86_400;
 const BODY_READ_TIMEOUT: Duration = Duration::from_secs(15);
@@ -103,6 +113,7 @@ pub fn router(state: Arc<AppState>) -> Router {
     let sidecar = Arc::clone(&state.sidecar);
     Router::new()
         .route(APNS_ROUTE, post(apns_route))
+        .route(APNS_VOIP_ROUTE, post(apns_voip_route))
         .route(FCM_ROUTE, post(fcm_route))
         .fallback(unmatched_route)
         .with_state(state)
@@ -118,17 +129,37 @@ async fn unmatched_route(State(state): State<Arc<AppState>>) -> Response {
 async fn apns_route(
     State(state): State<Arc<AppState>>,
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
-    Path((app_id, environment, device_token)): Path<(String, String, String)>,
+    Path(path): Path<(String, String, String)>,
     headers: HeaderMap,
     body: Body,
 ) -> Response {
-    let environment = ProviderEnvironment::from_label(&environment);
+    apns_leg(&state, RelayLeg::Apns, peer, path, headers, body).await
+}
+
+async fn apns_voip_route(
+    State(state): State<Arc<AppState>>,
+    ConnectInfo(peer): ConnectInfo<SocketAddr>,
+    Path(path): Path<(String, String, String)>,
+    headers: HeaderMap,
+    body: Body,
+) -> Response {
+    apns_leg(&state, RelayLeg::ApnsVoip, peer, path, headers, body).await
+}
+
+async fn apns_leg(
+    state: &AppState,
+    leg: RelayLeg,
+    peer: SocketAddr,
+    (app_id, environment, device_token): (String, String, String),
+    headers: HeaderMap,
+    body: Body,
+) -> Response {
     relay(
-        &state,
+        state,
         Incoming {
-            leg: RelayLeg::Apns,
+            leg,
             app_id,
-            environment,
+            environment: ProviderEnvironment::from_label(&environment),
             device_token,
             peer,
         },
@@ -173,14 +204,71 @@ struct Delivery {
     ttl_seconds: i64,
 }
 
+impl Delivery {
+    fn parse(urgency: Option<&str>, ttl_seconds: Option<&str>) -> Result<Self, Rejection> {
+        let bad_request = Rejection::new(Reason::BadRequest);
+        Ok(Self {
+            urgency: Urgency::from_header(urgency).ok_or(bad_request)?,
+            ttl_seconds: ttl_seconds
+                .ok_or(bad_request)?
+                .parse::<i64>()
+                .map_err(|_| bad_request)?
+                .clamp(0, MAX_TTL_SECONDS),
+        })
+    }
+}
+
 enum Target<'a> {
     Apns {
         environment: ProviderEnvironment,
         topic: &'a str,
     },
-    Fcm {
-        project_id: &'a str,
-    },
+    Fcm(FcmTarget<'a>),
+}
+
+pub struct FcmTarget<'a> {
+    cfg: &'a FcmConfig,
+    project_id: &'a str,
+    device_token: &'a str,
+}
+
+impl<'a> FcmTarget<'a> {
+    pub fn resolve(
+        cfg: Option<&'a FcmConfig>,
+        app_id: &str,
+        device_token: &'a str,
+    ) -> Option<Self> {
+        let cfg = cfg?;
+        Some(Self {
+            project_id: cfg.listed_project_id(app_id)?,
+            cfg,
+            device_token,
+        })
+    }
+}
+
+pub async fn forward_fcm(
+    http: &reqwest::Client,
+    tokens: &TokenCache,
+    metrics: &Metrics,
+    target: &FcmTarget<'_>,
+    record: &[u8],
+    urgency: &str,
+    ttl_seconds: &str,
+) -> u16 {
+    let verdict = async {
+        if !device_token_is_shaped(RelayLeg::Fcm, target.device_token) {
+            return Err(Rejection::new(Reason::DeviceTokenInvalid));
+        }
+        let delivery = Delivery::parse(Some(urgency), Some(ttl_seconds))?;
+        let payload = envelope::encode_payload(record);
+        send_fcm(http, tokens, metrics, target, &delivery, &payload).await
+    }
+    .await;
+    verdict
+        .err()
+        .map_or(StatusCode::OK, |rejection| rejection.reason.status())
+        .as_u16()
 }
 
 async fn relay(state: &AppState, incoming: Incoming, headers: HeaderMap, body: Body) -> Response {
@@ -233,14 +321,14 @@ async fn forward(
     if !is_aes128gcm(headers) {
         return Err(Rejection::new(Reason::BadRequest));
     }
-    let delivery = Delivery {
-        urgency: Urgency::from_header(header(headers, URGENCY_HEADER))
-            .ok_or(Rejection::new(Reason::BadRequest))?,
-        ttl_seconds: ttl_seconds(headers)?,
-    };
+    let delivery = Delivery::parse(header(headers, URGENCY_HEADER), header(headers, TTL_HEADER))?;
     state.quota.take(
         &state.metrics,
         &incoming.device_token,
+        match incoming.leg {
+            RelayLeg::ApnsVoip => Urgency::Alert,
+            _ => delivery.urgency,
+        },
         client_ip::for_rate_limit(&state.cfg, incoming.peer, headers),
         Instant::now(),
     )?;
@@ -262,31 +350,42 @@ async fn forward(
         Target::Apns { environment, topic } => {
             send_apns(state, incoming, &delivery, &payload, environment, topic).await
         }
-        Target::Fcm { project_id } => {
-            send_fcm(state, incoming, &delivery, &payload, project_id).await
+        Target::Fcm(target) => {
+            send_fcm(
+                &state.http,
+                &state.tokens,
+                &state.metrics,
+                &target,
+                &delivery,
+                &payload,
+            )
+            .await
         }
     }
 }
 
-fn resolve<'a>(state: &'a AppState, incoming: &Incoming) -> Result<Target<'a>, Rejection> {
+fn resolve<'a>(state: &'a AppState, incoming: &'a Incoming) -> Result<Target<'a>, Rejection> {
     let unknown = Rejection::new(Reason::AppUnknown);
     match incoming.leg {
-        RelayLeg::Apns => {
+        RelayLeg::Apns | RelayLeg::ApnsVoip => {
             let cfg = state.cfg.apns.as_ref().ok_or(unknown)?;
             let environment = incoming.environment.ok_or(unknown)?;
+            let topic = match incoming.leg {
+                RelayLeg::ApnsVoip => cfg.voip_topic_for(&incoming.app_id, environment),
+                _ => cfg.topic_for(&incoming.app_id, environment),
+            };
             Ok(Target::Apns {
                 environment,
-                topic: cfg
-                    .topic_for(&incoming.app_id, environment)
-                    .ok_or(unknown)?,
+                topic: topic.ok_or(unknown)?,
             })
         }
-        RelayLeg::Fcm => {
-            let cfg = state.cfg.fcm.as_ref().ok_or(unknown)?;
-            Ok(Target::Fcm {
-                project_id: cfg.listed_project_id(&incoming.app_id).ok_or(unknown)?,
-            })
-        }
+        RelayLeg::Fcm => FcmTarget::resolve(
+            state.cfg.fcm.as_ref(),
+            &incoming.app_id,
+            &incoming.device_token,
+        )
+        .map(Target::Fcm)
+        .ok_or(unknown),
     }
 }
 
@@ -303,12 +402,22 @@ async fn send_apns(
         .apns
         .as_ref()
         .ok_or(Rejection::new(Reason::AppUnknown))?;
+    let (headers, body) = match incoming.leg {
+        RelayLeg::ApnsVoip => (
+            envelope::apns_voip_headers(),
+            envelope::apns_voip_body(payload)?,
+        ),
+        _ => (
+            envelope::apns_headers(delivery.urgency, unix_seconds(), delivery.ttl_seconds),
+            envelope::apns_body(payload, delivery.urgency)?,
+        ),
+    };
     let request = ApnsRequest {
         environment,
         topic,
         device_token: &incoming.device_token,
-        headers: &envelope::apns_headers(delivery.urgency, unix_seconds(), delivery.ttl_seconds),
-        body: envelope::apns_body(payload, delivery.urgency)?,
+        headers: &headers,
+        body,
     };
     let outcome = vendor::send_apns(
         &state.apns_http,
@@ -318,41 +427,30 @@ async fn send_apns(
         request,
     )
     .await;
-    finish(state, RelayLeg::Apns, outcome)
+    finish(&state.metrics, incoming.leg, outcome)
 }
 
 async fn send_fcm(
-    state: &AppState,
-    incoming: &Incoming,
+    http: &reqwest::Client,
+    tokens: &TokenCache,
+    metrics: &Metrics,
+    target: &FcmTarget<'_>,
     delivery: &Delivery,
     payload: &str,
-    project_id: &str,
 ) -> Result<(), Rejection> {
-    let cfg = state
-        .cfg
-        .fcm
-        .as_ref()
-        .ok_or(Rejection::new(Reason::AppUnknown))?;
     let body = envelope::fcm_body(
-        &incoming.device_token,
+        target.device_token,
         payload,
         delivery.urgency,
         delivery.ttl_seconds,
     )?;
-    let outcome = vendor::send_fcm(
-        &state.http,
-        &state.tokens,
-        &state.metrics,
-        cfg,
-        project_id,
-        body,
-    )
-    .await;
-    finish(state, RelayLeg::Fcm, outcome)
+    let outcome =
+        vendor::send_fcm(http, tokens, metrics, target.cfg, target.project_id, body).await;
+    finish(metrics, RelayLeg::Fcm, outcome)
 }
 
 fn finish(
-    state: &AppState,
+    metrics: &Metrics,
     leg: RelayLeg,
     outcome: Result<VendorOutcome, TokenError>,
 ) -> Result<(), Rejection> {
@@ -362,7 +460,7 @@ fn finish(
     })?;
     let (result, verdict) = match outcome {
         VendorOutcome::Accepted => (RelayResult::Accepted, Ok(())),
-        VendorOutcome::Unreachable => (
+        VendorOutcome::Unreachable(_) => (
             RelayResult::Failed,
             Err(Rejection::new(Reason::ProviderUnavailable)),
         ),
@@ -375,7 +473,7 @@ fn finish(
             Err(Rejection::new(refusal_reason(&refusal))),
         ),
     };
-    state.metrics.record_relay_vendor_request(leg, result);
+    metrics.record_relay_vendor_request(leg, result);
     verdict
 }
 
@@ -390,8 +488,9 @@ fn refusal_reason(refusal: &Refusal) -> Reason {
 
 fn device_token_is_shaped(leg: RelayLeg, device_token: &str) -> bool {
     match leg {
-        RelayLeg::Apns => {
-            device_token.len() == APNS_DEVICE_TOKEN_LEN
+        RelayLeg::Apns | RelayLeg::ApnsVoip => {
+            (MIN_APNS_DEVICE_TOKEN_LEN..=MAX_APNS_DEVICE_TOKEN_LEN).contains(&device_token.len())
+                && device_token.len().is_multiple_of(2)
                 && device_token.bytes().all(|byte| byte.is_ascii_hexdigit())
         }
         RelayLeg::Fcm => {
@@ -409,14 +508,6 @@ fn is_fcm_token_byte(byte: u8) -> bool {
 fn is_aes128gcm(headers: &HeaderMap) -> bool {
     header(headers, header::CONTENT_ENCODING.as_str())
         .is_some_and(|value| value.eq_ignore_ascii_case(AES128GCM))
-}
-
-fn ttl_seconds(headers: &HeaderMap) -> Result<i64, Rejection> {
-    let raw = header(headers, TTL_HEADER).ok_or(Rejection::new(Reason::BadRequest))?;
-    let parsed = raw
-        .parse::<i64>()
-        .map_err(|_| Rejection::new(Reason::BadRequest))?;
-    Ok(parsed.clamp(0, MAX_TTL_SECONDS))
 }
 
 fn header<'a>(headers: &'a HeaderMap, name: &str) -> Option<&'a str> {
@@ -449,5 +540,80 @@ fn digest(value: &str) -> String {
     if value.is_empty() {
         return "-".to_owned();
     }
-    BASE64_URL_SAFE_NO_PAD.encode(&Sha256::digest(value.as_bytes())[..DIGEST_BYTES])
+    let mut hasher = Sha256::new();
+    hasher.update(*LOG_SALT);
+    hasher.update(value.as_bytes());
+    BASE64_URL_SAFE_NO_PAD.encode(&hasher.finalize()[..DIGEST_BYTES])
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn hex(len: usize) -> String {
+        "a".repeat(len)
+    }
+
+    #[test]
+    fn apns_accepts_every_token_length_apple_hands_out() {
+        for len in [64, 128, 160, 200, 256] {
+            assert!(
+                device_token_is_shaped(RelayLeg::Apns, &hex(len)),
+                "{len} hex characters must be accepted"
+            );
+        }
+        assert!(device_token_is_shaped(RelayLeg::Apns, &"A".repeat(64)));
+        assert!(device_token_is_shaped(RelayLeg::ApnsVoip, &hex(160)));
+    }
+
+    #[test]
+    fn apns_rejects_tokens_that_are_not_even_length_hex() {
+        for token in [hex(62), hex(63), hex(161), hex(258), "z".repeat(64)] {
+            assert!(
+                !device_token_is_shaped(RelayLeg::Apns, &token),
+                "{token} must be rejected"
+            );
+        }
+    }
+
+    #[test]
+    fn the_log_digest_is_not_a_bare_hash_of_the_token() {
+        const TOKEN: &str = "3dbc5a5ef1a1c1666afc26f466e1b3ebaaf4c66d92dddeb0fd1b69c49641d4cd";
+        let unsalted =
+            BASE64_URL_SAFE_NO_PAD.encode(&Sha256::digest(TOKEN.as_bytes())[..DIGEST_BYTES]);
+        assert_ne!(digest(TOKEN), unsalted);
+        assert_eq!(digest(TOKEN), digest(TOKEN));
+        assert_eq!(digest(""), "-");
+    }
+
+    #[test]
+    fn a_clear_survives_a_device_that_is_offline_for_a_day() {
+        assert_eq!(
+            Urgency::Background.ttl_cap_seconds(),
+            Urgency::Alert.ttl_cap_seconds(),
+            "a clear must outlive the alert it removes"
+        );
+    }
+
+    #[test]
+    fn a_clear_stays_silent_on_the_apns_leg() {
+        let body = envelope::apns_body("payload", Urgency::Background).expect("body fits");
+        let parsed: serde_json::Value = serde_json::from_slice(&body).expect("body is json");
+        assert_eq!(parsed["aps"]["content-available"], 1);
+        assert!(parsed["aps"].get("alert").is_none());
+        let headers = envelope::apns_headers(Urgency::Background, 0, 86_400);
+        let push_type = headers
+            .iter()
+            .find(|(name, _)| name == "apns-push-type")
+            .map(|(_, value)| value.as_str());
+        assert_eq!(push_type, Some("background"));
+    }
+
+    #[test]
+    fn payload_too_large_answers_413() {
+        assert_eq!(
+            Reason::PayloadTooLarge.status(),
+            StatusCode::PAYLOAD_TOO_LARGE
+        );
+    }
 }

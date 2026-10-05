@@ -9,7 +9,9 @@ import type {Relationship} from '@app/api/models/Relationship';
 import type {User} from '@app/api/models/User';
 import type {UserGuildSettings} from '@app/api/models/UserGuildSettings';
 import type {UserSettings} from '@app/api/models/UserSettings';
-import {canUseProfileTimezone, getRequiredActions} from '@app/api/user/UserHelpers';
+import type {WebAuthnCredential} from '@app/api/models/WebAuthnCredential';
+import {isAccountLimited} from '@app/api/user/AccountLimit';
+import {hiddenUserPartial, isProfileHidden} from '@app/api/user/ProfileVisibility';
 import {canUserAccessNsfwContent} from '@app/api/utils/AgeUtils';
 import type {ChannelMessageNotifications} from '@fluxer/constants/src/NotificationConstants';
 import {
@@ -26,6 +28,7 @@ import {
 	UserFlags,
 	UserPremiumTypes,
 } from '@fluxer/constants/src/UserConstants';
+import type {WebAuthnCredentialResponse} from '@fluxer/schema/src/domains/auth/AuthSchemas';
 import type {
 	RelationshipResponse,
 	UserGuildSettingsResponse,
@@ -68,10 +71,18 @@ function sortUserIds(userIds: Iterable<UserID>): Array<string> {
 }
 
 export function mapUserToPartialResponse(user: User): UserPartialResponse {
+	const partial = mapUserToOwnPartialResponse(user);
+	return isProfileHidden(user) && !isDeletedForDisplay(user) ? hiddenUserPartial(partial) : partial;
+}
+
+function isDeletedForDisplay(user: User): boolean {
+	return (user.flags & UserFlags.DELETED) !== 0n && user.pendingDeletionAt === null && !user.isSystem;
+}
+
+function mapUserToOwnPartialResponse(user: User): UserPartialResponse {
 	const isBot = user.isBot;
 	const avatarHash = stripAvatarForUser(user);
-	const isDeleted = (user.flags & UserFlags.DELETED) !== 0n && user.pendingDeletionAt === null && !user.isSystem;
-	if (isDeleted) {
+	if (isDeletedForDisplay(user)) {
 		return {
 			id: user.id.toString(),
 			username: DELETED_USER_USERNAME,
@@ -117,9 +128,8 @@ export function hasPartialUserFieldsChanged(oldUser: User, newUser: User): boole
 
 export function mapUserToPrivateResponse(user: User): UserPrivateResponse {
 	const isStaff = (user.flags & UserFlags.STAFF) !== 0n;
-	const partialResponse = mapUserToPartialResponse(user);
+	const partialResponse = mapUserToOwnPartialResponse(user);
 	const isActuallyPremium = user.isPremium();
-	const includeProfileTimezone = canUseProfileTimezone(user);
 	const traitSet = new Set<string>();
 	for (const trait of user.traits ?? []) {
 		if (trait && trait !== 'premium') {
@@ -129,7 +139,6 @@ export function mapUserToPrivateResponse(user: User): UserPrivateResponse {
 	if (isActuallyPremium) {
 		traitSet.add('premium');
 	}
-	const requiredActions = [...getRequiredActions(user)];
 	const traits = Array.from(traitSet).sort();
 	const authenticatorTypes = getActiveAuthenticatorTypes(user);
 	return {
@@ -140,17 +149,12 @@ export function mapUserToPrivateResponse(user: User): UserPrivateResponse {
 		traits,
 		email: user.email ?? null,
 		email_bounced: user.emailBounced,
-		phone: null,
-		has_verified_phone: user.hasVerifiedPhone,
+		has_verified_phone: false,
 		bio: user.bio,
 		pronouns: user.pronouns,
 		accent_color: user.accentColor,
-		...(includeProfileTimezone
-			? {
-					timezone: user.timezone,
-					timezone_privacy_flags: user.timezonePrivacyFlags,
-				}
-			: {}),
+		timezone: user.timezone,
+		timezone_privacy_flags: user.timezonePrivacyFlags,
 		banner: stripBannerForUser(user),
 		banner_color: user.bannerColor,
 		mfa_enabled: authenticatorTypes.length > 0,
@@ -173,7 +177,8 @@ export function mapUserToPrivateResponse(user: User): UserPrivateResponse {
 		premium_perks_disabled: !!(user.premiumFlags & PremiumFlags.PERKS_DISABLED),
 		password_last_changed_at: user.passwordLastChangedAt?.toISOString() ?? null,
 		last_voice_activity_sharing_change_at: user.lastVoiceActivitySharingChangeAt?.toISOString() ?? null,
-		required_actions: requiredActions,
+		required_actions: [],
+		account_limited: isAccountLimited(user),
 		nsfw_allowed: canUserAccessNsfwContent(user),
 		has_dismissed_premium_onboarding: isActuallyPremium && user.premiumOnboardingDismissedAt != null,
 		has_ever_purchased: user.hasEverPurchased,
@@ -197,6 +202,9 @@ export function mapUserToPrivateResponse(user: User): UserPrivateResponse {
 }
 
 export function mapUserToProfileResponse(user: User, options?: {restrictProfile?: boolean}): UserProfileResponse {
+	if (isProfileHidden(user)) {
+		return {bio: null, pronouns: null, banner: null, banner_color: null, accent_color: null};
+	}
 	if (options?.restrictProfile) {
 		return {
 			bio: null,
@@ -240,9 +248,12 @@ export function mapUserToOAuthResponse(
 
 export function mapGuildMemberToProfileResponse(
 	guildMember: GuildMember | null | undefined,
-	options?: {restrictProfile?: boolean},
+	options?: {restrictProfile?: boolean; hidden?: boolean},
 ): UserProfileResponse | null {
 	if (!guildMember) return null;
+	if (options?.hidden) {
+		return {bio: null, pronouns: null, banner: null, accent_color: null};
+	}
 	if (options?.restrictProfile) {
 		return {
 			bio: null,
@@ -418,5 +429,18 @@ export function mapUserGuildSettingsToResponse(settings: UserGuildSettings): Use
 			: null,
 		unread_badges: settings.unreadBadges ?? null,
 		version: settings.version,
+	};
+}
+
+export function mapWebAuthnCredentialToResponse(
+	credential: WebAuthnCredential,
+	legacyRpId: string,
+): WebAuthnCredentialResponse {
+	return {
+		id: credential.credentialId,
+		name: credential.name,
+		created_at: credential.createdAt.toISOString(),
+		last_used_at: credential.lastUsedAt?.toISOString() ?? null,
+		rp_id: credential.rpId ?? legacyRpId,
 	};
 }

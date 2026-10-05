@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use crate::relay::reject::{REASON_COUNT, Reason};
-use crate::rollout::{RolloutOutcome, RolloutSnapshot};
+use crate::relay_consent::ConsentUpdate;
 use fluxer_svc::metrics::now_ms;
 use std::fmt::{self, Write as _};
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -76,15 +76,17 @@ impl Default for Histogram {
 pub enum JobKind {
     Message,
     Clear,
+    Ring,
 }
 
 impl JobKind {
-    pub const ALL: [Self; 2] = [Self::Message, Self::Clear];
+    pub const ALL: [Self; 3] = [Self::Message, Self::Clear, Self::Ring];
 
     pub fn label(self) -> &'static str {
         match self {
             Self::Message => "message",
             Self::Clear => "clear",
+            Self::Ring => "ring",
         }
     }
 }
@@ -114,10 +116,17 @@ pub enum Provider {
     UnifiedPush,
     Fcm,
     Apns,
+    ApnsVoip,
 }
 
 impl Provider {
-    pub const ALL: [Self; 4] = [Self::WebPush, Self::UnifiedPush, Self::Fcm, Self::Apns];
+    pub const ALL: [Self; 5] = [
+        Self::WebPush,
+        Self::UnifiedPush,
+        Self::Fcm,
+        Self::Apns,
+        Self::ApnsVoip,
+    ];
 
     pub fn label(self) -> &'static str {
         match self {
@@ -125,6 +134,7 @@ impl Provider {
             Self::UnifiedPush => "unified_push",
             Self::Fcm => "fcm",
             Self::Apns => "apns",
+            Self::ApnsVoip => "apns_voip",
         }
     }
 }
@@ -161,15 +171,17 @@ impl SendResult {
 pub enum RelayLeg {
     Apns,
     Fcm,
+    ApnsVoip,
 }
 
 impl RelayLeg {
-    pub const ALL: [Self; 2] = [Self::Apns, Self::Fcm];
+    pub const ALL: [Self; 3] = [Self::Apns, Self::Fcm, Self::ApnsVoip];
 
     pub fn label(self) -> &'static str {
         match self {
             Self::Apns => "apns",
             Self::Fcm => "fcm",
+            Self::ApnsVoip => "apns_voip",
         }
     }
 }
@@ -265,15 +277,17 @@ impl DeliveryRoute {
 #[repr(usize)]
 pub enum BucketKey {
     DeviceToken,
+    BackgroundDeviceToken,
     Source,
 }
 
 impl BucketKey {
-    pub const ALL: [Self; 2] = [Self::DeviceToken, Self::Source];
+    pub const ALL: [Self; 3] = [Self::DeviceToken, Self::BackgroundDeviceToken, Self::Source];
 
     pub fn label(self) -> &'static str {
         match self {
             Self::DeviceToken => "device_token",
+            Self::BackgroundDeviceToken => "background_device_token",
             Self::Source => "source",
         }
     }
@@ -331,7 +345,7 @@ const BUCKET_KEY_COUNT: usize = BucketKey::ALL.len();
 const PAYLOAD_SHRINK_COUNT: usize = PayloadShrink::ALL.len();
 const DELIVERY_ROUTE_COUNT: usize = DeliveryRoute::ALL.len();
 const RPC_OUTCOME_COUNT: usize = RpcOutcome::ALL.len();
-const ROLLOUT_OUTCOME_COUNT: usize = RolloutOutcome::ALL.len();
+const CONSENT_UPDATE_COUNT: usize = ConsentUpdate::ALL.len();
 
 pub struct Metrics {
     jobs_received: [AtomicU64; JOB_KIND_COUNT],
@@ -342,21 +356,21 @@ pub struct Metrics {
     sends: [[AtomicU64; SEND_RESULT_COUNT]; PROVIDER_COUNT],
     token_deletions: [AtomicU64; PROVIDER_COUNT],
     payload_shrinks: [AtomicU64; PAYLOAD_SHRINK_COUNT],
+    own_relay_shortcuts: [AtomicU64; RELAY_LEG_COUNT],
     auth_tokens_minted: [AtomicU64; AUTH_PROVIDER_COUNT],
     rpc_requests: [[AtomicU64; RPC_OUTCOME_COUNT]; RPC_METHOD_COUNT],
-    rollout_updates: [AtomicU64; ROLLOUT_OUTCOME_COUNT],
+    relay_consent_updates: [AtomicU64; CONSENT_UPDATE_COUNT],
     delivery_routes: [[AtomicU64; SEND_RESULT_COUNT]; DELIVERY_ROUTE_COUNT],
     relay_served: [[AtomicU64; RELAY_RESULT_COUNT]; RELAY_LEG_COUNT],
     relay_vendor_requests: [[AtomicU64; RELAY_RESULT_COUNT]; RELAY_LEG_COUNT],
     relay_rejected: [AtomicU64; REASON_COUNT],
     relay_bucket_drops: [AtomicU64; BUCKET_KEY_COUNT],
+    rings_suppressed: AtomicU64,
     job_duration: [Histogram; JOB_KIND_COUNT],
     rpc_duration: [Histogram; RPC_METHOD_COUNT],
     send_duration: [Histogram; PROVIDER_COUNT],
     queue_depth: AtomicU64,
-    rollout_enabled: AtomicU64,
-    rollout_basis_points: AtomicU64,
-    rollout_config_version: AtomicU64,
+    relay_consent_accepted: AtomicU64,
     start_ms: i64,
 }
 
@@ -371,10 +385,11 @@ impl Metrics {
             sends: [const { [const { AtomicU64::new(0) }; SEND_RESULT_COUNT] }; PROVIDER_COUNT],
             token_deletions: [const { AtomicU64::new(0) }; PROVIDER_COUNT],
             payload_shrinks: [const { AtomicU64::new(0) }; PAYLOAD_SHRINK_COUNT],
+            own_relay_shortcuts: [const { AtomicU64::new(0) }; RELAY_LEG_COUNT],
             auth_tokens_minted: [const { AtomicU64::new(0) }; AUTH_PROVIDER_COUNT],
             rpc_requests: [const { [const { AtomicU64::new(0) }; RPC_OUTCOME_COUNT] };
                 RPC_METHOD_COUNT],
-            rollout_updates: [const { AtomicU64::new(0) }; ROLLOUT_OUTCOME_COUNT],
+            relay_consent_updates: [const { AtomicU64::new(0) }; CONSENT_UPDATE_COUNT],
             delivery_routes: [const { [const { AtomicU64::new(0) }; SEND_RESULT_COUNT] };
                 DELIVERY_ROUTE_COUNT],
             relay_served: [const { [const { AtomicU64::new(0) }; RELAY_RESULT_COUNT] };
@@ -383,13 +398,12 @@ impl Metrics {
                 RELAY_LEG_COUNT],
             relay_rejected: [const { AtomicU64::new(0) }; REASON_COUNT],
             relay_bucket_drops: [const { AtomicU64::new(0) }; BUCKET_KEY_COUNT],
+            rings_suppressed: AtomicU64::new(0),
             job_duration: [const { Histogram::new() }; JOB_KIND_COUNT],
             rpc_duration: [const { Histogram::new() }; RPC_METHOD_COUNT],
             send_duration: [const { Histogram::new() }; PROVIDER_COUNT],
             queue_depth: AtomicU64::new(0),
-            rollout_enabled: AtomicU64::new(0),
-            rollout_basis_points: AtomicU64::new(0),
-            rollout_config_version: AtomicU64::new(0),
+            relay_consent_accepted: AtomicU64::new(0),
             start_ms: now_ms(),
         }
     }
@@ -424,6 +438,10 @@ impl Metrics {
         self.token_deletions[provider as usize].fetch_add(1, ORDERING);
     }
 
+    pub fn record_own_relay_shortcut(&self, leg: RelayLeg) {
+        self.own_relay_shortcuts[leg as usize].fetch_add(1, ORDERING);
+    }
+
     pub fn record_payload_shrink(&self, step: PayloadShrink) {
         self.payload_shrinks[step as usize].fetch_add(1, ORDERING);
     }
@@ -437,17 +455,13 @@ impl Metrics {
         self.rpc_duration[method as usize].observe(duration_ms);
     }
 
-    pub fn record_rollout_update(&self, outcome: RolloutOutcome) {
-        self.rollout_updates[outcome as usize].fetch_add(1, ORDERING);
+    pub fn record_relay_consent_update(&self, outcome: ConsentUpdate) {
+        self.relay_consent_updates[outcome as usize].fetch_add(1, ORDERING);
     }
 
-    pub fn record_rollout_snapshot(&self, snapshot: &RolloutSnapshot) {
-        self.rollout_enabled
-            .store(u64::from(snapshot.enabled), ORDERING);
-        self.rollout_basis_points
-            .store(u64::from(snapshot.rollout_basis_points), ORDERING);
-        self.rollout_config_version
-            .store(snapshot.config_version, ORDERING);
+    pub fn record_relay_consent_accepted(&self, accepted: bool) {
+        self.relay_consent_accepted
+            .store(u64::from(accepted), ORDERING);
     }
 
     pub fn record_delivery_route(&self, route: DeliveryRoute, result: SendResult) {
@@ -468,6 +482,10 @@ impl Metrics {
 
     pub fn record_bucket_drop(&self, key: BucketKey) {
         self.relay_bucket_drops[key as usize].fetch_add(1, ORDERING);
+    }
+
+    pub fn record_ring_suppressed(&self) {
+        self.rings_suppressed.fetch_add(1, ORDERING);
     }
 
     pub fn set_queue_depth(&self, depth: u64) {
@@ -523,6 +541,13 @@ impl Metrics {
         )?;
         render_labelled_counter(
             out,
+            "fluxer_push_own_relay_shortcuts_total",
+            "leg",
+            RelayLeg::ALL.map(RelayLeg::label),
+            &self.own_relay_shortcuts,
+        )?;
+        render_labelled_counter(
+            out,
             "fluxer_push_payload_shrinks_total",
             "step",
             PayloadShrink::ALL.map(PayloadShrink::label),
@@ -546,10 +571,10 @@ impl Metrics {
 
         render_labelled_counter(
             out,
-            "fluxer_push_rollout_updates_total",
+            "fluxer_push_relay_consent_updates_total",
             "result",
-            RolloutOutcome::ALL.map(RolloutOutcome::label),
-            &self.rollout_updates,
+            ConsentUpdate::ALL.map(ConsentUpdate::label),
+            &self.relay_consent_updates,
         )?;
         render_labelled_histogram(
             out,
@@ -607,17 +632,16 @@ impl Metrics {
             BucketKey::ALL.map(BucketKey::label),
             &self.relay_bucket_drops,
         )?;
-        render_gauge(out, "fluxer_push_queue_depth", &self.queue_depth)?;
-        render_gauge(out, "fluxer_push_rollout_enabled", &self.rollout_enabled)?;
-        render_gauge(
+        render_counter(
             out,
-            "fluxer_push_rollout_basis_points",
-            &self.rollout_basis_points,
+            "fluxer_push_rings_suppressed_total",
+            &self.rings_suppressed,
         )?;
+        render_gauge(out, "fluxer_push_queue_depth", &self.queue_depth)?;
         render_gauge(
             out,
-            "fluxer_push_rollout_config_version",
-            &self.rollout_config_version,
+            "fluxer_push_relay_consent_accepted",
+            &self.relay_consent_accepted,
         )?;
 
         writeln!(out, "# TYPE fluxer_push_uptime_seconds gauge")?;

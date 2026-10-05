@@ -59,6 +59,7 @@ import type {ReportRequestService} from '@app/api/report/ReportRequestService';
 import type {ReportService} from '@app/api/report/ReportService';
 import type {RpcService} from '@app/api/rpc/RpcService';
 import type {SearchService} from '@app/api/search/SearchService';
+import type {StoreEntitlementService} from '@app/api/store_billing/StoreEntitlementService';
 import type {StripeService} from '@app/api/stripe/StripeService';
 import type {AgeVerificationService} from '@app/api/stripe/services/AgeVerificationService';
 import type {ThemeService} from '@app/api/theme/ThemeService';
@@ -77,6 +78,7 @@ import type {UserContentRequestService} from '@app/api/user/services/UserContent
 import type {UserRelationshipRequestService} from '@app/api/user/services/UserRelationshipRequestService';
 import type {UserService} from '@app/api/user/services/UserService';
 import type {ClientIpResolution} from '@app/api/utils/RequestClientIp';
+import type {ChannelFollowService} from '@app/api/webhook/ChannelFollowService';
 import type {SweegoWebhookService} from '@app/api/webhook/SweegoWebhookService';
 import type {WebhookRequestService} from '@app/api/webhook/WebhookRequestService';
 import type {WebhookService} from '@app/api/webhook/WebhookService';
@@ -177,9 +179,11 @@ export interface HonoEnv {
 		userRelationshipRequestService: UserRelationshipRequestService;
 		sweegoWebhookService: SweegoWebhookService;
 		webhookService: WebhookService;
+		channelFollowService: ChannelFollowService;
 		webhookRequestService: WebhookRequestService;
 		workerService: IWorkerService<WorkerTaskName>;
 		stripeService: StripeService;
+		storeEntitlementService: StoreEntitlementService;
 		ageVerificationService: AgeVerificationService;
 		applicationService: ApplicationService;
 		oauth2Service: OAuth2Service;
@@ -189,6 +193,7 @@ export interface HonoEnv {
 		oauth2TokenRepository: IOAuth2TokenRepository;
 		botAuthService: BotAuthService;
 		sudoModeValid: boolean;
+		captchaVerified?: boolean;
 		sudoModeToken: string | null;
 		instanceConfigRepository: InstanceConfigRepository;
 		singleCommunityService: SingleCommunityService;
