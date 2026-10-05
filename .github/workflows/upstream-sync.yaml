@@ -79,3 +79,15 @@ jobs:
           if [ -z "$(gh issue list --label upstream-sync --state open --search "\"$title\" in:title" --json number --jq '.[0].number')" ]; then
             gh issue create --label upstream-sync --title "$title" --body-file "${{ steps.sync.outputs.report }}"
           fi
+
+      # sync.sh crashing under `set -e` (network, pnpm, a script bug) produces no
+      # status output, so the steps above never run and nothing would alert.
+      - name: Report a crashed run
+        if: failure() && steps.sync.outcome == 'failure'
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_PAT }}
+        run: |
+          gh label create upstream-sync --color D93F0B --description "upstream merge needs a human" 2>/dev/null || true
+          printf 'The upstream-sync run itself failed (not a merge conflict): %s/%s/actions/runs/%s\n' \
+            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" > "$RUNNER_TEMP/crash.md"
+          gh issue create --label upstream-sync --title "Upstream sync run crashed ($(date -u +%F))" --body-file "$RUNNER_TEMP/crash.md"

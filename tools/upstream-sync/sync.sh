@@ -63,7 +63,6 @@ fi
 # {placeholders} in prod).
 CI=true pnpm install --frozen-lockfile
 ( cd fluxer_app && pnpm lingui:extract )
-python3 -m pip install -q polib
 python3 "$here/seed-po.py" upstream/main
 git add -A fluxer_app/src/features/i18n
 
