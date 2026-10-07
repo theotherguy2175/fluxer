@@ -254,6 +254,9 @@ simply stop rendering until you roll forward again).
 
 # Fluxer
 
+> [!IMPORTANT]
+> Bug reports and feature requests have moved to [feedback.fluxer.com](https://feedback.fluxer.com). Sign in with your Fluxer account to post, vote and follow updates. GitHub Issues and Discussions are closed. Report security vulnerabilities privately through [fluxer.app/security](https://fluxer.app/security).
+
 Fluxer is a free and open source instant messaging and VoIP chat app built for friends, groups, and communities.
 
 <p align="center">
