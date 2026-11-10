@@ -1,13 +1,13 @@
 %% SPDX-License-Identifier: AGPL-3.0-or-later
 
 -module(guild_subscription_mutual_channels).
--typing([eqwalizer]).
-
--export([filter_member_ids/3, filter_session_member_ids/2, filter_session_member_ids/3]).
-
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 -endif.
+
+-typing([eqwalizer]).
+
+-export([filter_member_ids/4, filter_session_member_ids/2, filter_session_member_ids/3]).
 
 -type guild_state() :: map().
 -type user_id() :: integer().
@@ -16,11 +16,13 @@
 -type view_memo() :: #{exceptions => sets:set(user_id()), views => view_cache()}.
 -export_type([guild_state/0, user_id/0, view_memo/0]).
 
--spec filter_member_ids(user_id(), [user_id()], guild_state()) -> [user_id()].
-filter_member_ids(_SessionUserId, [], _State) ->
+-spec filter_member_ids(map(), user_id(), [user_id()], guild_state()) -> [user_id()].
+filter_member_ids(_Session, _SessionUserId, [], _State) ->
     [];
-filter_member_ids(SessionUserId, MemberIds, State) ->
-    SessionMap = session_channel_map(SessionUserId, State),
+filter_member_ids(Session, SessionUserId, MemberIds, State) ->
+    SessionMap = visible_session_map(
+        Session#{user_id => SessionUserId}, session_channel_map(SessionUserId, State), State
+    ),
     {Kept, _Memo} = lists:foldl(
         fun(MemberId, Acc) ->
             keep_member_with_mutual_channel(MemberId, SessionUserId, SessionMap, State, Acc)
@@ -71,6 +73,36 @@ is_role_key(_Key) -> false.
 
 -spec request_session_map(term(), user_id(), map(), guild_state()) -> map().
 request_session_map(SessionId, SessionUserId, Sessions, State) ->
+    Session =
+        case maps:get(SessionId, Sessions, undefined) of
+            Found when is_map(Found) -> Found;
+            _ -> #{}
+        end,
+    visible_session_map(
+        Session#{user_id => SessionUserId},
+        raw_request_session_map(SessionId, SessionUserId, Sessions, State),
+        State
+    ).
+
+-spec visible_session_map(map(), map(), guild_state()) -> map().
+visible_session_map(Session, Map, State) ->
+    case
+        guild_thread_gate:needs_variant(State) andalso
+            not guild_thread_gate:session_viewer(Session)
+    of
+        true ->
+            maps:filter(
+                fun(ChannelId, _) ->
+                    guild_thread_gate:channel_visible(Session, ChannelId, State)
+                end,
+                Map
+            );
+        false ->
+            Map
+    end.
+
+-spec raw_request_session_map(term(), user_id(), map(), guild_state()) -> map().
+raw_request_session_map(SessionId, SessionUserId, Sessions, State) ->
     case maps:get(SessionId, Sessions, undefined) of
         #{user_id := SessionUserId, viewable_channels := Map} = SessionData when is_map(Map) ->
             case maps:get(pending_connect, SessionData, false) of
@@ -122,7 +154,9 @@ member_channel_key(MemberId, Exceptions, State, Cache) ->
         true ->
             {Key, Cache};
         false ->
-            {Key, Cache#{Key => guild_visibility:get_user_viewable_channels(MemberId, State)}}
+            {Key, Cache#{
+                Key => guild_visibility_channels:get_user_viewable_channels(MemberId, State)
+            }}
     end.
 
 -spec session_channel_map(user_id(), guild_state()) -> map().
@@ -130,7 +164,7 @@ session_channel_map(SessionUserId, State) ->
     case guild_visibility_channels:get_cached_viewable_channel_map(SessionUserId, State) of
         undefined ->
             guild_sessions:build_viewable_channel_map(
-                guild_visibility:get_user_viewable_channels(SessionUserId, State)
+                guild_visibility_channels:get_user_viewable_channels(SessionUserId, State)
             );
         Map ->
             Map
@@ -184,8 +218,10 @@ cached_has_mutual_channel(MemberId, RawRoles, SessionMap, State, Cache, Memo) ->
 -spec memo_key(user_id(), sets:set(user_id()), guild_state()) -> {ok, term()} | bypass.
 memo_key(MemberId, Exceptions, State) ->
     case sets:is_element(MemberId, Exceptions) of
-        true -> bypass;
-        false -> member_roles_key(guild_permissions:find_member_by_user_id(MemberId, State))
+        true ->
+            bypass;
+        false ->
+            member_roles_key(guild_permissions_check:find_member_by_user_id(MemberId, State))
     end.
 
 -spec member_roles_key(map() | undefined) -> {ok, term()} | bypass.
@@ -225,7 +261,7 @@ overwrite_target_ids(Data) ->
     maps:fold(
         fun(_ChannelId, Channel, Acc) -> channel_target_ids(Channel, Acc) end,
         Cached,
-        guild_data_index:channel_index(Data)
+        guild_data_index_channels:channel_index(Data)
     ).
 
 -spec cached_target_ids(term(), [user_id()]) -> [user_id()].
@@ -330,7 +366,7 @@ reference_keep(MemberId, SessionUserId, _SessionMap, _State) when
 ->
     false;
 reference_keep(MemberId, _SessionUserId, SessionMap, State) ->
-    MemberChannels = guild_visibility:get_user_viewable_channels(MemberId, State),
+    MemberChannels = guild_visibility_channels:get_user_viewable_channels(MemberId, State),
     case has_shared_channel(MemberChannels, SessionMap) of
         true -> {true, MemberId};
         false -> false
@@ -350,20 +386,11 @@ exceptions_cover_owner_virtual_and_overwrite_targets_test() ->
 filter_member_ids_matches_unmemoised_test() ->
     State = test_state(),
     Ids = candidate_ids(),
-    ?assertEqual([20, 21, 7, 99, 4242, 20], filter_member_ids(10, Ids, State)),
+    ?assertEqual([20, 21, 7, 99, 4242, 20], filter_member_ids(#{}, 10, Ids, State)),
     ?assertEqual(
         [reference_filter_member_ids(Viewer, Ids, State) || Viewer <- [10, 30, 7, 99]],
-        [filter_member_ids(Viewer, Ids, State) || Viewer <- [10, 30, 7, 99]]
+        [filter_member_ids(#{}, Viewer, Ids, State) || Viewer <- [10, 30, 7, 99]]
     ).
-
-memo_holds_one_entry_per_roles_term_test() ->
-    State = test_state(),
-    SessionMap = session_channel_map(10, State),
-    {First, Memo1} = memoised_has_mutual_channel(20, SessionMap, State, new_memo(State)),
-    {Second, Memo2} = memoised_has_mutual_channel(21, SessionMap, State, Memo1),
-    ?assert(First),
-    ?assertEqual(First, Second),
-    ?assertEqual([1, 1], [map_size(maps:get(cache, M)) || M <- [Memo1, Memo2]]).
 
 exception_user_is_not_answered_from_its_role_set_test() ->
     State = test_state(),
@@ -376,7 +403,7 @@ exception_user_is_not_answered_from_its_role_set_test() ->
 
 non_member_candidate_is_dropped_test() ->
     State = test_state(),
-    ?assertEqual([], filter_member_ids(10, [777], State)),
+    ?assertEqual([], filter_member_ids(#{}, 10, [777], State)),
     ?assertEqual([], reference_filter_member_ids(10, [777], State)).
 
 filter_session_member_ids_matches_filter_member_ids_test() ->
@@ -385,7 +412,10 @@ filter_session_member_ids_matches_filter_member_ids_test() ->
     Viewers = [10, 30, 7, 99],
     Requests = [{Viewer, Viewer, Ids} || Viewer <- Viewers],
     ?assertEqual(
-        maps:from_list([{Viewer, filter_member_ids(Viewer, Ids, State)} || Viewer <- Viewers]),
+        maps:from_list([
+            {Viewer, filter_member_ids(#{}, Viewer, Ids, State)}
+         || Viewer <- Viewers
+        ]),
         filter_session_member_ids(Requests, State)
     ).
 

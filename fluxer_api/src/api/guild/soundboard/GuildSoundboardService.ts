@@ -43,7 +43,6 @@ import {resolveLimitSafe} from '../../limits/LimitConfigUtils';
 import {createLimitMatchContext} from '../../limits/LimitMatchContextBuilder';
 import type {RequestCache} from '../../middleware/RequestCacheMiddleware';
 import {GuildSoundboardSound} from '../../models/GuildSoundboardSound';
-import {getCachedUserPartialResponses} from '../../user/UserCacheHelpers';
 import {serializeSoundboardSoundForAudit} from '../../utils/AuditSerializationUtils';
 import {requirePermission} from '../../utils/PermissionUtils';
 import type {GuildAuditLogService} from '../GuildAuditLogService';
@@ -191,11 +190,7 @@ export class GuildSoundboardService {
 		await this.gatewayService.getGuildData({guildId, userId});
 		const [sounds, limits] = await Promise.all([this.repository.listSounds(guildId), this.getEffectiveLimits(guildId)]);
 		const userIds = [...new Set(sounds.map((sound) => sound.creatorId))];
-		const users = await getCachedUserPartialResponses({
-			userIds,
-			userCacheService: this.userCacheService,
-			requestCache,
-		});
+		const users = await this.userCacheService.getUserPartialResponses(userIds, requestCache);
 		return {
 			sounds: sounds.map((sound) => ({
 				sound,
@@ -259,11 +254,7 @@ export class GuildSoundboardService {
 		sound: GuildSoundboardSound,
 		requestCache: RequestCache,
 	): Promise<UserPartialResponse | null> {
-		const users = await getCachedUserPartialResponses({
-			userIds: [sound.creatorId],
-			userCacheService: this.userCacheService,
-			requestCache,
-		});
+		const users = await this.userCacheService.getUserPartialResponses([sound.creatorId], requestCache);
 		return users.get(sound.creatorId) ?? null;
 	}
 

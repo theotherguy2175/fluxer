@@ -2,7 +2,7 @@
 
 import {Endpoints} from '@app/features/app/constants/Endpoints';
 import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
-import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
+import GatewaySessions from '@app/features/gateway/transport/GatewaySessionPool';
 import Guilds from '@app/features/guild/state/Guilds';
 import Messages from '@app/features/messaging/state/MessagingMessages';
 import {http} from '@app/features/platform/transport/RestTransport';
@@ -27,7 +27,7 @@ import type {UserPartialResponse} from '@fluxer/schema/src/domains/user/UserResp
 const logger = new Logger('PollCommands');
 
 function sessionQuery(): {session_id: string | null} {
-	return {session_id: GatewayConnection.sessionId ?? null};
+	return {session_id: GatewaySessions.foregroundConnection.sessionId ?? null};
 }
 
 /** Instance-level toggle, resolved from the limit snapshot the client already holds. */

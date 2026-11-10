@@ -26,6 +26,7 @@ pub const GUILD_TABS: &[(&str, &str)] = &[
     ("archives", "Archives"),
     ("emojis", "Emojis"),
     ("stickers", "Stickers"),
+    ("threads", "Threads"),
     ("audit_logs", "Admin Audit Logs"),
     ("audit_log", "Guild Audit Log"),
     ("reports", "Reports"),
@@ -87,10 +88,20 @@ pub fn simple_tab_content(
             csrf_token,
             admin_acls,
         ),
-        "emojis" => guild_detail_tabs::emojis::emojis_tab(config, &guild_info, &[], csrf_token),
-        "stickers" => {
-            guild_detail_tabs::stickers::stickers_tab(config, &guild_info, &[], csrf_token)
-        }
+        "emojis" => guild_detail_tabs::emojis::guild_assets_tab(
+            config,
+            &guild_info,
+            &[],
+            csrf_token,
+            guild_detail_tabs::emojis::GuildAssetKind::Emoji,
+        ),
+        "stickers" => guild_detail_tabs::emojis::guild_assets_tab(
+            config,
+            &guild_info,
+            &[],
+            csrf_token,
+            guild_detail_tabs::emojis::GuildAssetKind::Sticker,
+        ),
         _ => guild_detail_tabs::overview::overview_tab(config, guild, csrf_token),
     }
 }
@@ -208,6 +219,7 @@ fn guild_tab_visible(_config: &AdminConfig, tab_id: &str, admin_acls: &[String])
         "overview" | "members" | "settings" | "features" | "moderation" => true,
         "reports" => acl::has_permission(admin_acls, acl::REPORT_VIEW),
         "emojis" | "stickers" => acl::has_permission(admin_acls, acl::ASSET_PURGE),
+        "threads" => acl::has_permission(admin_acls, acl::GUILD_LOOKUP),
         "audit_logs" => acl::has_permission(admin_acls, acl::AUDIT_LOG_VIEW),
         "audit_log" => acl::has_permission(admin_acls, acl::GUILD_AUDIT_LOG_VIEW),
         "archives" => acl::has_any_permission(

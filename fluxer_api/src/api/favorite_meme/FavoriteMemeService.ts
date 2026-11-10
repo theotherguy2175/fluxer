@@ -7,14 +7,15 @@ import {createAttachmentID, createMemeID, userIdToChannelId} from '@app/api/Bran
 import {Config} from '@app/api/Config';
 import type {ChannelService} from '@app/api/channel/services/ChannelService';
 import {attachmentStorageChannelId, makeAttachmentCdnKey} from '@app/api/channel/services/message/MessageHelpers';
+import type {ThreadViewer} from '@app/api/experiment/ChannelThreadsGate';
 import {mapFavoriteMemeToResponse} from '@app/api/favorite_meme/FavoriteMemeModel';
-import type {IFavoriteMemeRepository} from '@app/api/favorite_meme/IFavoriteMemeRepository';
+import type {FavoriteMemeRepository} from '@app/api/favorite_meme/FavoriteMemeRepository';
 import {
 	isOptionalGifProviderError,
 	type ResolvedGifProviderSlug,
 	tryExtractGifProviderSlug,
 } from '@app/api/gif/GifProviderUtils';
-import type {GifService} from '@app/api/gif/GifService';
+import type {NatsGifProvider} from '@app/api/gif/NatsGifProvider';
 import type {MediaProxyMetadataResponse} from '@app/api/infrastructure/IMediaService';
 import type {IStorageService} from '@app/api/infrastructure/IStorageService';
 import type {IUnfurlerService} from '@app/api/infrastructure/IUnfurlerService';
@@ -95,16 +96,17 @@ function resolveFavoriteMemeAnimationFlag(
 export class FavoriteMemeService {
 	constructor(
 		private readonly apiContext: ApiContext,
-		private readonly favoriteMemeRepository: IFavoriteMemeRepository,
+		private readonly favoriteMemeRepository: FavoriteMemeRepository,
 		private readonly channelService: ChannelService,
 		private readonly storageService: IStorageService,
 		private readonly unfurlerService: IUnfurlerService,
 		private readonly limitConfigService: LimitConfigService,
-		private readonly gifService: GifService,
+		private readonly gifService: NatsGifProvider,
 	) {}
 
 	async createFromMessage({
 		user,
+		viewer,
 		channelId,
 		messageId,
 		attachmentId,
@@ -114,6 +116,7 @@ export class FavoriteMemeService {
 		tags,
 	}: {
 		user: User;
+		viewer: ThreadViewer;
 		channelId: ChannelID;
 		messageId: MessageID;
 		attachmentId?: string;
@@ -128,8 +131,13 @@ export class FavoriteMemeService {
 		if (count >= maxMemes) {
 			throw new MaxFavoriteMemesError(maxMemes);
 		}
-		await this.channelService.channelData.auth.getChannelAuthenticated({userId: user.id, channelId});
-		const message = await this.channelService.messages.retrieval.getMessage({userId: user.id, channelId, messageId});
+		await this.channelService.channelData.auth.getChannelAuthenticated({userId: user.id, channelId, viewer});
+		const message = await this.channelService.messages.retrieval.getMessage({
+			userId: user.id,
+			viewer,
+			channelId,
+			messageId,
+		});
 		if (!message) {
 			throw new UnknownMessageError();
 		}
@@ -483,14 +491,14 @@ export class FavoriteMemeService {
 		url: string;
 	}): Promise<ResolvedGifProviderSlug | null> {
 		if (slug && providerName) {
-			const provider = this.gifService.getByName(providerName);
+			const provider = this.gifService.meta.name === providerName ? this.gifService : null;
 			const trimmed = slug.trim();
 			if (provider && trimmed) {
 				const normalized = (await tryExtractGifProviderSlug(provider, trimmed)) ?? trimmed;
 				return {provider, slug: normalized};
 			}
 		}
-		const provider = this.gifService.getProvider();
+		const provider = this.gifService;
 		const extracted = await tryExtractGifProviderSlug(provider, url);
 		return extracted ? {provider, slug: extracted} : null;
 	}

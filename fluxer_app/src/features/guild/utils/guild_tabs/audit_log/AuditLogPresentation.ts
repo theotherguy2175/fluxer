@@ -59,6 +59,11 @@ import {
 	presentSoundboardSoundDelete,
 	presentSoundboardSoundUpdate,
 } from '@app/features/guild/utils/guild_tabs/audit_log/AuditLogSoundboardPresentation';
+import {
+	presentThreadCreate,
+	presentThreadDelete,
+	presentThreadUpdate,
+} from '@app/features/guild/utils/guild_tabs/audit_log/AuditLogThreadPresentation';
 import {actorPlaceholder, decodeAuditReason} from '@app/features/guild/utils/guild_tabs/audit_log/AuditLogValues';
 import {AuditLogActionType} from '@fluxer/constants/src/AuditLogActionType';
 import type {GuildAuditLogEntryResponse} from '@fluxer/schema/src/domains/guild/GuildAuditLogSchemas';
@@ -103,6 +108,9 @@ const PRESENTERS = {
 	[AuditLogActionType.SOUNDBOARD_SOUND_UPDATE]: presentSoundboardSoundUpdate,
 	[AuditLogActionType.SOUNDBOARD_SOUND_DELETE]: presentSoundboardSoundDelete,
 	[AuditLogActionType.POLL_END]: presentPollEnd,
+	[AuditLogActionType.THREAD_CREATE]: presentThreadCreate,
+	[AuditLogActionType.THREAD_UPDATE]: presentThreadUpdate,
+	[AuditLogActionType.THREAD_DELETE]: presentThreadDelete,
 } satisfies Record<AuditLogActionType, AuditLogPresenter>;
 
 function presentUnknownAction(entry: GuildAuditLogEntryResponse): AuditLogDomainResult {

@@ -2,7 +2,7 @@
 
 import {ConfirmModal} from '@app/features/app/components/dialogs/ConfirmModal';
 import * as Modal from '@app/features/app/components/dialogs/Modal';
-import {EXAMPLE_FLUXER_TAG, PREMIUM_PRODUCT_NAME} from '@app/features/app/config/I18nDisplayConstants';
+import {EXAMPLE_FLUXER_TAG} from '@app/features/app/config/I18nDisplayConstants';
 import {useFormSubmit} from '@app/features/app/hooks/useFormSubmit';
 import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
 import {LimitResolver} from '@app/features/app/utils/LimitResolverAdapter';
@@ -14,7 +14,7 @@ import {
 	USERNAME_DESCRIPTOR,
 } from '@app/features/i18n/utils/CommonMessageDescriptors';
 import * as PremiumModalCommands from '@app/features/premium/commands/PremiumModalCommands';
-import {shouldShowPremiumFeatures} from '@app/features/premium/utils/PremiumUtils';
+import {getPremiumProductName, shouldShowPremiumFeatures} from '@app/features/premium/utils/PremiumUtils';
 import {Button} from '@app/features/ui/button/Button';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
@@ -31,6 +31,7 @@ import styles from '@app/features/user/components/modals/FluxerTagChangeModal.mo
 import type {User} from '@app/features/user/models/User';
 import {getFormattedDateTime} from '@app/features/user/utils/DateFormatting';
 import {isVisionaryDiscriminator0000Blocked} from '@app/features/user/utils/FluxerTagDiscriminatorUtils';
+import {CHANGE_YOUR_USERNAME_DESCRIPTOR, TAG_DESCRIPTOR} from '@app/features/user/utils/UserMessageDescriptors';
 import {UserPremiumTypes} from '@fluxer/constants/src/UserConstants';
 import {msg} from '@lingui/core/macro';
 import {Trans, useLingui} from '@lingui/react/macro';
@@ -50,19 +51,13 @@ const CHANGE_USERNAME_FORM_DESCRIPTOR = msg({
 	message: 'Change username form',
 	comment: 'Short label in the FluxerTag change modal. Keep it concise.',
 });
-const CHANGE_YOUR_USERNAME_DESCRIPTOR = msg({
-	message: 'Change your username',
-	comment: 'Short label in the FluxerTag change modal. Keep it concise.',
-});
+
 const GET_TO_CUSTOMIZE_YOUR_TAG_OR_KEEP_IT_DESCRIPTOR = msg({
 	message: 'Get {premiumProductName} to customize your tag or keep it when changing your username',
 	comment:
 		'Description text in the FluxerTag change modal. Preserve {premiumProductName}; it is inserted by code. Keep the tone plain and specific.',
 });
-const TAG_DESCRIPTOR = msg({
-	message: 'Tag',
-	comment: 'Short label in the FluxerTag change modal. Keep it concise.',
-});
+
 const CUSTOM_DISCRIMINATORS_ARE_NOT_AVAILABLE_ON_THIS_INSTANCE_DESCRIPTOR = msg({
 	message: 'Custom discriminators are not available on this instance',
 	comment: 'Error message in the FluxerTag change modal.',
@@ -82,6 +77,7 @@ interface FluxerTagChangeModalProps {
 }
 
 export const FluxerTagChangeModal = observer(({user}: FluxerTagChangeModalProps) => {
+	const PREMIUM_PRODUCT_NAME = getPremiumProductName();
 	const {i18n} = useLingui();
 	const usernameRef = useRef<HTMLInputElement>(null);
 	const hasCustomDiscriminator = isLimitToggleEnabled(

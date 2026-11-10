@@ -3,8 +3,7 @@
 mod android_association;
 mod apple_association;
 mod assets_proxy;
-mod client_geoip;
-mod file_stream;
+pub(crate) mod file_stream;
 mod health;
 mod spa_index;
 mod spa_static;
@@ -29,19 +28,12 @@ use tower_http::{
     trace::TraceLayer,
 };
 
-const STRICT_TRANSPORT_SECURITY_VALUE: &str = "max-age=31536000; includeSubDomains; preload";
-const REFERRER_POLICY_VALUE: &str = "strict-origin-when-cross-origin";
-const X_FRAME_OPTIONS_VALUE: &str = "DENY";
 const PERMISSIONS_POLICY_VALUE: &str = "accelerometer=(), camera=(self), ch-dpr=(self), ch-save-data=(self), ch-viewport-width=(self), ch-width=(self), geolocation=(), gyroscope=(), magnetometer=(), microphone=(self), payment=(), usb=()";
 
 pub fn build_router(state: AppState) -> Router {
     Router::new()
         .route("/_health", get(health::health))
         .route("/_ready", get(health::ready))
-        .route(
-            client_geoip::CLIENT_GEOIP_PATH,
-            get(client_geoip::client_geoip),
-        )
         .route(
             "/.well-known/apple-app-site-association",
             get(apple_association::apple_app_site_association),
@@ -58,6 +50,7 @@ pub fn build_router(state: AppState) -> Router {
         .route("/version.json", get(spa_static::version_json))
         .route("/manifest.json", get(spa_static::manifest_json))
         .route("/browserconfig.xml", get(spa_static::browserconfig_xml))
+        .route("/favicon.ico", get(spa_static::favicon_ico))
         .route("/sw.js", get(spa_static::service_worker))
         .route("/sw.js.map", get(spa_static::service_worker_map))
         .fallback(get(spa_index::spa_catch_all))
@@ -79,19 +72,7 @@ async fn security_headers_middleware(request: Request, next: Next) -> Response {
 }
 
 fn set_security_headers(headers: &mut axum::http::HeaderMap) {
-    set_static_header(
-        headers,
-        header::STRICT_TRANSPORT_SECURITY,
-        STRICT_TRANSPORT_SECURITY_VALUE,
-    );
-    set_static_header(headers, header::X_CONTENT_TYPE_OPTIONS, "nosniff");
-    set_static_header(headers, header::REFERRER_POLICY, REFERRER_POLICY_VALUE);
-    set_static_header(headers, header::X_FRAME_OPTIONS, X_FRAME_OPTIONS_VALUE);
-    set_static_header(
-        headers,
-        HeaderName::from_static("permissions-policy"),
-        PERMISSIONS_POLICY_VALUE,
-    );
+    fluxer_common::server::set_baseline_security_headers(headers, PERMISSIONS_POLICY_VALUE);
 }
 
 async fn cache_headers_middleware(request: Request, next: Next) -> Response {
@@ -128,16 +109,10 @@ fn generate_request_id() -> String {
     hex::encode(bytes)
 }
 
-pub(super) fn capacity_refused_response() -> Response {
+pub(crate) fn capacity_refused_response() -> Response {
     let mut response = axum::http::StatusCode::SERVICE_UNAVAILABLE.into_response();
     let headers = response.headers_mut();
     headers.insert(header::RETRY_AFTER, HeaderValue::from_static("1"));
     headers.insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
     response
-}
-
-fn set_static_header(headers: &mut axum::http::HeaderMap, name: HeaderName, value: &'static str) {
-    headers
-        .entry(name)
-        .or_insert(HeaderValue::from_static(value));
 }

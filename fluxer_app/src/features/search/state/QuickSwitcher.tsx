@@ -4,9 +4,11 @@ import Guilds from '@app/features/guild/state/Guilds';
 import {onLocaleChange} from '@app/features/i18n/utils/LocaleChangeListener';
 import type {GuildMember} from '@app/features/member/models/GuildMember';
 import GuildMembers from '@app/features/member/state/GuildMembers';
-import MemberSearch, {type SearchContext, type TransformedMember} from '@app/features/member/state/MemberSearch';
+import MemberSearch, {type SearchContext} from '@app/features/member/state/MemberSearch';
+import type {TransformedMember} from '@app/features/member/workers/MemberSearchProtocol';
 import SelectedGuild from '@app/features/navigation/state/SelectedGuild';
 import {parseChannelUrl} from '@app/features/navigation/utils/DeepLinkUtils';
+import {AccountScopedWork} from '@app/features/platform/state/AccountScopedWork';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {loadLazyModule} from '@app/features/platform/utils/LazyModuleLoader';
 import {buildCandidateSets} from '@app/features/search/state/QuickSwitcherCandidateBuilder';
@@ -157,10 +159,6 @@ class QuickSwitcher {
 		return this.isOpen;
 	}
 
-	getResults(): ReadonlyArray<QuickSwitcherResult> {
-		return this.results;
-	}
-
 	getSelectedResult(): QuickSwitcherExecutableResult | null {
 		if (this.selectedIndex < 0 || this.selectedIndex >= this.results.length) {
 			return null;
@@ -309,7 +307,7 @@ class QuickSwitcher {
 
 	private getSearchContext(i18n: I18n): QuickSwitcherSearchContext {
 		const sets = this.getCandidateSets(i18n);
-		this.searchSources ??= createForwardSearchCandidates(i18n).get();
+		this.searchSources ??= createForwardSearchCandidates(i18n, {includeThreadOnlyChannels: true}).get();
 		return {confusables: this.confusables, sets, sources: this.searchSources};
 	}
 
@@ -504,4 +502,8 @@ class QuickSwitcher {
 	}
 }
 
-export default new QuickSwitcher();
+const quickSwitcher = new QuickSwitcher();
+
+AccountScopedWork.registerCancellation(() => quickSwitcher.hide());
+
+export default quickSwitcher;

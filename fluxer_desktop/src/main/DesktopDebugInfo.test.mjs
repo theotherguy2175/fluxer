@@ -6,6 +6,7 @@ import {createRequire} from 'node:module';
 import {describe, test} from 'node:test';
 import {fileURLToPath} from 'node:url';
 import vm from 'node:vm';
+import {loadTsModule} from './fixtures/TsModuleLoader.mjs';
 
 const require = createRequire(import.meta.url);
 const esbuild = require('esbuild');
@@ -29,10 +30,11 @@ function loadDesktopDebugInfo(options = {}) {
 		if (specifier === 'electron-log') {
 			return {info() {}, transports: {file: {getFile: () => null}}};
 		}
+		if (specifier === '@electron/common/Constants') {
+			return {DESKTOP_APP_URL: 'fluxer-app://app/'};
+		}
 		if (specifier === '@electron/common/DesktopConfig') {
 			return {
-				getAppUrl: () => '',
-				getCustomAppUrl: () => null,
 				getDesktopTroubleshootingSettings: () => options.troubleshooting ?? {disableHardwareAcceleration: false},
 				getDesktopWindowBehaviorSettings: () => ({}),
 			};
@@ -43,8 +45,17 @@ function loadDesktopDebugInfo(options = {}) {
 		if (specifier === '@electron/main/ChromiumRuntime') {
 			return {hasEnabledBlinkFeature: () => false, MIDDLE_CLICK_AUTOSCROLL_BLINK_FEATURE: 'feature'};
 		}
+		if (specifier === '@electron/main/DesktopAccountStoreTelemetry') {
+			return {formatDesktopAccountStoreTelemetry: () => '', readDesktopAccountStoreTelemetry: () => ({})};
+		}
+		if (specifier === '@electron/main/DesktopAppStoreHealth') {
+			return {readDesktopAppStoreState: () => null};
+		}
 		if (specifier === '@electron/main/PlatformInfo') {
 			return {getDesktopInfo: async () => ({})};
+		}
+		if (specifier === '@electron/main/LaunchOptions' || specifier === '@fluxer/desktop_ipc/src/DesktopLabels') {
+			return loadTsModule(specifier);
 		}
 		return require(specifier);
 	}

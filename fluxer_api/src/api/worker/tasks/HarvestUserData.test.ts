@@ -1,12 +1,29 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import {type ChannelID, createChannelID, createMessageID, createUserID, type MessageID} from '@app/api/BrandedTypes';
+import {
+	type ChannelID,
+	createChannelID,
+	createGuildID,
+	createMessageID,
+	createUserID,
+	type GuildID,
+	type MessageID,
+	type UserID,
+} from '@app/api/BrandedTypes';
 import {EMPTY_USER_ROW} from '@app/api/database/types/UserTypes';
+import {ThreadMember} from '@app/api/models/ThreadMember';
 import {User} from '@app/api/models/User';
 import {mapStorePurchaseToResponse} from '@app/api/store_billing/StoreBillingMappers';
 import {buildStorePurchaseRow} from '@app/api/store_billing/tests/StoreBillingTestUtils';
-import {buildUserDataJson, harvestMessages} from '@app/api/worker/tasks/HarvestUserData';
-import {describe, expect, it} from 'vitest';
+import {buildUserDataJson, collectThreadMemberships, harvestMessages} from '@app/api/worker/tasks/HarvestUserData';
+import {afterEach, describe, expect, it, vi} from 'vitest';
+
+const tainted = vi.hoisted(() => new Set<string>());
+
+vi.mock('@app/api/experiment/ChannelThreadsGate', async (importOriginal) => ({
+	...(await importOriginal<typeof import('@app/api/experiment/ChannelThreadsGate')>()),
+	isTainted: async (guildId: bigint) => tainted.has(guildId.toString()),
+}));
 
 const AUTHOR = createUserID(1000000000000000000n);
 
@@ -92,6 +109,7 @@ function userDataParams(overrides: Partial<Parameters<typeof buildUserDataJson>[
 		createdGiftCodes: [],
 		payments: [],
 		storePurchases: [],
+		threadMemberships: [],
 		oauthClients: [],
 		connections: [],
 		pinnedDms: [],
@@ -117,5 +135,39 @@ describe('buildUserDataJson', () => {
 	it('leaves the recovery kit out when the account has none', () => {
 		const data = buildUserDataJson(userDataParams());
 		expect('recovery_kit' in data).toBe(false);
+	});
+});
+
+describe('collectThreadMemberships', () => {
+	const guildId = createGuildID(1400000000000000000n);
+	const threadId = createChannelID(1400000000000000010n);
+	const member = new ThreadMember({
+		thread_id: threadId,
+		user_id: AUTHOR,
+		guild_id: guildId,
+		parent_id: createChannelID(1400000000000000001n),
+		join_timestamp: new Date('2026-09-27T00:00:00.000Z'),
+		flags: 1,
+		muted: false,
+		mute_config: null,
+	});
+	let reads = 0;
+	const threads = {
+		listJoinedThreadIds: async (_userId: UserID, id: GuildID) => {
+			reads++;
+			return id === guildId ? [threadId] : [];
+		},
+		getMember: async () => member,
+	};
+	afterEach(() => {
+		reads = 0;
+		tainted.clear();
+	});
+
+	it('collects the joined thread memberships of every tainted guild and skips the rest', async () => {
+		tainted.add(guildId.toString());
+		const collected = await collectThreadMemberships(threads, AUTHOR, [guildId, createGuildID(1400000000000000002n)]);
+		expect(collected).toEqual([member]);
+		expect(reads).toBe(1);
 	});
 });

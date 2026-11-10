@@ -252,14 +252,6 @@ export class Message {
 		return this.hasFlag(MessageFlags.SUPPRESS_EMBEDS);
 	}
 
-	get suppressNotifications(): boolean {
-		return this.hasFlag(MessageFlags.SUPPRESS_NOTIFICATIONS);
-	}
-
-	get isSilent(): boolean {
-		return this.hasFlag(MessageFlags.SUPPRESS_NOTIFICATIONS);
-	}
-
 	get isCrossposted(): boolean {
 		return this.hasFlag(MessageFlags.CROSSPOSTED);
 	}
@@ -300,10 +292,6 @@ export class Message {
 
 	get isSending(): boolean {
 		return this.state === MessageStates.SENDING;
-	}
-
-	get isSent(): boolean {
-		return this.state === MessageStates.SENT;
 	}
 
 	get hasFailed(): boolean {
@@ -374,34 +362,6 @@ export class Message {
 		if (!this.poll) return this;
 		const next = applyPollVote(this.poll, answerId, add, me);
 		return next === this.poll ? this : this.withUpdates({poll: next}, {mergePoll: false});
-	}
-
-	withReaction(emoji: ReactionEmoji, add = true, me = false): Message {
-		const existing = this.getReaction(emoji);
-		let newReactions: Array<MessageReaction>;
-		if (add) {
-			if (!existing) {
-				newReactions = [...this.reactions, {emoji, count: 1, me: me ? true : undefined}];
-			} else if (me && existing.me) {
-				return this;
-			} else {
-				newReactions = this.reactions.map((r) =>
-					emojiEquals(r.emoji, emoji) ? {...r, count: r.count + 1, me: me || r.me ? true : undefined} : r,
-				);
-			}
-		} else {
-			if (!existing) return this;
-			if (me && !existing.me) return this;
-			const nextCount = Math.max(0, existing.count - 1);
-			if (nextCount === 0) {
-				newReactions = this.reactions.filter((r) => !emojiEquals(r.emoji, emoji));
-			} else {
-				newReactions = this.reactions.map((r) =>
-					emojiEquals(r.emoji, emoji) ? {...r, count: nextCount, me: me ? undefined : r.me} : r,
-				);
-			}
-		}
-		return this.withUpdates({reactions: newReactions});
 	}
 
 	withoutReactionEmoji(emoji: ReactionEmoji): Message {
@@ -538,12 +498,6 @@ export class Message {
 			}
 		}
 		return true;
-	}
-
-	static hasRenderChanges(prev: Message | undefined, next: Message | undefined): boolean {
-		if (!prev && !next) return false;
-		if (!prev || !next) return true;
-		return !prev.equals(next);
 	}
 
 	toJSON(): WireMessage {

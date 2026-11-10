@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import {createChannelID, createMessageID, createUserID} from '@app/api/BrandedTypes';
+import {viewerFromCtx} from '@app/api/experiment/ChannelThreadsGate';
 import {LoginRequired} from '@app/api/middleware/AuthMiddleware';
 import {RateLimitMiddleware} from '@app/api/middleware/RateLimitMiddleware';
 import {OpenAPI} from '@app/api/middleware/ResponseTypeMiddleware';
@@ -38,6 +39,7 @@ export function MessagePollController(app: HonoApp) {
 		async (ctx) => {
 			const {channel_id, message_id, answer_id} = ctx.req.valid('param');
 			await ctx.get('channelService').polls.vote({
+				viewer: viewerFromCtx(ctx),
 				userId: ctx.get('user').id,
 				channelId: createChannelID(channel_id),
 				messageId: createMessageID(message_id),
@@ -66,6 +68,7 @@ export function MessagePollController(app: HonoApp) {
 		async (ctx) => {
 			const {channel_id, message_id, answer_id} = ctx.req.valid('param');
 			await ctx.get('channelService').polls.unvote({
+				viewer: viewerFromCtx(ctx),
 				userId: ctx.get('user').id,
 				channelId: createChannelID(channel_id),
 				messageId: createMessageID(message_id),
@@ -95,6 +98,7 @@ export function MessagePollController(app: HonoApp) {
 			const {channel_id, message_id, answer_id} = ctx.req.valid('param');
 			const {after, limit} = ctx.req.valid('query');
 			const response = await ctx.get('channelService').polls.listVoters({
+				viewer: viewerFromCtx(ctx),
 				userId: ctx.get('user').id,
 				channelId: createChannelID(channel_id),
 				messageId: createMessageID(message_id),
@@ -124,6 +128,7 @@ export function MessagePollController(app: HonoApp) {
 		async (ctx) => {
 			const {channel_id, message_id} = ctx.req.valid('param');
 			const poll = await ctx.get('channelService').polls.expire({
+				viewer: viewerFromCtx(ctx),
 				userId: ctx.get('user').id,
 				channelId: createChannelID(channel_id),
 				messageId: createMessageID(message_id),

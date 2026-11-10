@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import modalI18n from '@app/app/I18n';
 import {FeatureTemporarilyDisabledModal} from '@app/features/app/components/alerts/FeatureTemporarilyDisabledModal';
 import {GenericErrorModal} from '@app/features/app/components/alerts/GenericErrorModal';
-import {TemporaryInviteRequiresPresenceModal} from '@app/features/app/components/alerts/TemporaryInviteRequiresPresenceModal';
+import {showGenericErrorModal} from '@app/features/app/components/alerts/GenericErrorModalCommands';
 import {Endpoints} from '@app/features/app/constants/Endpoints';
 import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
 import Authentication from '@app/features/auth/state/Authentication';
-import {isAbortError} from '@app/features/auth/state/SudoPrompt';
 import {GuildAtCapacityModal} from '@app/features/guild/components/alerts/GuildAtCapacityModal';
 import {MaxGuildsModal} from '@app/features/guild/components/alerts/MaxGuildsModal';
-import {InviteAcceptFailedModal} from '@app/features/invite/components/alerts/InviteAcceptFailedModal';
+import {TRY_AGAIN_IN_A_MOMENT_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {InvitesDisabledModal} from '@app/features/invite/components/alerts/InvitesDisabledModal';
 import {InviteAcceptModal} from '@app/features/invite/components/modals/InviteAcceptModal';
 import Invites from '@app/features/invite/state/Invites';
 import {isGroupDmInvite, isGuildInvite} from '@app/features/invite/types/InviteTypes';
 import GuildMembers from '@app/features/member/state/GuildMembers';
-import {UserBannedFromGuildModal} from '@app/features/moderation/components/alerts/UserBannedFromGuildModal';
-import {UserIpBannedFromGuildModal} from '@app/features/moderation/components/alerts/UserIpBannedFromGuildModal';
 import * as NavigationCommands from '@app/features/navigation/commands/NavigationCommands';
+import {type InstanceHTTPTarget, instanceRequest} from '@app/features/platform/transport/InstanceHTTP';
 import {http} from '@app/features/platform/transport/RestTransport';
 import {HttpError} from '@app/features/platform/types/EndpointError';
 import {Logger} from '@app/features/platform/utils/AppLogger';
+import {isAbortError} from '@app/features/platform/utils/PlatformHelpers';
 import {failureCode, failureMessage} from '@app/features/platform/utils/ResponseInspection';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
@@ -33,6 +33,42 @@ import {GuildFeatures} from '@fluxer/constants/src/GuildConstants';
 import type {Invite} from '@fluxer/schema/src/domains/invite/InviteSchemas';
 import type {I18n} from '@lingui/core';
 import {msg} from '@lingui/core/macro';
+
+const InviteAcceptFailedModal_FAILED_TO_ACCEPT_INVITE_DESCRIPTOR = msg({
+	message: "Couldn't join community",
+	comment: 'Error modal title shown when accepting a community invite fails.',
+});
+
+const UserIpBannedFromGuildModal_YOUR_IP_IS_BANNED_DESCRIPTOR = msg({
+	message: 'Your IP is banned',
+	comment: 'Label in the user ip banned from guild modal. Keep the tone plain and specific.',
+});
+
+const UserIpBannedFromGuildModal_YOUR_IP_ADDRESS_IS_BANNED_FROM_THIS_COMMUNITY_DESCRIPTOR = msg({
+	message: 'Your IP address is banned from this community and you cannot join.',
+	comment: 'Error message in the user ip banned from guild modal. Keep the tone plain and specific.',
+});
+
+const UserBannedFromGuildModal_YOU_RE_BANNED_DESCRIPTOR = msg({
+	message: "You're banned",
+	comment: 'Short label in the user banned from guild modal. Keep it concise. Keep the tone plain and specific.',
+});
+
+const UserBannedFromGuildModal_YOU_ARE_BANNED_FROM_THIS_COMMUNITY_AND_CANNOT_DESCRIPTOR = msg({
+	message: 'You are banned from this community and cannot join.',
+	comment: 'Error message in the user banned from guild modal. Keep the tone plain and specific.',
+});
+
+const TemporaryInviteRequiresPresenceModal_GATEWAY_CONNECTION_REQUIRED_DESCRIPTOR = msg({
+	message: 'Gateway connection required',
+	comment: 'Short label in the temporary invite requires presence modal.',
+});
+
+const TemporaryInviteRequiresPresenceModal_YOU_MUST_BE_CONNECTED_TO_THE_GATEWAY_TO_DESCRIPTOR = msg({
+	message: 'Temporary invites need a live connection. Check yours and try again.',
+	comment:
+		'Modal body shown when the user tries to accept a temporary invite while the realtime connection is offline.',
+});
 
 const ACCOUNT_VERIFICATION_REQUIRED_DESCRIPTOR = msg({
 	message: 'Account verification required',
@@ -70,10 +106,15 @@ function guildInviteFeatures(invite: Invite | null): Array<string> {
 	return invite && isGuildInvite(invite) && Array.isArray(invite.guild.features) ? invite.guild.features : [];
 }
 
-function removeInviteIfMissing(code: string, responseErr: HttpError | null, errorCode?: string): void {
+function removeInviteIfMissing(
+	code: string,
+	target: InstanceHTTPTarget,
+	responseErr: HttpError | null,
+	errorCode?: string,
+): void {
 	if (responseErr?.status === 404 || errorCode === APIErrorCodes.UNKNOWN_INVITE) {
 		logger.debug(`Invite ${code} not found, removing from store`);
-		Invites.handleInviteDelete(code);
+		Invites.handleInviteDelete(code, target);
 	}
 }
 
@@ -136,38 +177,39 @@ function showGuildInviteAcceptFailure(
 			);
 		}
 	} else if (errorCode === APIErrorCodes.TEMPORARY_INVITE_REQUIRES_PRESENCE) {
-		ModalCommands.push(
-			modal(() => (
-				<TemporaryInviteRequiresPresenceModal data-flx="invite.invite-commands.show-guild-invite-accept-failure.temporary-invite-requires-presence-modal" />
-			)),
-		);
+		showGenericErrorModal({
+			title: () => modalI18n._(TemporaryInviteRequiresPresenceModal_GATEWAY_CONNECTION_REQUIRED_DESCRIPTOR),
+			message: () =>
+				modalI18n._(TemporaryInviteRequiresPresenceModal_YOU_MUST_BE_CONNECTED_TO_THE_GATEWAY_TO_DESCRIPTOR),
+			dataFlx: 'app.temporary-invite-requires-presence-modal.confirm-modal',
+		});
 	} else if (errorCode === APIErrorCodes.USER_BANNED_FROM_GUILD) {
-		ModalCommands.push(
-			modal(() => (
-				<UserBannedFromGuildModal data-flx="invite.invite-commands.show-guild-invite-accept-failure.user-banned-from-guild-modal" />
-			)),
-		);
+		showGenericErrorModal({
+			title: () => modalI18n._(UserBannedFromGuildModal_YOU_RE_BANNED_DESCRIPTOR),
+			message: () => modalI18n._(UserBannedFromGuildModal_YOU_ARE_BANNED_FROM_THIS_COMMUNITY_AND_CANNOT_DESCRIPTOR),
+			dataFlx: 'moderation.user-banned-from-guild-modal.confirm-modal',
+		});
 	} else if (errorCode === APIErrorCodes.USER_IP_BANNED_FROM_GUILD) {
-		ModalCommands.push(
-			modal(() => (
-				<UserIpBannedFromGuildModal data-flx="invite.invite-commands.show-guild-invite-accept-failure.user-ip-banned-from-guild-modal" />
-			)),
-		);
+		showGenericErrorModal({
+			title: () => modalI18n._(UserIpBannedFromGuildModal_YOUR_IP_IS_BANNED_DESCRIPTOR),
+			message: () => modalI18n._(UserIpBannedFromGuildModal_YOUR_IP_ADDRESS_IS_BANNED_FROM_THIS_COMMUNITY_DESCRIPTOR),
+			dataFlx: 'moderation.user-ip-banned-from-guild-modal.confirm-modal',
+		});
 	} else if (isUnclaimedAccountInviteError(errorCode)) {
 		showUnclaimedAccountInviteModal(i18n);
 	} else if (responseErr?.status && responseErr.status >= 400) {
-		ModalCommands.push(
-			modal(() => (
-				<InviteAcceptFailedModal data-flx="invite.invite-commands.show-guild-invite-accept-failure.invite-accept-failed-modal" />
-			)),
-		);
+		showGenericErrorModal({
+			title: () => modalI18n._(InviteAcceptFailedModal_FAILED_TO_ACCEPT_INVITE_DESCRIPTOR),
+			message: () => modalI18n._(TRY_AGAIN_IN_A_MOMENT_DESCRIPTOR),
+			dataFlx: 'invite.invite-accept-failed-modal.generic-error-modal',
+		});
 	}
 }
 
-export async function fetch(code: string): Promise<Invite> {
+export async function fetch(code: string, target: InstanceHTTPTarget): Promise<Invite> {
 	try {
 		logger.debug(`Fetching invite with code ${code}`);
-		const response = await http.get<Invite>(Endpoints.INVITE(code));
+		const response = await instanceRequest<Invite>({method: 'GET', path: Endpoints.INVITE(code), target});
 		return response.body;
 	} catch (error) {
 		logger.error(`Failed to fetch invite with code ${code}:`, error);
@@ -175,37 +217,45 @@ export async function fetch(code: string): Promise<Invite> {
 	}
 }
 
-export async function fetchWithCoalescing(code: string): Promise<Invite> {
-	return Invites.fetchInvite(code);
+export async function fetchWithCoalescing(code: string, target: InstanceHTTPTarget): Promise<Invite> {
+	return Invites.fetchInvite(code, target);
 }
 
-const accept = async (code: string): Promise<Invite> => {
+const accept = async (code: string, target: InstanceHTTPTarget): Promise<Invite> => {
 	if (blockIfAccountLimited()) {
 		throw new DOMException('Invite accept skipped', 'AbortError');
 	}
 	try {
 		logger.debug(`Accepting invite with code ${code}`);
-		const response = await http.post<Invite>(Endpoints.INVITE(code), {body: ACCEPT_INVITE_BODY});
+		const response = await instanceRequest<Invite>({
+			method: 'POST',
+			path: Endpoints.INVITE(code),
+			target,
+			body: ACCEPT_INVITE_BODY,
+		});
 		return response.body;
 	} catch (error) {
 		logger.error(`Failed to accept invite with code ${code}:`, error);
 		throw error;
 	}
 };
-export const acceptInvite = accept;
 
-export async function acceptAndTransitionToChannel(code: string, i18n: I18n): Promise<void> {
+export async function acceptAndTransitionToChannel(
+	code: string,
+	i18n: I18n,
+	target: InstanceHTTPTarget,
+): Promise<void> {
 	let invite: Invite | null = null;
 	try {
 		logger.debug(`Fetching invite details before accepting: ${code}`);
-		invite = await fetchWithCoalescing(code);
+		invite = await fetchWithCoalescing(code, target);
 		if (!invite) {
 			throw new Error(`Invite ${code} returned no data`);
 		}
 		if (isGroupDmInvite(invite)) {
 			const channelId = invite.channel.id;
 			logger.debug(`Accepting group DM invite ${code} and opening channel ${channelId}`);
-			await accept(code);
+			await accept(code, target);
 			NavigationCommands.selectChannel(ME, channelId);
 			return;
 		}
@@ -226,7 +276,7 @@ export async function acceptAndTransitionToChannel(code: string, i18n: I18n): Pr
 			return;
 		}
 		logger.debug(`User not in guild ${guildId}, accepting invite ${code}`);
-		await accept(code);
+		await accept(code, target);
 		logger.debug(
 			inviteTargetAllowed
 				? `Transitioning to channel ${channelId} in guild ${guildId}`
@@ -238,17 +288,21 @@ export async function acceptAndTransitionToChannel(code: string, i18n: I18n): Pr
 		const responseErr = error instanceof HttpError ? error : null;
 		const errorCode = failureCode(error);
 		logger.error(`Failed to accept invite and transition for code ${code}:`, error);
-		removeInviteIfMissing(code, responseErr, errorCode);
+		removeInviteIfMissing(code, target, responseErr, errorCode);
 		showGuildInviteAcceptFailure(i18n, invite, errorCode, responseErr);
 		throw error;
 	}
 }
 
-export async function openAcceptModal(code: string): Promise<void> {
-	void fetchWithCoalescing(code).catch(() => {});
+export async function openAcceptModal(code: string, target: InstanceHTTPTarget): Promise<void> {
+	void fetchWithCoalescing(code, target).catch(() => {});
 	ModalCommands.pushWithKey(
 		modal(() => (
-			<InviteAcceptModal code={code} data-flx="invite.invite-commands.open-accept-modal.invite-accept-modal" />
+			<InviteAcceptModal
+				code={code}
+				target={target}
+				data-flx="invite.invite-commands.open-accept-modal.invite-accept-modal"
+			/>
 		)),
 		`invite-accept-${code}`,
 	);

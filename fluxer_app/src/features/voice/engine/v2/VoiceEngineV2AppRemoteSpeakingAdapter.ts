@@ -14,7 +14,10 @@ import {
 	type VoiceRemoteSpeakingEvent,
 	type VoiceRemoteSpeakingSnapshot,
 } from '@app/features/voice/engine/VoiceParticipantStateMachine';
-import {getSharedVoiceAudioContext} from '@app/features/voice/engine/VoiceSharedAudioContext';
+import {
+	getSharedVoiceAudioContext,
+	resolveAudioContextConstructor,
+} from '@app/features/voice/engine/VoiceSharedAudioContext';
 import {getRemoteSpeakingThresholdRms} from '@app/features/voice/engine/VoiceSpeakingThreshold';
 import {VoiceTrackKind, VoiceTrackSource} from '@app/features/voice/engine/VoiceTrackSource';
 import {
@@ -31,8 +34,8 @@ import VoiceSettings from '@app/features/voice/state/VoiceSettings';
 import type {Participant, RemoteAudioTrack, RemoteTrack, RemoteTrackPublication, Room} from 'livekit-client';
 
 const logger = new Logger('VoiceEngineV2AppRemoteSpeakingAdapter');
-export const REMOTE_SPEAKING_ANALYSER_INTERVAL_MS = 50;
-export const REMOTE_SPEAKING_ANALYSER_HANDLES_CAP = 256;
+const REMOTE_SPEAKING_ANALYSER_INTERVAL_MS = 50;
+const REMOTE_SPEAKING_ANALYSER_HANDLES_CAP = 256;
 
 export function computeTimeDomainRms(samples: Float32Array): number {
 	if (samples.length === 0) return 0;
@@ -53,16 +56,15 @@ interface AnalyserHandle {
 	nextTickAtMs: number;
 }
 
-export interface VoiceEngineV2AppRemoteSpeakingAdapterOptions {
+interface VoiceEngineV2AppRemoteSpeakingAdapterOptions {
 	autoSchedule?: boolean;
 }
 
-export class VoiceEngineV2AppRemoteSpeakingAdapter {
+class VoiceEngineV2AppRemoteSpeakingAdapter {
 	private audioContext: AudioContext | null = null;
 	private audioContextIsShared = false;
 	private analysers = new Map<string, AnalyserHandle>();
-	private installedVisibilityListener = false;
-	private roomForRehydrate: Room | null = null;
+	private hydratedRoom: Room | null = null;
 	private machineSnapshot: VoiceRemoteSpeakingSnapshot = createVoiceRemoteSpeakingSnapshot();
 	private autoScheduleTimerId: number | null = null;
 	private readonly autoSchedule: boolean;
@@ -93,9 +95,6 @@ export class VoiceEngineV2AppRemoteSpeakingAdapter {
 					clearRemoteVoicePlaybackBoost(command.identity);
 					this.reapplyParticipantVolume(command.identity);
 					break;
-				case 'rehydrateRemoteAnalysers':
-					if (this.roomForRehydrate) this.hydrateFromRoom(this.roomForRehydrate);
-					break;
 			}
 		}
 	}
@@ -107,22 +106,6 @@ export class VoiceEngineV2AppRemoteSpeakingAdapter {
 		this.analysers.clear();
 		this.closeAudioContext();
 		this.stopAutoSchedule();
-	}
-
-	private ensureVisibilityListener(): void {
-		if (this.installedVisibilityListener) return;
-		if (typeof document === 'undefined') return;
-		document.addEventListener('visibilitychange', () => {
-			if (document.hidden) {
-				if (this.machineSnapshot.context.analyserSuspendedByVisibility) return;
-				this.detachAllAdapterAnalysers();
-				this.applyCommands(this.transition({type: 'remote.visibilityHidden'}));
-			} else {
-				if (!this.machineSnapshot.context.analyserSuspendedByVisibility) return;
-				this.applyCommands(this.transition({type: 'remote.visibilityVisible'}));
-			}
-		});
-		this.installedVisibilityListener = true;
 	}
 
 	private getAudioContext(): AudioContext | null {
@@ -137,13 +120,7 @@ export class VoiceEngineV2AppRemoteSpeakingAdapter {
 			assert.notEqual(shared.state, 'closed', 'shared voice AudioContext for analyser must not be closed');
 			return shared;
 		}
-		const AudioContextCtor =
-			window.AudioContext ||
-			(
-				window as typeof window & {
-					webkitAudioContext?: typeof AudioContext;
-				}
-			).webkitAudioContext;
+		const AudioContextCtor = resolveAudioContextConstructor();
 		if (!AudioContextCtor) return null;
 		try {
 			this.audioContext = new AudioContextCtor({latencyHint: 'interactive'});
@@ -169,8 +146,6 @@ export class VoiceEngineV2AppRemoteSpeakingAdapter {
 			this.analysers.size <= REMOTE_SPEAKING_ANALYSER_HANDLES_CAP,
 			'remote speaking analyser registry exceeded cap',
 		);
-		this.ensureVisibilityListener();
-		if (this.machineSnapshot.context.analyserSuspendedByVisibility) return;
 		if (participant.isLocal) return;
 		if (publication.source !== VoiceTrackSource.Microphone) return;
 		if (track.kind !== VoiceTrackKind.Audio) return;
@@ -252,12 +227,12 @@ export class VoiceEngineV2AppRemoteSpeakingAdapter {
 		);
 		this.detachAllAdapterAnalysers();
 		this.applyCommands(this.transition({type: 'remote.clear'}));
-		this.roomForRehydrate = null;
+		this.hydratedRoom = null;
 		assert.equal(this.analysers.size, 0, 'clear post-condition: no analysers');
 	}
 
 	private reapplyParticipantVolume(identity: string): void {
-		const room = getRoomFromMediaEngine() ?? this.roomForRehydrate;
+		const room = getRoomFromMediaEngine() ?? this.hydratedRoom;
 		const participant = room?.remoteParticipants.get(identity);
 		if (!participant) return;
 		try {
@@ -270,9 +245,7 @@ export class VoiceEngineV2AppRemoteSpeakingAdapter {
 	hydrateFromRoom(room: Room): void {
 		assertObjectLike<Room>(room, 'hydrateFromRoom.room');
 		assert.ok(room.remoteParticipants instanceof Map, 'hydrateFromRoom.room.remoteParticipants must be a Map');
-		this.ensureVisibilityListener();
-		this.roomForRehydrate = room;
-		if (this.machineSnapshot.context.analyserSuspendedByVisibility) return;
+		this.hydratedRoom = room;
 		room.remoteParticipants.forEach((participant) => {
 			participant.audioTrackPublications.forEach((publication) => {
 				const remotePub = publication as RemoteTrackPublication;
@@ -290,7 +263,6 @@ export class VoiceEngineV2AppRemoteSpeakingAdapter {
 			this.analysers.size <= REMOTE_SPEAKING_ANALYSER_HANDLES_CAP,
 			'tickHost pre-condition: analyser cap respected',
 		);
-		if (this.machineSnapshot.context.analyserSuspendedByVisibility) return;
 		const sizeBefore = this.analysers.size;
 		const expired: Array<AnalyserHandle> = [];
 		for (const handle of this.analysers.values()) {
@@ -368,15 +340,6 @@ export class VoiceEngineV2AppRemoteSpeakingAdapter {
 		if (typeof window === 'undefined') return;
 		window.clearInterval(this.autoScheduleTimerId);
 		this.autoScheduleTimerId = null;
-	}
-
-	get analyserCount(): number {
-		return this.analysers.size;
-	}
-
-	hasAnalyserForIdentity(identity: string): boolean {
-		assertNonEmptyString(identity, 'hasAnalyserForIdentity.identity');
-		return this.analysers.has(identity);
 	}
 
 	private closeAudioContext(): void {

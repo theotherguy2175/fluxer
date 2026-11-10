@@ -145,6 +145,11 @@ const POLL_ENDED_DESCRIPTOR = msg({
 	comment:
 		'Plain-text summary of a poll-result system message, used in notifications and channel previews. {username} is the poll author.',
 });
+const STARTED_A_THREAD_NAMED_DESCRIPTOR = msg({
+	message: '{username} started a thread: {threadName}',
+	comment:
+		'Plain text summary of the thread created system message. username is the author, threadName the thread name.',
+});
 
 interface StringifyableMessage {
 	id: string;
@@ -245,6 +250,8 @@ export const SystemMessageUtils = {
 				return i18n._(POLL_ENDED_DESCRIPTOR, {username});
 			case MessageTypes.CHANNEL_FOLLOW_ADD:
 				return i18n._(ADDED_FOLLOWED_CHANNEL_DESCRIPTOR, {username, name: message.content});
+			case MessageTypes.THREAD_CREATED:
+				return i18n._(STARTED_A_THREAD_NAMED_DESCRIPTOR, {username, threadName: message.content});
 			default:
 				return null;
 		}

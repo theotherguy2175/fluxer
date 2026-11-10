@@ -1,16 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import fs from 'node:fs';
-import {createAttachmentID, type UserID} from '@app/api/BrandedTypes';
+import {type ChannelID, createAttachmentID, type UserID} from '@app/api/BrandedTypes';
 import {Config} from '@app/api/Config';
 import type {AttachmentToProcess} from '@app/api/channel/AttachmentDTOs';
 import type {AttachmentUploadTraceRepository} from '@app/api/channel/repositories/message/AttachmentUploadTraceRepository';
-import {
-	getContentType,
-	isMediaFile,
-	makeAttachmentCdnKey,
-	validateAttachmentIds,
-} from '@app/api/channel/services/message/MessageHelpers';
+import {makeAttachmentCdnKey, validateAttachmentIds} from '@app/api/channel/services/message/MessageHelpers';
 import type {MessageAttachment} from '@app/api/database/types/MessageTypes';
 import {contentModerationService, type ModerationContext} from '@app/api/infrastructure/ContentModerationService';
 import type {
@@ -33,7 +28,7 @@ import {InputValidationError} from '@fluxer/errors/src/domains/core/InputValidat
 import {ExplicitContentCannotBeSentError} from '@fluxer/errors/src/domains/moderation/ExplicitContentCannotBeSentError';
 import type {GuildMemberResponse} from '@fluxer/schema/src/domains/guild/GuildMemberSchemas';
 import type {GuildResponse} from '@fluxer/schema/src/domains/guild/GuildResponseSchemas';
-import {isSupportedMediaContentType} from '@pkgs/mime_utils/src/ContentTypeUtils';
+import {getContentTypeFromFilename, isSupportedMediaContentType} from '@pkgs/mime_utils/src/ContentTypeUtils';
 import type {IVirusScanService} from '@pkgs/virus_scan/src/IVirusScanService';
 import {temporaryFile} from 'tempy';
 
@@ -45,6 +40,7 @@ interface ProcessAttachmentParams {
 	attachment: AttachmentToProcess;
 	index: number;
 	uploadUserId: UserID;
+	uploadChannelId?: ChannelID;
 	channel?: Channel;
 	guild?: GuildResponse | null;
 	member?: GuildMemberResponse | null;
@@ -81,6 +77,7 @@ export class AttachmentProcessingService {
 		message: Message;
 		attachments: Array<AttachmentToProcess>;
 		uploadUserId: UserID;
+		uploadChannelId?: ChannelID;
 		channel?: Channel;
 		guild?: GuildResponse | null;
 		member?: GuildMemberResponse | null;
@@ -104,6 +101,7 @@ export class AttachmentProcessingService {
 						attachment,
 						index,
 						uploadUserId: params.uploadUserId,
+						uploadChannelId: params.uploadChannelId,
 						channel: params.channel,
 						guild: params.guild,
 						member: params.member,
@@ -181,7 +179,7 @@ export class AttachmentProcessingService {
 		const pendingUpload = await this.attachmentUploadTraceRepository.getPendingUpload({
 			uploadKey: attachment.upload_filename,
 			userId: params.uploadUserId,
-			channelId: message.channelId,
+			channelId: params.uploadChannelId ?? message.channelId,
 		});
 		if (!pendingUpload) {
 			throw InputValidationError.fromCode(
@@ -199,7 +197,7 @@ export class AttachmentProcessingService {
 		}
 		const attachmentId = createAttachmentID(await this.snowflakeService.generate());
 		const cdnKey = makeAttachmentCdnKey(message.channelId, attachmentId, attachment.filename);
-		let contentType = pendingUpload.content_type ?? getContentType(attachment.filename);
+		let contentType = pendingUpload.content_type ?? getContentTypeFromFilename(attachment.filename);
 		let size = BigInt(uploadedFile.contentLength);
 		const clientFlags =
 			(attachment.flags ?? 0) & (MessageAttachmentFlags.IS_SPOILER | MessageAttachmentFlags.CONTAINS_EXPLICIT_MEDIA);
@@ -214,7 +212,7 @@ export class AttachmentProcessingService {
 		let applyFinalObjectMetadata = false;
 		const clientDuration: number | null = attachment.duration ?? null;
 		const waveform: string | null = attachment.waveform ?? null;
-		const sniffedContentType = isMediaFile(contentType)
+		const sniffedContentType = isSupportedMediaContentType(contentType)
 			? null
 			: await this.sniffAttachmentMediaType({
 					index,
@@ -238,7 +236,7 @@ export class AttachmentProcessingService {
 				'content_moderation.attachment_type_mismatch',
 			);
 		}
-		const isMedia = isMediaFile(contentType) || sniffedContentType !== null;
+		const isMedia = isSupportedMediaContentType(contentType) || sniffedContentType !== null;
 		let metadata: MediaProxyMetadataResponse | null = null;
 		if (isMedia) {
 			metadata = await this.getAttachmentMediaMetadata({
@@ -246,6 +244,7 @@ export class AttachmentProcessingService {
 				uploadFilename: attachment.upload_filename,
 				filename: attachment.filename,
 				nsfwMode,
+				sizeBytes: uploadedFile.contentLength,
 			});
 			if (metadata) {
 				applyFinalObjectMetadata = true;
@@ -403,14 +402,18 @@ export class AttachmentProcessingService {
 		uploadFilename: string;
 		filename: string;
 		nsfwMode: MediaProxyNsfwMode;
+		sizeBytes: number;
 	}): Promise<MediaProxyMetadataResponse | null> {
 		try {
-			const metadata = await this.mediaService.getMetadata({
-				type: 'upload',
-				upload_filename: params.uploadFilename,
-				filename: params.filename,
-				nsfw: params.nsfwMode,
-			});
+			const metadata = await this.mediaService.getMetadata(
+				{
+					type: 'upload',
+					upload_filename: params.uploadFilename,
+					filename: params.filename,
+					nsfw: params.nsfwMode,
+				},
+				{sizeBytes: params.sizeBytes},
+			);
 			if (metadata) {
 				return metadata;
 			}

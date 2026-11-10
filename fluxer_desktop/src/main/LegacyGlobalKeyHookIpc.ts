@@ -16,7 +16,7 @@ const MAX_LEGACY_ID_LENGTH = 512;
 const MAX_LEGACY_KEY_NAME_LENGTH = 64;
 const MAX_LEGACY_MOUSE_BUTTON = 31;
 
-export interface LegacyLinuxEvdevStatus {
+interface LegacyLinuxEvdevStatus {
 	supported: boolean;
 	hasAccess: boolean;
 	canPrompt: boolean;
@@ -25,12 +25,6 @@ export interface LegacyLinuxEvdevStatus {
 	totalEventDevices: number;
 	readableEventDevices: number;
 	inInputGroup: boolean;
-}
-
-export interface LegacyLinuxEvdevGrantResult {
-	success: boolean;
-	needsRelogin: boolean;
-	error?: string;
 }
 
 export interface LegacyHostEnvironment {
@@ -198,12 +192,6 @@ export function buildLegacyLinuxEvdevStatus(
 	};
 }
 
-export const LEGACY_LINUX_EVDEV_GRANT_RESULT: LegacyLinuxEvdevGrantResult = Object.freeze({
-	success: false,
-	needsRelogin: false,
-	error: 'unsupported',
-});
-
 export function registerLegacyGlobalKeyHookHandlers(
 	engine: GlobalShortcutsEngine,
 	adapter: LegacyGlobalKeyHookAdapter,
@@ -237,10 +225,6 @@ export function registerLegacyGlobalKeyHookHandlers(
 		adapter.release(event.sender.id);
 		await engine.refreshHooks();
 	});
-	ipcMain.handle('global-key-hook-is-running', (event): boolean => {
-		requirePrivilegedRendererDocumentSender(event, 'global-key-hook-is-running');
-		return engine.hooksActive();
-	});
 	ipcMain.handle('check-input-monitoring-access', (event): boolean => {
 		requirePrivilegedRendererDocumentSender(event, 'check-input-monitoring-access');
 		return host.hasInputMonitoringAccess();
@@ -265,9 +249,5 @@ export function registerLegacyGlobalKeyHookHandlers(
 	ipcMain.handle('linux-evdev-status', (event): LegacyLinuxEvdevStatus => {
 		requirePrivilegedRendererDocumentSender(event, 'linux-evdev-status');
 		return buildLegacyLinuxEvdevStatus(host);
-	});
-	ipcMain.handle('linux-evdev-grant-access', (event): LegacyLinuxEvdevGrantResult => {
-		requirePrivilegedRendererDocumentSender(event, 'linux-evdev-grant-access');
-		return {...LEGACY_LINUX_EVDEV_GRANT_RESULT};
 	});
 }

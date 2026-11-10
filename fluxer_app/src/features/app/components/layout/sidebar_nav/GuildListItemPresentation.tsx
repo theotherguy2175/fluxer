@@ -14,6 +14,7 @@ import Guilds from '@app/features/guild/state/Guilds';
 import {
 	type GuildInitialsLength,
 	getGuildIconDisplayInitials,
+	getGuildInitialsFitStyle,
 	getInitialsFromName,
 	getInitialsLength,
 	truncateInitials,
@@ -22,7 +23,7 @@ import {ariaCurrentPage} from '@app/features/platform/ARIAProps';
 import {Edge} from '@app/features/ui/AxisOrientation';
 import {MentionBadgeAnimated} from '@app/features/ui/components/MentionBadge';
 import {AnimePresence, AnimeSpan, type AnimeStyle, createAnimeFlxElement} from '@app/features/ui/motion/AnimeElement';
-import * as AvatarSourceUtils from '@app/features/user/utils/AvatarSourceUtils';
+import * as AvatarSourceUtils from '@app/features/user/utils/AvatarUtils';
 import {flxElementClassName} from '@app/lib/react';
 import {GuildFeatures} from '@fluxer/constants/src/GuildConstants';
 import {ExclamationMarkIcon, PauseIcon} from '@phosphor-icons/react';
@@ -57,11 +58,11 @@ function resolveGuildListItemMotion(useReducedMotion: boolean): GuildListItemMot
 	return STANDARD_GUILD_LIST_ITEM_MOTION;
 }
 
-function resolveInitialsLength(rawInitials: string): GuildInitialsLength | null {
-	if (rawInitials.length === 0) {
+function resolveInitialsLength(displayInitials: string): GuildInitialsLength | null {
+	if (displayInitials.length === 0) {
 		return null;
 	}
-	return getInitialsLength(rawInitials);
+	return getInitialsLength(displayInitials);
 }
 
 function resolveDraggingCursor(dragAndDrop: GuildListItemDragAndDrop | null): 'grabbing' | null {
@@ -303,8 +304,8 @@ export const GuildListItemPresentation = forwardRef<
 	forwardedRef,
 ) {
 	const rootRef = useMergeRefs([surfaceRef, forwardedRef]);
-	const rawInitials = getInitialsFromName(guild.name);
-	const initialsLength = resolveInitialsLength(rawInitials);
+	const displayInitials = getGuildIconDisplayInitials(getInitialsFromName(guild.name));
+	const initialsLength = resolveInitialsLength(displayInitials);
 	const dropIndicator = resolveDropIndicator(dragAndDrop);
 	const motion = resolveGuildListItemMotion(Accessibility.useReducedMotion);
 	const draggingCursor = resolveDraggingCursor(dragAndDrop);
@@ -378,9 +379,10 @@ export const GuildListItemPresentation = forwardRef<
 					{!hasPaintedIcon && (
 						<span
 							className={styles.guildIconInitials}
+							style={getGuildInitialsFitStyle(displayInitials)}
 							data-flx="app.sidebar-nav.guild-list-item-presentation.guild-icon-initials"
 						>
-							{getGuildIconDisplayInitials(rawInitials)}
+							{displayInitials}
 						</span>
 					)}
 				</GuildListItemIcon>

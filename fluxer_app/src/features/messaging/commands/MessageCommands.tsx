@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import modalI18n from '@app/app/I18n';
 import Accessibility from '@app/features/accessibility/state/Accessibility';
 import {showDmActionErrorModal} from '@app/features/app/components/alerts/DmActionErrorModal';
 import {FeatureTemporarilyDisabledModal} from '@app/features/app/components/alerts/FeatureTemporarilyDisabledModal';
 import {showGenericErrorModal} from '@app/features/app/components/alerts/GenericErrorModalCommands';
 import {ConfirmModal} from '@app/features/app/components/dialogs/ConfirmModal';
-import {PRODUCT_NAME} from '@app/features/app/config/I18nDisplayConstants';
 import {Endpoints} from '@app/features/app/constants/Endpoints';
+import {getActiveInstanceProductName} from '@app/features/app/state/ActiveInstanceProductName';
+import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
 import Authentication from '@app/features/auth/state/Authentication';
+import {canReportMessage} from '@app/features/channel/components/MessageActionUtils';
 import Channels from '@app/features/channel/state/Channels';
 import DeveloperOptions from '@app/features/devtools/state/DeveloperOptions';
-import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
+import GatewaySessions from '@app/features/gateway/transport/GatewaySessionPool';
 import GuildMatureContentAgree from '@app/features/guild/state/GuildMatureContentAgree';
 import {DELETE_MESSAGE_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import GuildMembers from '@app/features/member/state/GuildMembers';
@@ -22,9 +25,6 @@ import {
 } from '@app/features/messaging/commands/MessageFetchStateMachine';
 import {resolveMessagePageState} from '@app/features/messaging/commands/MessagePageStateMachine';
 import {MessageCrosspostLimitModal} from '@app/features/messaging/components/alerts/MessageCrosspostLimitModal';
-import {MessageDeleteFailedModal} from '@app/features/messaging/components/alerts/MessageDeleteFailedModal';
-import {MessageDeleteTooQuickModal} from '@app/features/messaging/components/alerts/MessageDeleteTooQuickModal';
-import {MessageEditFailedModal} from '@app/features/messaging/components/alerts/MessageEditFailedModal';
 import {MessageEditTooQuickModal} from '@app/features/messaging/components/alerts/MessageEditTooQuickModal';
 import {PublishedMessageEditLimitModal} from '@app/features/messaging/components/alerts/PublishedMessageEditLimitModal';
 import type {Message as MessageModel} from '@app/features/messaging/models/MessagingMessage';
@@ -46,9 +46,12 @@ import {
 	normalizeMessageContent,
 } from '@app/features/messaging/utils/MessageRequestUtils';
 import {resolveRetryAfterMs} from '@app/features/messaging/utils/RetryAfterUtils';
-import * as IARCommands from '@app/features/moderation/commands/IARCommands';
+import {openReportMessageModal} from '@app/features/moderation/utils/ReportActionUtils';
 import * as NavigationCommands from '@app/features/navigation/commands/NavigationCommands';
 import Permission from '@app/features/permissions/state/Permission';
+import {AccountScopedWork} from '@app/features/platform/state/AccountScopedWork';
+import {isAccountTransitionAbortError} from '@app/features/platform/state/AccountTransitionAbort';
+import SessionManager from '@app/features/platform/state/AuthSession';
 import {http} from '@app/features/platform/transport/RestTransport';
 import {HttpError} from '@app/features/platform/types/EndpointError';
 import type {RestResponse} from '@app/features/platform/types/TransportTypes';
@@ -58,6 +61,8 @@ import {failureCode, failureMessage} from '@app/features/platform/utils/Response
 import * as ReadStateCommands from '@app/features/read_state/commands/ReadStateCommands';
 import ReadStates from '@app/features/read_state/state/ReadStates';
 import * as SlowmodeCommands from '@app/features/slowmode/commands/SlowmodeCommands';
+import ChannelThreads from '@app/features/threads/state/ChannelThreads';
+import ThreadGuilds from '@app/features/threads/state/ThreadGuilds';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
 import * as ToastCommands from '@app/features/ui/commands/ToastCommands';
@@ -78,6 +83,38 @@ import type {PollCreateRequestInput} from '@fluxer/schema/src/domains/message/Po
 import * as SnowflakeUtils from '@fluxer/snowflake/src/SnowflakeUtils';
 import type {I18n} from '@lingui/core';
 import {msg} from '@lingui/core/macro';
+import {useLingui} from '@lingui/react/macro';
+import {observer} from 'mobx-react-lite';
+
+const MessageEditFailedModal_YOUR_MESSAGE_DIDN_T_UPDATE_DESCRIPTOR = msg({
+	message: "Your message didn't update",
+	comment: 'Label in the message edit failed modal.',
+});
+
+const MessageEditFailedModal_TRY_EDITING_YOUR_MESSAGE_AGAIN_DESCRIPTOR = msg({
+	message: 'Try editing your message again.',
+	comment: 'Description text in the message edit failed modal.',
+});
+
+const MessageDeleteFailedModal_THAT_MESSAGE_DIDN_T_DELETE_DESCRIPTOR = msg({
+	message: "That message couldn't be deleted",
+	comment: 'Label in the message delete failed modal. Keep the tone plain and specific.',
+});
+
+const MessageDeleteFailedModal_TRY_DELETING_THAT_MESSAGE_AGAIN_DESCRIPTOR = msg({
+	message: 'Try deleting that message again.',
+	comment: 'Description text in the message delete failed modal. Keep the tone plain and specific.',
+});
+
+const MessageDeleteTooQuickModal_YOU_RE_DELETING_MESSAGES_TOO_QUICKLY_DESCRIPTOR = msg({
+	message: "You're deleting messages too quickly",
+	comment: 'Label in the message delete too quick modal. Keep the tone plain and specific.',
+});
+
+const MessageDeleteTooQuickModal_WAIT_A_MOMENT_BEFORE_DELETING_MORE_MESSAGES_DESCRIPTOR = msg({
+	message: 'Wait a moment before deleting more messages.',
+	comment: 'Description text in the message delete too quick modal. Keep the tone plain and specific.',
+});
 
 const ARE_YOU_SURE_YOU_WANT_TO_DELETE_THIS_DESCRIPTOR = msg({
 	message: "Delete this message? Can't be undone.",
@@ -90,7 +127,7 @@ const DELETE_DESCRIPTOR = msg({
 const ALSO_REPORT_TO_SAFETY_TEAM_DESCRIPTOR = msg({
 	message: 'Also report this message to the {productName} Safety Team',
 	comment:
-		'Toggle-switch label in the moderator delete-message confirmation dialog. When enabled, the message is reported (category: other) before being deleted. {productName} is the product name (e.g., Fluxer).',
+		'Toggle-switch label in the moderator delete-message confirmation dialog. When enabled, confirming opens the report flow for the message, and the message is deleted when that flow ends. {productName} is the product name (e.g., Fluxer).',
 });
 const DELETE_PUBLISHED_MESSAGE_BODY_DESCRIPTOR = msg({
 	message:
@@ -173,6 +210,9 @@ function shouldBlockMessageFetch(channelId: string): boolean {
 	const channel = Channels.getChannel(channelId);
 	if (!channel || channel.isPrivate()) {
 		return false;
+	}
+	if (channel.isThreadOnly()) {
+		return true;
 	}
 	return GuildMatureContentAgree.shouldShowGate({channelId: channel.id, guildId: channel.guildId ?? null});
 }
@@ -292,6 +332,9 @@ function handleMessageFetchSuccess(
 	cached: boolean,
 	jump?: JumpOptions,
 ): void {
+	if (ThreadGuilds.anyActive) {
+		ChannelThreads.ingestMessageThreads(messages);
+	}
 	Messages.handleLoadMessagesSuccess({
 		channelId,
 		messages,
@@ -437,6 +480,7 @@ export async function fetchMessages(
 	const inFlight = pendingFetchPromises.get(key);
 	const preflightDecision = resolveMessageFetchPreflightDecision({
 		hasInFlightRequest: inFlight != null,
+		accountTransitionActive: AccountScopedWork.isSuspended,
 		shouldBlockForGate: shouldBlockMessageFetch(channelId),
 		cacheHit: getMessageFetchCacheHit(channelId, before, after, jump),
 	});
@@ -444,6 +488,10 @@ export async function fetchMessages(
 		case 'useInFlightRequest':
 			logger.debug(`Using in-flight fetchMessages for channel ${channelId} (deduped)`);
 			return inFlight as Promise<Array<WireMessage>>;
+		case 'waitForAccountTransition':
+			logger.debug(`Holding message fetch for channel ${channelId} until the account transition completes`);
+			Messages.handleLoadMessagesBlocked({channelId});
+			return [];
 		case 'blockForGate':
 			logger.debug(`Skipping message fetch for gated channel ${channelId}`);
 			Messages.handleLoadMessagesBlocked({channelId});
@@ -463,17 +511,17 @@ export async function fetchMessages(
 			return handleForcedMessageLoadFailure(channelId, jump);
 		}
 		Messages.handleLoadMessages({channelId, jump});
-		const connectedAtRequest = GatewayConnection.isConnected;
-		const epochAtRequest = GatewayConnection.connectionEpoch;
+		const connectedAtRequest = GatewaySessions.foregroundConnection.isConnected;
+		const epochAtRequest = GatewaySessions.foregroundConnection.connectionEpoch;
 		try {
 			const timeStart = Date.now();
 			logger.debug(`Fetching messages for channel ${channelId}`);
 			const messages = await requestChannelMessages(channelId, before, after, limit, jump);
 			const cached = resolveMessageFetchWindowCached({
 				connectedAtRequest,
-				connectedAtResponse: GatewayConnection.isConnected,
+				connectedAtResponse: GatewaySessions.foregroundConnection.isConnected,
 				epochAtRequest,
-				epochAtResponse: GatewayConnection.connectionEpoch,
+				epochAtResponse: GatewaySessions.foregroundConnection.connectionEpoch,
 			});
 			const pageState = calculateMessagePageState(channelId, before, after, limit, messages, jump);
 			logger.info(`Fetched ${messages.length} messages for channel ${channelId}, took ${Date.now() - timeStart}ms`);
@@ -481,7 +529,11 @@ export async function fetchMessages(
 			return messages;
 		} catch (error) {
 			logger.error(`Failed to fetch messages for channel ${channelId}:`, error);
-			Messages.handleLoadMessagesFailure({channelId});
+			if (isAccountTransitionAbortError(error)) {
+				Messages.handleLoadMessagesBlocked({channelId});
+			} else {
+				Messages.handleLoadMessagesFailure({channelId});
+			}
 			if (options?.throwOnError) {
 				throw error;
 			}
@@ -572,6 +624,7 @@ function nextChannelOrder(channelId: string): number {
 }
 
 export async function send(channelId: string, params: SendMessageParams): Promise<WireMessage | null> {
+	const accountKey = SessionManager.currentAccountKey;
 	if (!MessageQueue.consumeLocalSendReservation(channelId, params.nonce)) {
 		MessageQueue.rejectLocalRateLimitedSend(channelId, params.nonce, params.hasAttachments);
 		return null;
@@ -586,6 +639,7 @@ export async function send(channelId: string, params: SendMessageParams): Promis
 	}
 	const payload = {
 		type: 'send' as const,
+		accountKey,
 		channelId,
 		nonce: params.nonce,
 		content: params.content,
@@ -638,11 +692,11 @@ function showDeleteFailureModal(error: unknown, messageId: string): void {
 		const {status} = error;
 		const errorCode = failureCode(error);
 		if (status === 429) {
-			ModalCommands.push(
-				modal(() => (
-					<MessageDeleteTooQuickModal data-flx="messaging.message-commands.show-delete-failure-modal.message-delete-too-quick-modal" />
-				)),
-			);
+			showGenericErrorModal({
+				title: () => modalI18n._(MessageDeleteTooQuickModal_YOU_RE_DELETING_MESSAGES_TOO_QUICKLY_DESCRIPTOR),
+				message: () => modalI18n._(MessageDeleteTooQuickModal_WAIT_A_MOMENT_BEFORE_DELETING_MORE_MESSAGES_DESCRIPTOR),
+				dataFlx: 'messaging.message-delete-too-quick-modal.confirm-modal',
+			});
 		} else if (status === 403 && errorCode === APIErrorCodes.FEATURE_TEMPORARILY_DISABLED) {
 			ModalCommands.push(
 				modal(() => (
@@ -652,19 +706,19 @@ function showDeleteFailureModal(error: unknown, messageId: string): void {
 		} else if (status === 404) {
 			logger.debug(`Message ${messageId} was already deleted (404 response)`);
 		} else {
-			ModalCommands.push(
-				modal(() => (
-					<MessageDeleteFailedModal data-flx="messaging.message-commands.show-delete-failure-modal.message-delete-failed-modal" />
-				)),
-			);
+			showGenericErrorModal({
+				title: () => modalI18n._(MessageDeleteFailedModal_THAT_MESSAGE_DIDN_T_DELETE_DESCRIPTOR),
+				message: () => modalI18n._(MessageDeleteFailedModal_TRY_DELETING_THAT_MESSAGE_AGAIN_DESCRIPTOR),
+				dataFlx: 'messaging.message-delete-failed-modal.generic-error-modal',
+			});
 		}
 		return;
 	}
-	ModalCommands.push(
-		modal(() => (
-			<MessageDeleteFailedModal data-flx="messaging.message-commands.show-delete-failure-modal.message-delete-failed-modal--2" />
-		)),
-	);
+	showGenericErrorModal({
+		title: () => modalI18n._(MessageDeleteFailedModal_THAT_MESSAGE_DIDN_T_DELETE_DESCRIPTOR),
+		message: () => modalI18n._(MessageDeleteFailedModal_TRY_DELETING_THAT_MESSAGE_AGAIN_DESCRIPTOR),
+		dataFlx: 'messaging.message-delete-failed-modal.generic-error-modal',
+	});
 }
 
 function showPublishedEditLimitModal(error: unknown): boolean {
@@ -723,9 +777,11 @@ function showEditFailureModal(error: unknown): void {
 		showDmActionErrorModal(error);
 		return;
 	}
-	ModalCommands.push(
-		modal(() => <MessageEditFailedModal data-flx="messaging.message-commands.message-edit-failed-modal" />),
-	);
+	showGenericErrorModal({
+		title: () => modalI18n._(MessageEditFailedModal_YOUR_MESSAGE_DIDN_T_UPDATE_DESCRIPTOR),
+		message: () => modalI18n._(MessageEditFailedModal_TRY_EDITING_YOUR_MESSAGE_AGAIN_DESCRIPTOR),
+		dataFlx: 'messaging.message-edit-failed-modal.generic-error-modal',
+	});
 }
 
 export async function edit(
@@ -778,26 +834,41 @@ export async function remove(channelId: string, messageId: string): Promise<void
 	return deletePromise;
 }
 
+interface SafetyTeamReportSwitchProps {
+	value?: boolean;
+	onChange?: (checked: boolean) => void;
+}
+
+const SafetyTeamReportSwitch = observer(({value = false, onChange}: SafetyTeamReportSwitchProps) => {
+	const {i18n} = useLingui();
+	return (
+		<Switch
+			value={value}
+			onChange={(checked) => onChange?.(checked)}
+			label={i18n._(ALSO_REPORT_TO_SAFETY_TEAM_DESCRIPTOR, {productName: getActiveInstanceProductName()})}
+			compact
+			data-flx="messaging.message-commands.safety-team-report-switch.switch"
+		/>
+	);
+});
+
 interface ShowDeleteConfirmationOptions {
 	message: MessageModel;
 	onDelete?: () => void;
 	showShiftBypassConfirmationTip?: boolean;
-	suppressSafetyTeamReportToggle?: boolean;
 }
 
 export function showDeleteConfirmation(
 	i18n: I18n,
-	{
-		message,
-		onDelete,
-		showShiftBypassConfirmationTip = false,
-		suppressSafetyTeamReportToggle = false,
-	}: ShowDeleteConfirmationOptions,
+	{message, onDelete, showShiftBypassConfirmationTip = false}: ShowDeleteConfirmationOptions,
 ): void {
 	const showSafetyTeamReportToggle =
-		!suppressSafetyTeamReportToggle &&
-		message.author.id !== Authentication.currentUserId &&
-		Permission.can(Permissions.MANAGE_MESSAGES, {channelId: message.channelId});
+		canReportMessage(message) && Permission.can(Permissions.MANAGE_MESSAGES, {channelId: message.channelId});
+	if (showSafetyTeamReportToggle) {
+		RuntimeConfig.revalidateDiscovery().catch((error: unknown) => {
+			logger.warn('Failed to refresh discovery for the delete confirmation:', error);
+		});
+	}
 	ModalCommands.push(
 		modal(() => (
 			<ConfirmModal
@@ -812,25 +883,19 @@ export function showDeleteConfirmation(
 				primaryVariant="danger"
 				toggleSwitchContent={
 					showSafetyTeamReportToggle ? (
-						<Switch
-							value={false}
-							onChange={() => {}}
-							label={i18n._(ALSO_REPORT_TO_SAFETY_TEAM_DESCRIPTOR, {productName: PRODUCT_NAME})}
-							compact
-							data-flx="messaging.message-commands.show-delete-confirmation.switch"
-						/>
+						<SafetyTeamReportSwitch data-flx="messaging.message-commands.show-delete-confirmation.safety-team-report-switch" />
 					) : undefined
 				}
-				onPrimary={async (alsoReportToSafetyTeam) => {
+				onPrimary={(alsoReportToSafetyTeam) => {
+					const deleteMessage = () => {
+						remove(message.channelId, message.id);
+						onDelete?.();
+					};
 					if (alsoReportToSafetyTeam) {
-						try {
-							await IARCommands.reportMessage(message.channelId, message.id, 'other');
-						} catch (error) {
-							logger.error('Failed to also-report message before deletion:', error);
-						}
+						openReportMessageModal(message, {onFinish: deleteMessage});
+						return;
 					}
-					remove(message.channelId, message.id);
-					onDelete?.();
+					deleteMessage();
 				}}
 				showShiftBypassConfirmationTip={showShiftBypassConfirmationTip}
 				data-flx="messaging.message-commands.show-delete-confirmation.confirm-modal"
@@ -999,25 +1064,6 @@ export function sendError(channelId: string, nonce: string): void {
 export function retryLocal(channelId: string, messageId: string): void {
 	logger.debug(`Retrying optimistic message ${messageId} in channel ${channelId}`);
 	Messages.handleSendRetry({channelId, messageId});
-}
-
-export function editOptimistic(
-	channelId: string,
-	messageId: string,
-	content: string,
-): {originalContent: string; originalEditedTimestamp: string | null} | null {
-	logger.debug(`Applying optimistic edit for message ${messageId} in channel ${channelId}`);
-	return Messages.handleOptimisticEdit({channelId, messageId, content});
-}
-
-export function editRollback(
-	channelId: string,
-	messageId: string,
-	originalContent: string,
-	originalEditedTimestamp: string | null,
-): void {
-	logger.debug(`Rolling back edit for message ${messageId} in channel ${channelId}`);
-	Messages.handleEditRollback({channelId, messageId, originalContent, originalEditedTimestamp});
 }
 
 export async function forward(

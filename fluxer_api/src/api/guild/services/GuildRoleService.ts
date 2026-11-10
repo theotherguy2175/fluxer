@@ -1,28 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import type {GuildID, RoleID, UserID} from '@app/api/BrandedTypes';
-import {createRoleID, guildIdToRoleId} from '@app/api/BrandedTypes';
+import {createRoleID, type GuildID, guildIdToRoleId, type RoleID, type UserID} from '@app/api/BrandedTypes';
+import type {ThreadViewer} from '@app/api/experiment/ChannelThreadsGate';
 import type {GuildAuditLogService} from '@app/api/guild/GuildAuditLogService';
-import type {GuildAuditLogChange} from '@app/api/guild/GuildAuditLogTypes';
 import {mapGuildRoleToResponse} from '@app/api/guild/GuildModel';
-import type {IGuildMemberRepository} from '@app/api/guild/repositories/IGuildMemberRepository';
-import type {IGuildRoleRepository} from '@app/api/guild/repositories/IGuildRoleRepository';
-import {createGuildMfaEnforcer} from '@app/api/guild/services/GuildMfaEnforcement';
+import type {GuildRepository} from '@app/api/guild/repositories/GuildRepository';
+import {getGuildAuth} from '@app/api/guild/services/GuildMfaEnforcement';
 import {computeMovedIds, getMemberListRoleOrderIds} from '@app/api/guild/services/role/RoleOrderAuditUtils';
+import {
+	resolveProtectedBitActor,
+	shouldMaskThreadPermissionBits,
+	stripThreadPermissionBits,
+} from '@app/api/guild/services/ThreadPermissionBits';
 import type {IGatewayService} from '@app/api/infrastructure/IGatewayService';
 import type {ISnowflakeService} from '@app/api/infrastructure/ISnowflakeService';
-import {Logger} from '@app/api/Logger';
 import type {LimitConfigService} from '@app/api/limits/LimitConfigService';
 import {resolveLimitSafe} from '@app/api/limits/LimitConfigUtils';
 import {createLimitMatchContext} from '@app/api/limits/LimitMatchContextBuilder';
 import {GuildRole} from '@app/api/models/GuildRole';
-import type {IUserRepository} from '@app/api/user/IUserRepository';
-import {applyProtectedRolePermissions} from '@app/api/utils/featureUtils';
+import type {UserRepository} from '@app/api/user/repositories/UserRepository';
+import {applyProtectedRolePermissions, permissionWriteMask, protectedThreadBits} from '@app/api/utils/featureUtils';
 import {computePermissionsDiff} from '@app/api/utils/PermissionUtils';
 import {AuditLogActionType} from '@fluxer/constants/src/AuditLogActionType';
-import {ALL_PERMISSIONS, DEFAULT_PERMISSIONS, Permissions} from '@fluxer/constants/src/ChannelConstants';
+import {DEFAULT_PERMISSIONS, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import type {LimitKey} from '@fluxer/constants/src/LimitConfigMetadata';
 import {MAX_GUILD_ROLES} from '@fluxer/constants/src/LimitConstants';
+import {THREAD_AWARE_ALL_PERMISSIONS, withImplicitThreadBits} from '@fluxer/constants/src/ThreadPermissionUtils';
 import {ValidationErrorCodes} from '@fluxer/constants/src/ValidationErrorCodes';
 import {InputValidationError} from '@fluxer/errors/src/domains/core/InputValidationError';
 import {MissingPermissionsError} from '@fluxer/errors/src/domains/core/MissingPermissionsError';
@@ -37,14 +40,6 @@ import type {GuildResponse} from '@fluxer/schema/src/domains/guild/GuildResponse
 import type {GuildRoleResponse} from '@fluxer/schema/src/domains/guild/GuildRoleSchemas';
 import type {ICacheService} from '@pkgs/cache/src/ICacheService';
 
-interface GuildRoleRepository extends IGuildRoleRepository, IGuildMemberRepository {}
-
-interface GuildAuth {
-	guildData: GuildResponse;
-	checkPermission: (permission: bigint) => Promise<void>;
-	getMyPermissions: () => Promise<bigint>;
-}
-
 type RoleUpdateData = Partial<{
 	name: string;
 	color: number;
@@ -58,14 +53,35 @@ type RoleUpdateData = Partial<{
 }>;
 
 export class GuildRoleService {
+	private async buildRoleManageCheck(
+		guildId: GuildID,
+		userId: UserID,
+		guildData: GuildResponse,
+		allRoles: Array<GuildRole>,
+	): Promise<(role: GuildRole) => boolean> {
+		const everyoneRoleId = guildIdToRoleId(guildId);
+		const isOwner = guildData.owner_id === userId.toString();
+		let myHighestRole: GuildRole | null = null;
+		if (!isOwner) {
+			const member = await this.guildRepository.getMember(guildId, userId);
+			if (member) myHighestRole = this.getUserHighestRole(member, allRoles);
+		}
+		return (role: GuildRole) => {
+			if (isOwner) return true;
+			if (role.id === everyoneRoleId) return false;
+			if (!myHighestRole) return false;
+			return this.isRoleHigherThan(myHighestRole, role);
+		};
+	}
+
 	constructor(
-		private readonly guildRepository: GuildRoleRepository,
+		private readonly guildRepository: GuildRepository,
 		private readonly snowflakeService: ISnowflakeService,
 		private readonly cacheService: ICacheService,
 		private readonly gatewayService: IGatewayService,
 		private readonly guildAuditLogService: GuildAuditLogService,
 		private readonly limitConfigService: LimitConfigService,
-		private readonly userRepository: IUserRepository,
+		private readonly userRepository: UserRepository,
 	) {}
 
 	async systemCreateRole(params: {
@@ -78,7 +94,8 @@ export class GuildRoleService {
 		const currentRoleCount = await this.guildRepository.countRoles(guildId);
 		const roleLimit = this.resolveGuildLimit(guildData.features, 'max_guild_roles', MAX_GUILD_ROLES);
 		if (currentRoleCount >= roleLimit) throw new MaxGuildRolesError(roleLimit);
-		const permissions = data.permissions !== undefined ? data.permissions & ALL_PERMISSIONS : DEFAULT_PERMISSIONS;
+		const permissionMask = THREAD_AWARE_ALL_PERMISSIONS;
+		const permissions = data.permissions !== undefined ? data.permissions & permissionMask : DEFAULT_PERMISSIONS;
 		const roleId = createRoleID(await this.snowflakeService.generate());
 		const position = 1;
 		const role = await this.guildRepository.upsertRole({
@@ -96,7 +113,7 @@ export class GuildRoleService {
 			version: 1,
 		});
 		await this.dispatchGuildRoleCreate({guildId, role});
-		await this.recordAuditLog({
+		await this.guildAuditLogService.record({
 			guildId,
 			userId: initiatorId,
 			action: AuditLogActionType.ROLE_CREATE,
@@ -113,11 +130,16 @@ export class GuildRoleService {
 			guildId: GuildID;
 			data: GuildRoleCreateRequest;
 			clientFeatures: ReadonlySet<string>;
+			viewer?: ThreadViewer;
 		},
 		auditLogReason?: string | null,
 	): Promise<GuildRoleResponse> {
-		const {userId, guildId, data, clientFeatures} = params;
-		const {checkPermission, getMyPermissions, guildData} = await this.getGuildAuthenticated({userId, guildId});
+		const {userId, guildId, data, clientFeatures, viewer} = params;
+		const {checkPermission, getMyPermissions, guildData} = await getGuildAuth(
+			this.gatewayService,
+			this.userRepository,
+			{userId, guildId},
+		);
 		await checkPermission(Permissions.MANAGE_ROLES);
 		const currentRoleCount = await this.guildRepository.countRoles(guildId);
 		const roleLimit = this.resolveGuildLimit(guildData.features, 'max_guild_roles', MAX_GUILD_ROLES);
@@ -128,8 +150,10 @@ export class GuildRoleService {
 						requestedPermissions: data.permissions,
 						existingPermissions: 0n,
 						clientFeatures,
+						guildId,
 						guildData,
 						userId,
+						viewer,
 						getMyPermissions,
 					})
 				: ((await this.guildRepository.getRole(guildIdToRoleId(guildId), guildId))?.permissions ?? DEFAULT_PERMISSIONS);
@@ -150,7 +174,7 @@ export class GuildRoleService {
 			version: 1,
 		});
 		await this.dispatchGuildRoleCreate({guildId, role});
-		await this.recordAuditLog({
+		await this.guildAuditLogService.record({
 			guildId,
 			userId,
 			action: AuditLogActionType.ROLE_CREATE,
@@ -158,33 +182,55 @@ export class GuildRoleService {
 			auditLogReason: auditLogReason ?? null,
 			changes: this.guildAuditLogService.computeChanges(null, this.serializeRoleForAudit(role)),
 		});
-		return mapGuildRoleToResponse(role);
+		return this.mapRoleForViewer(guildId, role, viewer);
 	}
 
 	private async resolveRequestedPermissions(params: {
 		requestedPermissions: bigint;
 		existingPermissions: bigint;
 		clientFeatures: ReadonlySet<string>;
+		guildId: GuildID;
 		guildData: {
 			owner_id: string;
 		};
 		userId: UserID;
+		viewer?: ThreadViewer;
 		getMyPermissions: () => Promise<bigint>;
 	}): Promise<bigint> {
 		const {requestedPermissions, existingPermissions, clientFeatures, guildData, userId, getMyPermissions} = params;
-		const sanitizedPermissions = applyProtectedRolePermissions(
-			requestedPermissions & ALL_PERMISSIONS,
-			existingPermissions,
+		const actor = await resolveProtectedBitActor({
+			guildId: params.guildId,
+			userId,
 			clientFeatures,
+			viewer: params.viewer,
+			isBot: async () =>
+				params.viewer?.kind === 'user'
+					? params.viewer.bot
+					: ((await this.userRepository.findUnique(userId))?.isBot ?? false),
+		});
+		const sanitizedPermissions = applyProtectedRolePermissions(
+			requestedPermissions & permissionWriteMask(actor),
+			existingPermissions,
+			actor,
 		);
 		const isOwner = guildData && guildData.owner_id === userId.toString();
 		if (!isOwner) {
-			const myPermissions = await getMyPermissions();
-			if ((sanitizedPermissions & ~myPermissions) !== 0n) {
+			const myPermissions = withImplicitThreadBits(await getMyPermissions());
+			if ((sanitizedPermissions & ~protectedThreadBits(actor) & ~myPermissions) !== 0n) {
 				throw new MissingPermissionsError();
 			}
 		}
 		return sanitizedPermissions;
+	}
+
+	private async mapRoleForViewer(
+		guildId: GuildID,
+		role: GuildRole,
+		viewer: ThreadViewer | undefined,
+	): Promise<GuildRoleResponse> {
+		const response = mapGuildRoleToResponse(role);
+		if (!(await shouldMaskThreadPermissionBits(guildId, viewer, [role.permissions]))) return response;
+		return {...response, permissions: stripThreadPermissionBits(role.permissions).toString()};
 	}
 
 	async updateRole(
@@ -194,11 +240,16 @@ export class GuildRoleService {
 			roleId: RoleID;
 			data: GuildRoleUpdateRequest;
 			clientFeatures: ReadonlySet<string>;
+			viewer?: ThreadViewer;
 		},
 		auditLogReason?: string | null,
 	): Promise<GuildRoleResponse> {
-		const {userId, guildId, roleId, data, clientFeatures} = params;
-		const {guildData, checkPermission, getMyPermissions} = await this.getGuildAuthenticated({userId, guildId});
+		const {userId, guildId, roleId, data, clientFeatures, viewer} = params;
+		const {guildData, checkPermission, getMyPermissions} = await getGuildAuth(
+			this.gatewayService,
+			this.userRepository,
+			{userId, guildId},
+		);
 		await checkPermission(Permissions.MANAGE_ROLES);
 		const role = await this.guildRepository.getRole(roleId, guildId);
 		if (!role || (role.id === guildIdToRoleId(guildId) && roleId !== guildIdToRoleId(guildId))) {
@@ -219,6 +270,7 @@ export class GuildRoleService {
 			userId,
 			data,
 			clientFeatures,
+			viewer,
 			getMyPermissions,
 		});
 		const updatedRoleData = {
@@ -233,14 +285,16 @@ export class GuildRoleService {
 			hoist: updateData.hoist ?? role.isHoisted,
 			mentionable: updateData.mentionable ?? role.isMentionable,
 		};
-		const updatedRole = await this.guildRepository.upsertRole(updatedRoleData, role.toRow());
+		const updatedRole = await this.guildRepository.upsertRole(updatedRoleData);
 		await this.dispatchGuildRoleUpdate({guildId, role: updatedRole});
 		const changes = this.guildAuditLogService.computeChanges(previousSnapshot, this.serializeRoleForAudit(updatedRole));
 		if (role.permissions !== updatedRole.permissions) {
-			const permissionsDiff = computePermissionsDiff(role.permissions, updatedRole.permissions);
+			const permissionsDiff = computePermissionsDiff(role.permissions, updatedRole.permissions, {
+				threads: true,
+			});
 			changes.push({key: 'permissions_diff', new_value: permissionsDiff});
 		}
-		await this.recordAuditLog({
+		await this.guildAuditLogService.record({
 			guildId,
 			userId,
 			action: AuditLogActionType.ROLE_UPDATE,
@@ -249,7 +303,7 @@ export class GuildRoleService {
 			metadata: {role_name: updatedRole.name},
 			changes,
 		});
-		return mapGuildRoleToResponse(updatedRole);
+		return this.mapRoleForViewer(guildId, updatedRole, viewer);
 	}
 
 	async deleteRole(
@@ -261,7 +315,10 @@ export class GuildRoleService {
 		auditLogReason?: string | null,
 	): Promise<void> {
 		const {userId, guildId, roleId} = params;
-		const {checkPermission, guildData} = await this.getGuildAuthenticated({userId, guildId});
+		const {checkPermission, guildData} = await getGuildAuth(this.gatewayService, this.userRepository, {
+			userId,
+			guildId,
+		});
 		await checkPermission(Permissions.MANAGE_ROLES);
 		const role = await this.guildRepository.getRole(roleId, guildId);
 		if (!role || role.id === guildIdToRoleId(guildId)) {
@@ -291,7 +348,7 @@ export class GuildRoleService {
 		);
 		await this.guildRepository.deleteRole(guildId, role.id);
 		await this.dispatchGuildRoleDelete({guildId, roleId: role.id});
-		await this.recordAuditLog({
+		await this.guildAuditLogService.record({
 			guildId,
 			userId,
 			action: AuditLogActionType.ROLE_DELETE,
@@ -313,7 +370,7 @@ export class GuildRoleService {
 		auditLogReason?: string | null,
 	): Promise<void> {
 		const {userId, guildId, updates} = params;
-		const {checkPermission} = await this.getGuildAuthenticated({userId, guildId});
+		const {checkPermission} = await getGuildAuth(this.gatewayService, this.userRepository, {userId, guildId});
 		await checkPermission(Permissions.MANAGE_ROLES);
 		const lockKey = `guild:${guildId}:role-positions`;
 		const lockToken = await this.cacheService.acquireLock(lockKey, 30);
@@ -327,15 +384,32 @@ export class GuildRoleService {
 		}
 	}
 
-	async listRoles(params: {userId: UserID; guildId: GuildID}): Promise<Array<GuildRoleResponse>> {
-		const {userId, guildId} = params;
-		await this.getGuildAuthenticated({userId, guildId});
+	async listRoles(params: {
+		userId: UserID;
+		guildId: GuildID;
+		viewer?: ThreadViewer;
+	}): Promise<Array<GuildRoleResponse>> {
+		const {userId, guildId, viewer} = params;
+		await getGuildAuth(this.gatewayService, this.userRepository, {userId, guildId});
 		const roles = await this.guildRepository.listRoles(guildId);
 		const sortedRoles = [...roles].sort((a, b) => {
 			if (b.position !== a.position) return b.position - a.position;
 			return this.compareRoleIds(a, b);
 		});
-		return sortedRoles.map(mapGuildRoleToResponse);
+		const responses = sortedRoles.map(mapGuildRoleToResponse);
+		if (
+			!(await shouldMaskThreadPermissionBits(
+				guildId,
+				viewer,
+				sortedRoles.map((role) => role.permissions),
+			))
+		) {
+			return responses;
+		}
+		return responses.map((response, index) => ({
+			...response,
+			permissions: stripThreadPermissionBits(sortedRoles[index]!.permissions).toString(),
+		}));
 	}
 
 	async updateHoistPositions(
@@ -350,7 +424,10 @@ export class GuildRoleService {
 		auditLogReason?: string | null,
 	): Promise<void> {
 		const {userId, guildId, updates} = params;
-		const {checkPermission, guildData} = await this.getGuildAuthenticated({userId, guildId});
+		const {checkPermission, guildData} = await getGuildAuth(this.gatewayService, this.userRepository, {
+			userId,
+			guildId,
+		});
 		await checkPermission(Permissions.MANAGE_ROLES);
 		const lockKey = `guild:${guildId}:role-hoist-positions`;
 		const lockToken = await this.cacheService.acquireLock(lockKey, 30);
@@ -361,20 +438,7 @@ export class GuildRoleService {
 			const allRoles = await this.guildRepository.listRoles(guildId);
 			const roleMap = new Map(allRoles.map((r) => [r.id, r]));
 			const everyoneRoleId = guildIdToRoleId(guildId);
-			const isOwner = guildData && guildData.owner_id === userId.toString();
-			let myHighestRole: GuildRole | null = null;
-			if (!isOwner) {
-				const member = await this.guildRepository.getMember(guildId, userId);
-				if (member) {
-					myHighestRole = this.getUserHighestRole(member, allRoles);
-				}
-			}
-			const canManageRole = (role: GuildRole): boolean => {
-				if (isOwner) return true;
-				if (role.id === everyoneRoleId) return false;
-				if (!myHighestRole) return false;
-				return this.isRoleHigherThan(myHighestRole, role);
-			};
+			const canManageRole = await this.buildRoleManageCheck(guildId, userId, guildData, allRoles);
 			for (const update of updates) {
 				if (update.roleId === everyoneRoleId) {
 					throw InputValidationError.fromCode('id', ValidationErrorCodes.CANNOT_SET_HOIST_FOR_EVERYONE_ROLE);
@@ -393,14 +457,10 @@ export class GuildRoleService {
 			for (const update of updates) {
 				const role = roleMap.get(update.roleId)!;
 				if (role.hoistPosition === update.hoistPosition) continue;
-				const roleRow = role.toRow();
-				const updatedRole = await this.guildRepository.upsertRole(
-					{
-						...roleRow,
-						hoist_position: update.hoistPosition,
-					},
-					roleRow,
-				);
+				const updatedRole = await this.guildRepository.upsertRole({
+					...role.toRow(),
+					hoist_position: update.hoistPosition,
+				});
 				changedRoles.push(updatedRole);
 			}
 			if (changedRoles.length > 0) {
@@ -428,7 +488,7 @@ export class GuildRoleService {
 		auditLogReason?: string | null,
 	): Promise<void> {
 		const {userId, guildId} = params;
-		const {checkPermission} = await this.getGuildAuthenticated({userId, guildId});
+		const {checkPermission} = await getGuildAuth(this.gatewayService, this.userRepository, {userId, guildId});
 		await checkPermission(Permissions.MANAGE_ROLES);
 		const lockKey = `guild:${guildId}:role-hoist-positions`;
 		const lockToken = await this.cacheService.acquireLock(lockKey, 30);
@@ -441,14 +501,7 @@ export class GuildRoleService {
 			const changedRoles: Array<GuildRole> = [];
 			for (const role of allRoles) {
 				if (role.hoistPosition === null) continue;
-				const roleRow = role.toRow();
-				const updatedRole = await this.guildRepository.upsertRole(
-					{
-						...roleRow,
-						hoist_position: null,
-					},
-					roleRow,
-				);
+				const updatedRole = await this.guildRepository.upsertRole({...role.toRow(), hoist_position: null});
 				changedRoles.push(updatedRole);
 			}
 			if (changedRoles.length > 0) {
@@ -470,22 +523,6 @@ export class GuildRoleService {
 		} finally {
 			await this.cacheService.releaseLock(lockKey, lockToken);
 		}
-	}
-
-	private async getGuildAuthenticated({userId, guildId}: {userId: UserID; guildId: GuildID}): Promise<GuildAuth> {
-		const guildData = await this.gatewayService.getGuildData({guildId, userId});
-		const enforceGuildMfa = await createGuildMfaEnforcer({userRepository: this.userRepository, guildData, userId});
-		const checkPermission = async (permission: bigint) => {
-			const hasPermission = await this.gatewayService.checkPermission({guildId, userId, permission});
-			if (!hasPermission) throw new MissingPermissionsError();
-			enforceGuildMfa(permission);
-		};
-		const getMyPermissions = async () => this.gatewayService.getUserPermissions({guildId, userId});
-		return {
-			guildData,
-			checkPermission,
-			getMyPermissions,
-		};
 	}
 
 	private async checkCanManageRole(params: {
@@ -544,9 +581,10 @@ export class GuildRoleService {
 		userId: UserID;
 		data: GuildRoleUpdateRequest;
 		clientFeatures: ReadonlySet<string>;
+		viewer?: ThreadViewer;
 		getMyPermissions: () => Promise<bigint>;
 	}): Promise<RoleUpdateData> {
-		const {role, guildId, guildData, userId, data, clientFeatures, getMyPermissions} = params;
+		const {role, guildId, guildData, userId, data, clientFeatures, viewer, getMyPermissions} = params;
 		const updateData: RoleUpdateData = {};
 		const isEveryoneRole = role.id === guildIdToRoleId(guildId);
 		if (data.name !== undefined && !isEveryoneRole) {
@@ -569,8 +607,10 @@ export class GuildRoleService {
 				requestedPermissions: data.permissions,
 				existingPermissions: role.permissions,
 				clientFeatures,
+				guildId,
 				guildData,
 				userId,
+				viewer,
 				getMyPermissions,
 			});
 		}
@@ -587,7 +627,7 @@ export class GuildRoleService {
 		auditLogReason?: string | null;
 	}): Promise<void> {
 		const {userId, guildId, updates, auditLogReason} = params;
-		const {guildData} = await this.getGuildAuthenticated({userId, guildId});
+		const {guildData} = await getGuildAuth(this.gatewayService, this.userRepository, {userId, guildId});
 		const allRoles = await this.guildRepository.listRoles(guildId);
 		const roleMap = new Map(allRoles.map((r) => [r.id, r]));
 		const everyoneRoleId = guildIdToRoleId(guildId);
@@ -601,20 +641,7 @@ export class GuildRoleService {
 				});
 			}
 		}
-		const isOwner = guildData && guildData.owner_id === userId.toString();
-		let myHighestRole: GuildRole | null = null;
-		if (!isOwner) {
-			const member = await this.guildRepository.getMember(guildId, userId);
-			if (member) {
-				myHighestRole = this.getUserHighestRole(member, allRoles);
-			}
-		}
-		const canManageRole = (role: GuildRole): boolean => {
-			if (isOwner) return true;
-			if (role.id === everyoneRoleId) return false;
-			if (!myHighestRole) return false;
-			return this.isRoleHigherThan(myHighestRole, role);
-		};
+		const canManageRole = await this.buildRoleManageCheck(guildId, userId, guildData, allRoles);
 		for (const update of updates) {
 			const role = roleMap.get(update.roleId)!;
 			if (canManageRole(role)) {
@@ -638,11 +665,7 @@ export class GuildRoleService {
 		});
 		const reorderedIds = targetOrder.map((r) => r.id);
 		const reorderedRoles = this.reorderRolePositions({allRoles, reorderedIds, guildId});
-		const updatePromises = reorderedRoles.map((role) => {
-			const roleRow = role.toRow();
-			const oldRole = roleMap.get(role.id);
-			return this.guildRepository.upsertRole(roleRow, oldRole ? oldRole.toRow() : undefined);
-		});
+		const updatePromises = reorderedRoles.map((role) => this.guildRepository.upsertRole(role.toRow()));
 		await Promise.all(updatePromises);
 		const updatedRoles = await this.guildRepository.listRoles(guildId);
 		const changedRoles = updatedRoles.filter((role) => {
@@ -771,7 +794,7 @@ export class GuildRoleService {
 				continue;
 			}
 			const oldRole = roleMap.get(role.id);
-			await this.recordAuditLog({
+			await this.guildAuditLogService.record({
 				guildId,
 				userId,
 				action: AuditLogActionType.ROLE_UPDATE,
@@ -837,47 +860,6 @@ export class GuildRoleService {
 			event: 'GUILD_ROLE_UPDATE_BULK',
 			data: {roles: roleResponses},
 		});
-	}
-
-	private async recordAuditLog(params: {
-		guildId: GuildID;
-		userId: UserID;
-		action: AuditLogActionType;
-		targetId?: RoleID | string | null;
-		auditLogReason?: string | null;
-		metadata?: Map<string, string> | Record<string, string>;
-		changes?: GuildAuditLogChange | null;
-	}): Promise<void> {
-		const targetId =
-			params.targetId === undefined || params.targetId === null
-				? null
-				: typeof params.targetId === 'string'
-					? params.targetId
-					: params.targetId.toString();
-		try {
-			const builder = this.guildAuditLogService
-				.createBuilder(params.guildId, params.userId)
-				.withAction(params.action, targetId)
-				.withReason(params.auditLogReason ?? null);
-			if (params.metadata) {
-				builder.withMetadata(params.metadata);
-			}
-			if (params.changes) {
-				builder.withChanges(params.changes);
-			}
-			await builder.commit();
-		} catch (error) {
-			Logger.error(
-				{
-					error,
-					guildId: params.guildId.toString(),
-					userId: params.userId.toString(),
-					action: params.action,
-					targetId,
-				},
-				'Failed to record guild audit log',
-			);
-		}
 	}
 
 	private resolveGuildLimit(guildFeatures: Iterable<string> | null, key: LimitKey, fallback: number): number {

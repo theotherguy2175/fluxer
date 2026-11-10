@@ -29,9 +29,10 @@ import {
 	sendWithImage,
 	setupFanoutWorld,
 	sourceIndex,
-	workerHelpers,
 	writeRow,
 } from '@app/api/channel/tests/CrosspostWorkerTestUtils';
+import {threadsRequest} from '@app/api/channel/tests/ThreadTestUtils';
+import {clearChannelThreadsTaintCacheForTesting} from '@app/api/experiment/ChannelThreadsGate';
 import type {EmbedService} from '@app/api/infrastructure/EmbedService';
 import type {IAssetDeletionQueue} from '@app/api/infrastructure/IAssetDeletionQueue';
 import type {InstanceConfigRepository} from '@app/api/instance/InstanceConfigRepository';
@@ -39,6 +40,7 @@ import {getKVClient} from '@app/api/middleware/ServiceRegistry';
 import type {Embed} from '@app/api/models/Embed';
 import {type ApiTestHarness, createApiTestHarness} from '@app/api/test/ApiTestHarness';
 import {NoopGatewayService} from '@app/api/test/NoopGatewayService';
+import {createTestWorkerHelpers} from '@app/api/test/SyncTaskWorkerService';
 import {createBuilder, createBuilderWithoutAuth} from '@app/api/test/TestRequestBuilder';
 import {getExpiryBucket} from '@app/api/utils/AttachmentDecay';
 import {createWebhook, executeWebhook} from '@app/api/webhook/tests/WebhookTestUtils';
@@ -58,6 +60,7 @@ import {
 	MessageReferenceTypes,
 } from '@fluxer/constants/src/ChannelConstants';
 import {GuildFeatures} from '@fluxer/constants/src/GuildConstants';
+import {ServerMessageFlags} from '@fluxer/constants/src/ThreadConstants';
 import type {MessageResponse} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
 import {afterAll, afterEach, beforeAll, beforeEach, describe, expect, test, vi} from 'vitest';
 
@@ -86,6 +89,7 @@ describe('Crosspost propagation', () => {
 
 	afterEach(() => {
 		disableCrosspostWorker();
+		clearChannelThreadsTaintCacheForTesting();
 		vi.restoreAllMocks();
 	});
 
@@ -313,15 +317,16 @@ describe('Crosspost propagation', () => {
 						}),
 					} as unknown as Embed,
 				],
-				cacheTtlSeconds: 0,
 			}),
-			cacheEmbeds: async () => {},
 		} as unknown as EmbedService;
 		disableCrosspostWorker();
 		world.worker = enableCrosspostWorker({}, {embedService});
 		await extractEmbeds(
 			{channelId: world.a.ann.id, messageId: source.id, guildId: world.a.guild.id, nsfwMode: 'allow'},
-			workerHelpers(world.worker),
+			createTestWorkerHelpers({
+				jobId: 0n,
+				addJob: (taskType, payload, options) => world.worker.addJob(taskType, payload, options),
+			}),
 		);
 		expect(world.worker.byTask('syncCrosspostedMessage')).toHaveLength(1);
 		await world.worker.drain();
@@ -381,6 +386,26 @@ describe('Crosspost propagation', () => {
 		expect(deleted.some((key) => key.startsWith(`attachments/${world.b.t2.id}/`))).toBe(false);
 		expect(await mappingRows(source.id)).toHaveLength(0);
 		expect(await sourceIndex(world.a.ann.id)).not.toContain(source.id);
+	});
+
+	test('deleting the source keeps the thread a follower started from its copy', async () => {
+		await followInto(harness, world, world.b.t1.id);
+		const source = await postAndPublish(harness, world, {content: 'thread me'});
+		const copy = await onlyCopy(world.b.t1.id, source.id);
+		await threadsRequest(harness, world.b.owner.token)
+			.post(`/channels/${world.b.t1.id}/messages/${copy.id}/threads`)
+			.body({name: 'discussion'})
+			.expect(201)
+			.execute();
+		await deleteMessageRequest(harness, world.a.owner.token, world.a.ann.id, source.id);
+		await world.worker.drain();
+		const row = (await readRow(world.b.t1.id, copy.id))!;
+		expect(row.flags).toBe(DELETED_COPY_FLAGS | ServerMessageFlags.HAS_THREAD);
+		expect(row.content).toBe(CROSSPOST_SOURCE_DELETED_CONTENT);
+		const rendered = await threadsRequest<MessageResponse & {thread?: {id: string}}>(harness, world.b.owner.token)
+			.get(`/channels/${world.b.t1.id}/messages/${copy.id}`)
+			.execute();
+		expect(rendered.thread?.id).toBe(copy.id);
 	});
 
 	describe('other delete paths mark copies too', () => {
@@ -484,7 +509,10 @@ describe('Crosspost propagation', () => {
 					target_user_id: world.a.member.userId,
 					entries: [{channel_id: world.a.ann.id, message_id: source.id}],
 				},
-				workerHelpers(world.worker),
+				createTestWorkerHelpers({
+					jobId: 0n,
+					addJob: (taskType, payload, options) => world.worker.addJob(taskType, payload, options),
+				}),
 			);
 			await world.worker.drain();
 			expect(await readRow(world.a.ann.id, source.id)).toBeNull();
@@ -684,6 +712,7 @@ describe('Crosspost propagation', () => {
 						queued.push(item);
 					},
 				} as unknown as IAssetDeletionQueue,
+				kvClient: harness.kvProvider,
 				instanceConfigRepository: {
 					async getEffectiveAttachmentDecayConfig() {
 						return {enabled: true};

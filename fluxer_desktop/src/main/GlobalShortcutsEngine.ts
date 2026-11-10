@@ -1,3 +1,4 @@
+import {isRecord} from '@fluxer/record_utils/src/RecordGuards';
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import {
@@ -29,9 +30,9 @@ import type {LinuxPortalShortcutsManager, PortalShortcutDefinition} from '@elect
 
 export type HookBackendKind = 'x11' | 'evdev' | 'windows' | 'macos';
 export type HookStartResult = 'ok' | 'permission' | 'start-failed';
-export type InputHookMode = 'auto' | 'off' | 'evdev' | 'native';
+type InputHookMode = 'auto' | 'off' | 'evdev' | 'native';
 
-export interface NativeKeyIdentity {
+interface NativeKeyIdentity {
 	keycode: number;
 	keyName: string;
 }
@@ -92,13 +93,13 @@ export interface GlobalShortcutsEngineDeps {
 	log: (message: string, details?: Record<string, unknown>) => void;
 }
 
-export interface SanitizedSyncBinding {
+interface SanitizedSyncBinding {
 	sourceId: string;
 	action: string;
 	combo: GlobalShortcutCombo;
 }
 
-export interface SanitizedSyncAction {
+interface SanitizedSyncAction {
 	action: GlobalShortcutAction;
 	description: string;
 	preferredCombo: GlobalShortcutCombo | null;
@@ -117,10 +118,6 @@ const MAX_KEY_LENGTH = 64;
 const MAX_MOUSE_BUTTON = 31;
 const INPUT_DEVICE_REPROBE_DELAY_MS = 500;
 export const GLOBAL_SHORTCUT_CAPTURE_TIMEOUT_MS = 60000;
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return value !== null && typeof value === 'object' && !Array.isArray(value);
-}
 
 function sanitizeBoundedString(value: unknown, maxLength: number): string | null {
 	if (typeof value !== 'string') return null;
@@ -461,6 +458,10 @@ export class GlobalShortcutsEngine {
 			});
 		});
 		return this.hookQueue;
+	}
+
+	retryBlockedHooks(): Promise<void> {
+		return this.hookError === null ? Promise.resolve() : this.refreshHooks();
 	}
 
 	private desiredHookKind(): HookBackendKind | null {

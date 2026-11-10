@@ -4,6 +4,12 @@ import {requireEmailVerified} from '@app/api/auth/EmailVerificationUtils';
 import {requireSudoMode} from '@app/api/auth/services/SudoVerificationService';
 import {createGuildID} from '@app/api/BrandedTypes';
 import {Config} from '@app/api/Config';
+import {viewerFromCtx} from '@app/api/experiment/ChannelThreadsGate';
+import {
+	flagThreadActiveUserGuilds,
+	maskGuildResponseThreadBits,
+	maskUserGuildsThreadBits,
+} from '@app/api/guild/services/ThreadPermissionBits';
 import {resolveLimitSafe} from '@app/api/limits/LimitConfigUtils';
 import {createLimitMatchContext} from '@app/api/limits/LimitMatchContextBuilder';
 import {LoginRequired} from '@app/api/middleware/AuthMiddleware';
@@ -79,7 +85,7 @@ export function GuildBaseController(app: HonoApp) {
 			}
 			const auditLogReason = ctx.get('auditLogReason') ?? null;
 			const locale = ctx.get('requestLocale') ?? null;
-			return ctx.json(await ctx.get('guildService').data.createGuild({user, data, locale}, auditLogReason));
+			return ctx.json(await ctx.get('guildService').data.operations.createGuild({user, data, locale}, auditLogReason));
 		},
 	);
 	app.get(
@@ -100,14 +106,14 @@ export function GuildBaseController(app: HonoApp) {
 		async (ctx) => {
 			const userId = ctx.get('user').id;
 			const {before, after, limit, with_counts} = ctx.req.valid('query');
-			return ctx.json(
-				await ctx.get('guildService').data.getUserGuilds(userId, {
-					before: before != null ? createGuildID(before) : undefined,
-					after: after != null ? createGuildID(after) : undefined,
-					limit,
-					withCounts: with_counts,
-				}),
-			);
+			const guilds = await ctx.get('guildService').data.operations.getUserGuilds(userId, {
+				before: before != null ? createGuildID(before) : undefined,
+				after: after != null ? createGuildID(after) : undefined,
+				limit,
+				withCounts: with_counts,
+			});
+			const viewer = viewerFromCtx(ctx);
+			return ctx.json(flagThreadActiveUserGuilds(viewer, await maskUserGuildsThreadBits(viewer, guilds)));
 		},
 	);
 	app.delete(
@@ -142,7 +148,7 @@ export function GuildBaseController(app: HonoApp) {
 			const {delete_messages} = ctx.req.valid('query');
 			const body = ctx.req.valid('json');
 			if (delete_messages) {
-				await ctx.get('guildService').data.getGuild({userId, guildId});
+				await ctx.get('guildService').data.operations.getGuild({userId, guildId});
 				await requireSudoMode(ctx, user, body);
 				await ctx.get('channelService').userMessageDeletion.deleteUserMessagesInScope(userId, {guildId});
 			}
@@ -172,7 +178,7 @@ export function GuildBaseController(app: HonoApp) {
 			const userId = user.id;
 			const guildId = createGuildID(ctx.req.valid('param').guild_id);
 			const body = ctx.req.valid('json');
-			await ctx.get('guildService').data.getGuild({userId, guildId});
+			await ctx.get('guildService').data.operations.getGuild({userId, guildId});
 			await requireSudoMode(ctx, user, body);
 			await ctx.get('channelService').userMessageDeletion.deleteUserMessagesInScope(userId, {guildId});
 			return ctx.body(null, 202);
@@ -197,7 +203,8 @@ export function GuildBaseController(app: HonoApp) {
 		async (ctx) => {
 			const userId = ctx.get('user').id;
 			const guildId = createGuildID(ctx.req.valid('param').guild_id);
-			return ctx.json(await ctx.get('guildService').data.getGuild({userId, guildId}));
+			const guild = await ctx.get('guildService').data.operations.getGuild({userId, guildId});
+			return ctx.json(await maskGuildResponseThreadBits(guildId, viewerFromCtx(ctx), guild));
 		},
 	);
 	app.patch(
@@ -224,7 +231,7 @@ export function GuildBaseController(app: HonoApp) {
 			const data = ctx.req.valid('json');
 			let shouldRequireSudoMode = false;
 			if (data.mfa_level !== undefined) {
-				const currentGuild = await ctx.get('guildService').data.getGuild({userId, guildId});
+				const currentGuild = await ctx.get('guildService').data.operations.getGuild({userId, guildId});
 				shouldRequireSudoMode = currentGuild.mfa_level !== data.mfa_level;
 			}
 			if (shouldRequireSudoMode) {
@@ -232,7 +239,8 @@ export function GuildBaseController(app: HonoApp) {
 			}
 			const requestCache = ctx.get('requestCache');
 			const auditLogReason = ctx.get('auditLogReason') ?? null;
-			return ctx.json(await ctx.get('guildService').updateGuild({userId, guildId, data, requestCache}, auditLogReason));
+			const guild = await ctx.get('guildService').updateGuild({userId, guildId, data, requestCache}, auditLogReason);
+			return ctx.json(await maskGuildResponseThreadBits(guildId, viewerFromCtx(ctx), guild));
 		},
 	);
 	app.post(
@@ -262,7 +270,7 @@ export function GuildBaseController(app: HonoApp) {
 			const body = ctx.req.valid('json');
 			await requireSudoMode(ctx, user, body);
 			const auditLogReason = ctx.get('auditLogReason') ?? null;
-			await ctx.get('guildService').data.deleteGuild({user, guildId}, auditLogReason);
+			await ctx.get('guildService').data.operations.deleteGuild({user, guildId}, auditLogReason);
 			return ctx.body(null, 204);
 		},
 	);
@@ -283,7 +291,7 @@ export function GuildBaseController(app: HonoApp) {
 		async (ctx) => {
 			const userId = ctx.get('user').id;
 			const guildId = createGuildID(ctx.req.valid('param').guild_id);
-			return ctx.json(await ctx.get('guildService').data.getVanityURL({userId, guildId}));
+			return ctx.json(await ctx.get('guildService').data.vanity.getVanityURL({userId, guildId}));
 		},
 	);
 	app.patch(
@@ -309,7 +317,7 @@ export function GuildBaseController(app: HonoApp) {
 			const auditLogReason = ctx.get('auditLogReason') ?? null;
 			const {code: newCode} = await ctx
 				.get('guildService')
-				.data.updateVanityURL({userId, guildId, code: code ?? null, requestCache}, auditLogReason);
+				.data.vanity.updateVanityURL({userId, guildId, code: code ?? null, requestCache}, auditLogReason);
 			return ctx.json({code: newCode});
 		},
 	);

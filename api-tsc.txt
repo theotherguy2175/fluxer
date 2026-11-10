@@ -1,0 +1,23 @@
+src/api/channel/services/ChannelService.ts(175,18): error TS2339: Property 'dispatch' does not exist on type 'MessageService'.
+src/api/channel/services/message/MessageSendService.ts(847,85): error TS2304: Cannot find name 'MessageFlags'.
+src/api/channel/services/poll/MessagePollService.ts(11,39): error TS2307: Cannot find module '@app/api/channel/IChannelRepository' or its corresponding type declarations.
+src/api/channel/services/poll/MessagePollService.ts(14,38): error TS2307: Cannot find module '@app/api/channel/services/interaction/MessageInteractionBase' or its corresponding type declarations.
+src/api/channel/services/poll/MessagePollService.ts(15,43): error TS2307: Cannot find module '@app/api/channel/services/message/MessageDispatchService' or its corresponding type declarations.
+src/api/channel/services/poll/MessagePollService.ts(22,46): error TS2307: Cannot find module '@app/api/guild/repositories/IGuildRepositoryAggregate' or its corresponding type declarations.
+src/api/channel/services/poll/MessagePollService.ts(34,36): error TS2307: Cannot find module '@app/api/user/IUserRepository' or its corresponding type declarations.
+src/api/channel/services/poll/MessagePollService.ts(197,33): error TS2339: Property 'gatewayService' does not exist on type 'MessagePollService'.
+src/api/channel/services/poll/MessagePollService.ts(245,8): error TS2339: Property 'ensureTextChannel' does not exist on type 'MessagePollService'.
+src/api/channel/services/poll/MessagePollService.ts(361,8): error TS2339: Property 'ensureTextChannel' does not exist on type 'MessagePollService'.
+src/api/channel/services/poll/MessagePollService.ts(395,70): error TS2741: Property 'viewer' is missing in type '{ userId: UserID; channelId: ChannelID; }' but required in type '{ userId: UserID; channelId: ChannelID; viewer: ThreadViewer; skipNsfwValidation?: boolean | undefined; }'.
+src/api/channel/services/poll/MessagePollService.ts(437,70): error TS2741: Property 'viewer' is missing in type '{ userId: UserID; channelId: ChannelID; }' but required in type '{ userId: UserID; channelId: ChannelID; viewer: ThreadViewer; skipNsfwValidation?: boolean | undefined; }'.
+src/api/channel/services/poll/MessagePollService.ts(474,70): error TS2741: Property 'viewer' is missing in type '{ userId: UserID; channelId: ChannelID; }' but required in type '{ userId: UserID; channelId: ChannelID; viewer: ThreadViewer; skipNsfwValidation?: boolean | undefined; }'.
+src/api/channel/services/poll/MessagePollService.ts(478,8): error TS2339: Property 'ensureTextChannel' does not exist on type 'MessagePollService'.
+src/api/channel/services/poll/MessagePollService.ts(507,25): error TS2339: Property 'gatewayService' does not exist on type 'MessagePollService'.
+src/api/channel/services/poll/MessagePollService.ts(531,70): error TS2741: Property 'viewer' is missing in type '{ userId: UserID; channelId: ChannelID; }' but required in type '{ userId: UserID; channelId: ChannelID; viewer: ThreadViewer; skipNsfwValidation?: boolean | undefined; }'.
+src/api/database/types/GuildTypes.ts(298,12): error TS2304: Cannot find name 'Nullish'.
+src/api/database/types/GuildTypes.ts(299,14): error TS2304: Cannot find name 'Nullish'.
+src/api/database/types/GuildTypes.ts(300,18): error TS2304: Cannot find name 'Nullish'.
+src/api/database/types/GuildTypes.ts(301,10): error TS2304: Cannot find name 'Nullish'.
+src/api/database/types/GuildTypes.ts(334,21): error TS2304: Cannot find name 'Nullish'.
+src/api/guild/soundboard/GuildSoundboardPlayService.ts(14,39): error TS2307: Cannot find module '../../channel/IChannelRepository' or its corresponding type declarations.
+src/api/guild/soundboard/GuildSoundboardService.ts(46,45): error TS2307: Cannot find module '../../user/UserCacheHelpers' or its corresponding type declarations.

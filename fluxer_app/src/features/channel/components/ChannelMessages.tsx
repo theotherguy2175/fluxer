@@ -17,7 +17,7 @@ import {NewMessagesBar} from '@app/features/channel/components/NewMessagesBar';
 import {usePresentableTypingUsers} from '@app/features/channel/components/TypingUsers';
 import {UploadManager} from '@app/features/channel/components/UploadManager';
 import type {Channel} from '@app/features/channel/models/Channel';
-import GatewayConnection from '@app/features/gateway/transport/GatewayConnection';
+import GatewaySessions from '@app/features/gateway/transport/GatewaySessionPool';
 import GuildVerification from '@app/features/guild/state/GuildVerification';
 import {TRY_AGAIN_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import * as MessageCommands from '@app/features/messaging/commands/MessageCommands';
@@ -42,6 +42,7 @@ import {
 } from '@app/features/messaging/utils/MessageGroupingUtils';
 import {findMessageElement, getMessageSelector} from '@app/features/messaging/utils/MessageNodeSelectors';
 import LocalUserSpamOverride from '@app/features/moderation/state/LocalUserSpamOverride';
+import Navigation from '@app/features/navigation/state/Navigation';
 import SelectedChannel from '@app/features/navigation/state/SelectedChannel';
 import Permission from '@app/features/permissions/state/Permission';
 import {ComponentBus} from '@app/features/platform/utils/ComponentBus';
@@ -50,6 +51,7 @@ import * as ReadStateCommands from '@app/features/read_state/commands/ReadStateC
 import ReadStates from '@app/features/read_state/state/ReadStates';
 import {shouldAutoAck} from '@app/features/read_state/utils/AutoAckPredicate';
 import {remFromPx} from '@app/features/theme/layout/RemFromPx';
+import ActiveComposer from '@app/features/threads/state/ActiveComposer';
 import {Button} from '@app/features/ui/button/Button';
 import {Scroller} from '@app/features/ui/components/Scroller';
 import FocusRingScope from '@app/features/ui/focus_ring/FocusRingScope';
@@ -122,7 +124,6 @@ interface MessagesStateSnapshot {
 
 interface MessagesProps {
 	channel: Channel;
-	onBottomBarVisibilityChange?: (visible: boolean) => void;
 	allowAutoAck?: boolean;
 }
 
@@ -160,11 +161,7 @@ function shallowEqual<T extends object>(a: T, b: T): boolean {
 	return true;
 }
 
-export const Messages = observer(function Messages({
-	channel,
-	onBottomBarVisibilityChange,
-	allowAutoAck = true,
-}: MessagesProps) {
+const CachedMessages = observer(function CachedMessages({channel, allowAutoAck = true}: MessagesProps) {
 	const {i18n} = useLingui();
 	const scrollerInnerRef = useRef<HTMLDivElement | null>(null);
 	const scrollerContainerRef = useRef<HTMLDivElement | null>(null);
@@ -186,8 +183,9 @@ export const Messages = observer(function Messages({
 	const windowId = Window.windowId;
 	const isWindowFocused = Window.isFocused();
 	const isModalOpen = Modal.hasModalOpen();
-	const isGatewayConnected = GatewayConnection.isConnected;
+	const isGatewayConnected = GatewaySessions.foregroundConnection.isConnected;
 	const selectedChannelId = SelectedChannel.currentChannelId;
+	const openThreadPanelId = Navigation.threadId;
 	const placeholderSpecs = useMessageListPlaceholderSpecs({
 		channelId: channel.id,
 		compact: state.messageDisplayCompact,
@@ -393,11 +391,17 @@ export const Messages = observer(function Messages({
 			UserSettings.subscribe(updateFromState),
 			MessageEdit.subscribe(updateFromState),
 		];
-		const onForceJumpToPresent = () => {
+		const onForceJumpToPresent = (payload?: unknown) => {
+			const data = payload as {channelId?: string} | undefined;
+			if (data?.channelId && data.channelId !== channel.id) return;
 			MessageCommands.jumpToLiveEdge(channel.id, MAX_MESSAGES_PER_CHANNEL);
 		};
-		const onScrollPageUp = () => scrollManager.pageBackward(true);
-		const onScrollPageDown = () => scrollManager.pageForward(true);
+		const onScrollPageUp = () => {
+			if (ActiveComposer.accepts(channel.id)) scrollManager.pageBackward(true);
+		};
+		const onScrollPageDown = () => {
+			if (ActiveComposer.accepts(channel.id)) scrollManager.pageForward(true);
+		};
 		const onLayoutResized = (payload?: unknown) => {
 			const data = payload as {channelId?: string} | undefined;
 			if (data?.channelId && data.channelId !== channel.id) return;
@@ -425,7 +429,6 @@ export const Messages = observer(function Messages({
 			}
 		};
 		const dispatchUnsubs = [
-			ComponentBus.subscribe('SCROLL_TO_PRESENT', onScrollToPresent),
 			ComponentBus.subscribe('MESSAGE_SENT', onMessageSent),
 			ComponentBus.subscribe('FORCE_JUMP_TO_PRESENT', onForceJumpToPresent),
 			ComponentBus.subscribe('ESCAPE_PRESSED', onEscapePressed),
@@ -465,7 +468,11 @@ export const Messages = observer(function Messages({
 		}
 	}, [state.editingMessageId, scrollManager]);
 	useEffect(() => {
-		if (!windowNeedsPage || !isGatewayConnected || selectedChannelId !== channel.id) {
+		if (
+			!windowNeedsPage ||
+			!isGatewayConnected ||
+			(selectedChannelId !== channel.id && openThreadPanelId !== channel.id)
+		) {
 			if (recoveryFetchChannelIdRef.current === channel.id) {
 				recoveryFetchChannelIdRef.current = null;
 			}
@@ -480,7 +487,7 @@ export const Messages = observer(function Messages({
 				recoveryFetchChannelIdRef.current = null;
 			}
 		});
-	}, [channel.id, isGatewayConnected, selectedChannelId, windowNeedsPage, state.messageVersion]);
+	}, [channel.id, isGatewayConnected, selectedChannelId, openThreadPanelId, windowNeedsPage, state.messageVersion]);
 	useMessageListKeyboardNavigation({
 		containerRef: scrollManager.ref,
 		channelId: channel.id,
@@ -602,15 +609,6 @@ export const Messages = observer(function Messages({
 		onMessageEdit,
 		onReveal,
 	]);
-	const hasBottomBar = windowBar !== 'none';
-	useEffect(() => {
-		onBottomBarVisibilityChange?.(hasBottomBar);
-	}, [hasBottomBar, onBottomBarVisibilityChange]);
-	useEffect(() => {
-		return () => {
-			onBottomBarVisibilityChange?.(false);
-		};
-	}, [onBottomBarVisibilityChange]);
 	const bottomBar =
 		windowBar === 'retry' ? (
 			<LoadErrorBar
@@ -758,6 +756,16 @@ export const Messages = observer(function Messages({
 			</div>
 			{bottomBar}
 		</div>
+	);
+});
+
+export const Messages = observer(function Messages(props: MessagesProps) {
+	return (
+		<CachedMessages
+			key={MessagesState.cacheGeneration}
+			data-flx="channel.channel-messages.messages.cached-messages"
+			{...props}
+		/>
 	);
 });
 const JumpToPresentBar = observer(function JumpToPresentBar({

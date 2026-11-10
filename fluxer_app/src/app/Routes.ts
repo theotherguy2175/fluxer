@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
 import {marketingUrl} from '@app/features/messaging/utils/MessagingUrlUtils';
+
+function hostedMarketingUrl(path: string): string | null {
+	return RuntimeConfig.isSelfHosted() ? null : marketingUrl(path);
+}
 
 export const Routes = {
 	HOME: '/',
@@ -39,13 +44,12 @@ export const Routes = {
 	LEGACY_PLUTONIUM: '/plutonium',
 	terms: () => marketingUrl('terms'),
 	privacy: () => marketingUrl('privacy'),
-	guidelines: () => marketingUrl('guidelines'),
+	guidelines: (): string | null => RuntimeConfig.guidelinesUrl ?? hostedMarketingUrl('guidelines'),
 	careers: () => marketingUrl('careers'),
 	partners: () => marketingUrl('partners'),
 	bugs: () => marketingUrl('help/report-bug'),
-	plutonium: () => marketingUrl('plutonium'),
-	help: () => marketingUrl('help'),
-	helpArticle: (slug: string) => marketingUrl(`help/${slug}`),
+	help: (): string | null => hostedMarketingUrl('help'),
+	helpArticle: (slug: string): string | null => hostedMarketingUrl(`help/${slug}`),
 	dmChannel: (channelId: string) => `/channels/@me/${channelId}`,
 	favoritesChannel: (channelId: string) => `/channels/@favorites/${channelId}`,
 	guildMembers: (guildId: string) => `/channels/${guildId}/members`,
@@ -53,6 +57,8 @@ export const Routes = {
 		channelId ? `/channels/${guildId}/${channelId}` : `/channels/${guildId}`,
 	channelMessage: (guildId: string, channelId: string, messageId: string) =>
 		`${Routes.guildChannel(guildId, channelId)}/${messageId}`,
+	threadPanel: (guildId: string, channelId: string, threadId: string, messageId?: string) =>
+		`${Routes.guildChannel(guildId, channelId)}/threads/${threadId}${messageId ? `/${messageId}` : ''}`,
 	dmChannelMessage: (channelId: string, messageId: string) => `${Routes.dmChannel(channelId)}/${messageId}`,
 	favoritesChannelMessage: (channelId: string, messageId: string) =>
 		`${Routes.favoritesChannel(channelId)}/${messageId}`,
@@ -72,7 +78,6 @@ export const Routes = {
 	isDMRoute: (pathname: string) => pathname.startsWith('/channels/@me'),
 	isFavoritesRoute: (pathname: string) => pathname.startsWith('/channels/@favorites'),
 	isDiscoverRoute: (pathname: string) => pathname.startsWith('/channels/@discover'),
-	isPlutoniumRoute: (pathname: string) => pathname === '/channels/@premium',
 	isChannelRoute: (pathname: string) => pathname.startsWith('/channels/') && !pathname.startsWith('/channels/@premium'),
 	isGuildChannelRoute: (pathname: string) =>
 		pathname.startsWith('/channels/') &&

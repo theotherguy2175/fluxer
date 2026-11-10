@@ -2,6 +2,7 @@
 
 import Keybind from '@app/features/input/state/InputKeybind';
 import {Logger} from '@app/features/platform/utils/AppLogger';
+import {isAbortError} from '@app/features/platform/utils/PlatformHelpers';
 import {
 	acquireVoiceInputSource,
 	discardVoiceInputContext,
@@ -63,7 +64,7 @@ export function isVoiceActivityGateEnabled(): boolean {
 	return Keybind.transmitMode === 'voice_activity' && profile.mode !== 'studio' && !profile.stereoCapture;
 }
 
-export function resolveVoiceInputConfig(): VoiceInputConfig {
+function resolveVoiceInputConfig(): VoiceInputConfig {
 	const profile = resolveVoiceProcessingFromStateForDeviceLabel(
 		VoiceSettings,
 		getActiveInputDeviceLabel(VoiceSettings),
@@ -83,10 +84,6 @@ interface SuppressionSlot {
 	readonly key: SuppressionSlotKey;
 	readonly output: GainNode;
 	dispose(): void;
-}
-
-function isAbortError(error: unknown): boolean {
-	return error instanceof DOMException && error.name === 'AbortError';
 }
 
 function disconnectEdge(from: AudioNode, to: AudioNode): void {

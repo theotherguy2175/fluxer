@@ -17,7 +17,11 @@
     <<"stickers">>,
     role_perms_cache,
     overwrite_perms_cache,
-    members_ets
+    members_ets,
+    thread_gate,
+    thread_tainted,
+    thread_store,
+    thread_forum_categories
 ]).
 
 -spec put_state(map()) -> ok.
@@ -38,7 +42,7 @@ store(GuildId, State, Data) ->
     Members =
         case maps:get(members_ets, Data, undefined) of
             Tab when is_reference(Tab) -> #{};
-            _ -> guild_data_index:member_map(Data)
+            _ -> guild_data_index_members:member_map(Data)
         end,
     Snapshot = (maps:with(?STATE_KEYS, State))#{
         data => ReadData#{<<"members">> => Members, members_normalized => Members}
@@ -98,8 +102,8 @@ read({Tag, Request}, Snapshot) ->
     case Tag of
         get_guild_data -> reply(guild_data:get_guild_data(Request, State));
         get_guild_auth_context -> reply(guild_data:get_auth_context(Request, State));
-        get_guild_member -> reply(guild_data:get_guild_member(Request, State));
-        has_member -> reply(guild_data:has_member(Request, State));
+        get_guild_member -> reply(guild_data_members:get_guild_member(Request, State));
+        has_member -> reply(guild_data_members:has_member(Request, State));
         _ -> miss
     end.
 

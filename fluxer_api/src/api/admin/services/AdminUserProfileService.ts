@@ -3,18 +3,24 @@
 import type {ApiContext} from '@app/api/ApiContext';
 import {mapUserToAdminResponse} from '@app/api/admin/models/UserTypes';
 import type {AdminAuditService} from '@app/api/admin/services/AdminAuditService';
-import type {AdminUserUpdatePropagator} from '@app/api/admin/services/AdminUserUpdatePropagator';
 import {createUserID, type UserID} from '@app/api/BrandedTypes';
-import type {IGuildRepositoryAggregate} from '@app/api/guild/repositories/IGuildRepositoryAggregate';
+import type {GuildRepository} from '@app/api/guild/repositories/GuildRepository';
 import {GuildMemberSearchIndexService} from '@app/api/guild/services/member/GuildMemberSearchIndexService';
-import type {IDiscriminatorService} from '@app/api/infrastructure/DiscriminatorService';
+import type {DiscriminatorService} from '@app/api/infrastructure/DiscriminatorService';
 import type {EntityAssetService, PreparedAssetUpload} from '@app/api/infrastructure/EntityAssetService';
 import {Logger} from '@app/api/Logger';
 import {getInstanceConfigRepository} from '@app/api/middleware/ServiceSingletons';
 import type {User} from '@app/api/models/User';
 import {enqueueStripeCustomerEmailSync} from '@app/api/stripe/StripeCustomer';
+import {
+	type PartialUserChangePropagationDeps,
+	propagateUserUpdate,
+} from '@app/api/user/services/PartialUserChangePropagation';
 import {assertNoDiscriminatorChange, reserveUsername, type UsernameReservation} from '@app/api/user/UniqueUsernames';
 import {USERNAME_MODE_DISCRIMINATOR} from '@app/api/user/UserTag';
+import {ValidationErrorCodes} from '@fluxer/constants/src/ValidationErrorCodes';
+import {AccessDeniedError} from '@fluxer/errors/src/domains/core/AccessDeniedError';
+import {InputValidationError} from '@fluxer/errors/src/domains/core/InputValidationError';
 import {TagAlreadyTakenError} from '@fluxer/errors/src/domains/user/TagAlreadyTakenError';
 import {UnknownUserError} from '@fluxer/errors/src/domains/user/UnknownUserError';
 import type {
@@ -22,17 +28,19 @@ import type {
 	ChangeEmailRequest,
 	ChangeUsernameRequest,
 	ClearUserFieldsRequest,
+	SetUserBotStatusRequest,
+	SetUserSystemStatusRequest,
 	VerifyUserEmailRequest,
 } from '@fluxer/schema/src/domains/admin/AdminUserSchemas';
 import {types} from 'cassandra-driver';
 
 interface AdminUserProfileServiceDeps {
 	apiContext: ApiContext;
-	discriminatorService: IDiscriminatorService;
+	discriminatorService: DiscriminatorService;
 	entityAssetService: EntityAssetService;
 	auditService: AdminAuditService;
-	updatePropagator: AdminUserUpdatePropagator;
-	guildRepository: IGuildRepositoryAggregate;
+	userUpdateDeps: PartialUserChangePropagationDeps;
+	guildRepository: GuildRepository;
 }
 
 export class AdminUserProfileService {
@@ -49,7 +57,7 @@ export class AdminUserProfileService {
 		acls: ReadonlySet<string>,
 	) {
 		const {users: userRepository, cache: cacheService} = this.deps.apiContext.services;
-		const {entityAssetService, auditService, updatePropagator} = this.deps;
+		const {entityAssetService, auditService, userUpdateDeps} = this.deps;
 		const userId = createUserID(data.user_id);
 		const user = await userRepository.findUnique(userId);
 		if (!user) {
@@ -90,7 +98,7 @@ export class AdminUserProfileService {
 		}
 		const updatedUser = await userRepository.patchUpsert(userId, updates, user.toRow());
 		await entityAssetService.commitAssetChanges(preparedAssets);
-		await updatePropagator.propagateUserUpdate({userId, oldUser: user, updatedUser: updatedUser});
+		await propagateUserUpdate(userUpdateDeps, user, updatedUser);
 		await auditService.createAuditLog({
 			adminUserId,
 			targetType: 'user',
@@ -104,6 +112,75 @@ export class AdminUserProfileService {
 		};
 	}
 
+	async setUserBotStatus(
+		data: SetUserBotStatusRequest,
+		adminUserId: UserID,
+		auditLogReason: string | null,
+		acls: ReadonlySet<string>,
+	) {
+		const {users: userRepository, cache: cacheService} = this.deps.apiContext.services;
+		const {auditService, userUpdateDeps} = this.deps;
+		const userId = createUserID(data.user_id);
+		const user = await userRepository.findUnique(userId);
+		if (!user) {
+			throw new UnknownUserError();
+		}
+		if (data.bot && user.acls.size > 0) {
+			throw new AccessDeniedError();
+		}
+		const updates: Record<string, boolean> = {bot: data.bot};
+		if (!data.bot) {
+			updates['system'] = false;
+		}
+		const updatedUser = await userRepository.patchUpsert(userId, updates, user.toRow());
+		await propagateUserUpdate(userUpdateDeps, user, updatedUser);
+		await auditService.createAuditLog({
+			adminUserId,
+			targetType: 'user',
+			targetId: BigInt(userId),
+			action: 'set_bot_status',
+			auditLogReason,
+			metadata: new Map([['bot', data.bot.toString()]]),
+		});
+		return {
+			user: await mapUserToAdminResponse(updatedUser, cacheService, acls),
+		};
+	}
+
+	async setUserSystemStatus(
+		data: SetUserSystemStatusRequest,
+		adminUserId: UserID,
+		auditLogReason: string | null,
+		acls: ReadonlySet<string>,
+	) {
+		const {users: userRepository, cache: cacheService} = this.deps.apiContext.services;
+		const {auditService, userUpdateDeps} = this.deps;
+		const userId = createUserID(data.user_id);
+		const user = await userRepository.findUnique(userId);
+		if (!user) {
+			throw new UnknownUserError();
+		}
+		if (data.system && !user.isBot) {
+			throw InputValidationError.fromCode(
+				'system',
+				ValidationErrorCodes.USER_MUST_BE_A_BOT_TO_BE_MARKED_AS_A_SYSTEM_USER,
+			);
+		}
+		const updatedUser = await userRepository.patchUpsert(userId, {system: data.system}, user.toRow());
+		await propagateUserUpdate(userUpdateDeps, user, updatedUser);
+		await auditService.createAuditLog({
+			adminUserId,
+			targetType: 'user',
+			targetId: BigInt(userId),
+			action: 'set_system_status',
+			auditLogReason,
+			metadata: new Map([['system', data.system.toString()]]),
+		});
+		return {
+			user: await mapUserToAdminResponse(updatedUser, cacheService, acls),
+		};
+	}
+
 	async verifyUserEmail(
 		data: VerifyUserEmailRequest,
 		adminUserId: UserID,
@@ -111,7 +188,7 @@ export class AdminUserProfileService {
 		acls: ReadonlySet<string>,
 	) {
 		const {users: userRepository, cache: cacheService} = this.deps.apiContext.services;
-		const {auditService, updatePropagator} = this.deps;
+		const {auditService, userUpdateDeps} = this.deps;
 		const userId = createUserID(data.user_id);
 		const user = await userRepository.findUnique(userId);
 		if (!user) {
@@ -122,7 +199,7 @@ export class AdminUserProfileService {
 			{email_verified: true, email_bounced: false},
 			user.toRow(),
 		);
-		await updatePropagator.propagateUserUpdate({userId, oldUser: user, updatedUser: updatedUser});
+		await propagateUserUpdate(userUpdateDeps, user, updatedUser);
 		await auditService.createAuditLog({
 			adminUserId,
 			targetType: 'user',
@@ -147,7 +224,7 @@ export class AdminUserProfileService {
 			cache: cacheService,
 			contactChangeLog: contactChangeLogService,
 		} = this.deps.apiContext.services;
-		const {discriminatorService, auditService, updatePropagator} = this.deps;
+		const {discriminatorService, auditService, userUpdateDeps} = this.deps;
 		const userId = createUserID(data.user_id);
 		const user = await userRepository.findUnique(userId);
 		if (!user) {
@@ -184,7 +261,7 @@ export class AdminUserProfileService {
 		} finally {
 			await reservation?.release();
 		}
-		await updatePropagator.propagateUserUpdate({userId, oldUser: user, updatedUser: updatedUser});
+		await propagateUserUpdate(userUpdateDeps, user, updatedUser);
 		await contactChangeLogService.recordDiff({
 			oldUser: user,
 			newUser: updatedUser,
@@ -221,7 +298,7 @@ export class AdminUserProfileService {
 			contactChangeLog: contactChangeLogService,
 			worker: workerService,
 		} = this.deps.apiContext.services;
-		const {auditService, updatePropagator} = this.deps;
+		const {auditService, userUpdateDeps} = this.deps;
 		const userId = createUserID(data.user_id);
 		const user = await userRepository.findUnique(userId);
 		if (!user) {
@@ -235,7 +312,7 @@ export class AdminUserProfileService {
 			},
 			user.toRow(),
 		);
-		await updatePropagator.propagateUserUpdate({userId, oldUser: user, updatedUser: updatedUser});
+		await propagateUserUpdate(userUpdateDeps, user, updatedUser);
 		await contactChangeLogService.recordDiff({
 			oldUser: user,
 			newUser: updatedUser,
@@ -280,7 +357,7 @@ export class AdminUserProfileService {
 		acls: ReadonlySet<string>,
 	) {
 		const {users: userRepository, cache: cacheService} = this.deps.apiContext.services;
-		const {auditService, updatePropagator} = this.deps;
+		const {auditService, userUpdateDeps} = this.deps;
 		const userId = createUserID(data.user_id);
 		const user = await userRepository.findUnique(userId);
 		if (!user) {
@@ -293,7 +370,7 @@ export class AdminUserProfileService {
 			},
 			user.toRow(),
 		);
-		await updatePropagator.propagateUserUpdate({userId, oldUser: user, updatedUser: updatedUser});
+		await propagateUserUpdate(userUpdateDeps, user, updatedUser);
 		await auditService.createAuditLog({
 			adminUserId,
 			targetType: 'user',

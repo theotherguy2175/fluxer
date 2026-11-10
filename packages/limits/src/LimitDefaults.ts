@@ -33,6 +33,7 @@ import {
 	MAX_PRIVATE_CHANNELS_PER_USER,
 	MAX_REACTIONS_PER_MESSAGE,
 	MAX_RELATIONSHIPS,
+	MAX_SCREEN_SHARE_BITRATE,
 	MAX_USERS_PER_MESSAGE_REACTION,
 	MAX_VOICE_MESSAGE_DURATION,
 	MAX_WEBHOOKS_PER_CHANNEL,
@@ -100,6 +101,7 @@ export const DEFAULT_RESTRICTED_LIMITS: Record<LimitKey, number> = {
 	max_poll_question_length: POLL_DEFAULT_MAX_QUESTION_LENGTH,
 	max_poll_answer_length: POLL_DEFAULT_MAX_ANSWER_LENGTH,
 	max_poll_duration_hours: POLL_DEFAULT_MAX_DURATION_HOURS,
+	max_screen_share_bitrate: MAX_SCREEN_SHARE_BITRATE,
 	max_users_per_message_reaction: MAX_USERS_PER_MESSAGE_REACTION,
 	max_voice_message_duration: MAX_VOICE_MESSAGE_DURATION,
 	max_webhooks_per_channel: MAX_WEBHOOKS_PER_CHANNEL,
@@ -126,6 +128,3 @@ export const DEFAULT_STOCK_LIMITS: Record<LimitKey, number> = {
 	max_guilds: 200,
 	max_message_length: MAX_MESSAGE_LENGTH_PREMIUM,
 };
-
-export const DEFAULT_FREE_LIMITS = DEFAULT_RESTRICTED_LIMITS;
-export const DEFAULT_PREMIUM_LIMITS = DEFAULT_STOCK_LIMITS;

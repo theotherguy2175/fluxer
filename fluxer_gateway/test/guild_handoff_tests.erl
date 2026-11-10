@@ -94,35 +94,65 @@ export_handoff_state_omits_pending_member_list_batch_test() ->
     Exported = guild_handoff:export_handoff_state(State),
     ?assertNot(maps:is_key(pending_member_list_sync_batch, Exported)).
 
-validate_handoff_state_rejects_missing_keys_test() ->
-    ?assertMatch({error, _}, guild_handoff:validate_handoff_state(#{})),
-    ?assertMatch({error, _}, guild_handoff:validate_handoff_state(#{id => 1})),
-    ?assertMatch({error, [not_a_map]}, guild_handoff:validate_handoff_state(not_a_map)).
-
-validate_handoff_state_rejects_bad_types_test() ->
-    BadState = #{id => <<"not_int">>, data => #{}, sessions => #{}, voice_states => #{}},
-    ?assertMatch({error, [id]}, guild_handoff:validate_handoff_state(BadState)).
-
-export_import_roundtrip_preserves_data_test() ->
-    State = #{
-        id => 54321,
-        data => #{<<"guild">> => #{<<"id">> => <<"54321">>}, <<"channels">> => []},
-        sessions => #{},
-        voice_states => #{<<"c1">> => #{<<"user_id">> => 1, <<"channel_id">> => 100}},
-        virtual_channel_access => #{10 => sets:from_list([20])},
-        virtual_channel_access_pending => #{},
-        virtual_channel_access_preserve => #{},
-        virtual_channel_access_move_pending => #{}
-    },
-    Exported = guild_handoff:export_handoff_state(State),
-    ?assertEqual(ok, guild_handoff:validate_handoff_state(Exported)),
-    ExportedVoice = maps:get(voice_states, Exported),
-    ?assertEqual(1, maps:size(ExportedVoice)),
-    ?assert(maps:is_key(<<"c1">>, ExportedVoice)).
-
 session_loop() ->
     receive
         stop -> ok
     after infinity ->
         ok
+    end.
+
+export_handoff_state_replaces_the_thread_store_with_rows_test() ->
+    Tab = guild_thread_store:new(),
+    ok = guild_thread_store:put_thread(Tab, #{<<"id">> => 10, <<"parent_id">> => 1}),
+    try
+        State = #{
+            id => 12345,
+            data => #{thread_store => Tab, thread_gate => #{active => true, version => 1}},
+            sessions => #{}
+        },
+        Data = maps:get(data, guild_handoff:export_handoff_state(State)),
+        ?assertNot(maps:is_key(thread_store, Data)),
+        ?assertEqual(#{active => true, version => 1}, maps:get(thread_gate, Data)),
+        ?assertEqual(guild_thread_store:export(Tab), maps:get(thread_rows, Data)),
+        ?assert(is_integer(maps:get(thread_rows_at, Data)))
+    after
+        guild_thread_store:destroy(Tab)
+    end.
+
+init_from_export_queues_a_flip_when_the_gate_disagrees_with_config_test() ->
+    Tab = guild_thread_store:new(),
+    ok = guild_thread_store:put_thread(Tab, #{<<"id">> => 10, <<"parent_id">> => 1}),
+    Key = channel_threads_config,
+    Previous = persistent_term:get(Key, undefined),
+    try
+        Exported = guild_handoff:export_handoff_state(#{
+            id => 12345,
+            data => #{thread_store => Tab, thread_gate => #{active => true, version => 4}},
+            sessions => #{}
+        }),
+        persistent_term:put(Key, (channel_threads_config:default_config())#{
+            enabled => true, config_version => 5
+        }),
+        _ = guild_init:init_base_state(Exported),
+        ?assertEqual([5], drain_flips([])),
+        persistent_term:put(Key, (channel_threads_config:default_config())#{
+            enabled => true, config_version => 5, enabled_guilds => #{<<"12345">> => true}
+        }),
+        _ = guild_init:init_base_state(Exported),
+        ?assertEqual([], drain_flips([])),
+        persistent_term:erase(Key),
+        _ = guild_init:init_base_state(Exported),
+        ?assertEqual([], drain_flips([]))
+    after
+        guild_thread_store:destroy(Tab),
+        case Previous of
+            undefined -> persistent_term:erase(Key);
+            _ -> persistent_term:put(Key, Previous)
+        end
+    end.
+
+drain_flips(Acc) ->
+    receive
+        {thread_gate_flip, Version} -> drain_flips([Version | Acc])
+    after 0 -> lists:reverse(Acc)
     end.

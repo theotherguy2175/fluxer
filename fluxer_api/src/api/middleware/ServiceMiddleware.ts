@@ -14,7 +14,9 @@ import {ChannelRequestService} from '@app/api/channel/services/ChannelRequestSer
 import {CrosspostSourceService} from '@app/api/channel/services/message/CrosspostSourceService';
 import {MessageRequestService} from '@app/api/channel/services/message/MessageRequestService';
 import {createMessageResponseDataService} from '@app/api/channel/services/message/MessageResponseDataService';
+import {ThreadMessageResponses} from '@app/api/channel/services/message/ThreadMessageResponses';
 import {StreamService} from '@app/api/channel/services/StreamService';
+import {ThreadService} from '@app/api/channel/services/thread/ThreadService';
 import {ConnectionRequestService} from '@app/api/connection/ConnectionRequestService';
 import {ConnectionService} from '@app/api/connection/ConnectionService';
 import {DonationService} from '@app/api/donation/DonationService';
@@ -53,7 +55,6 @@ import {
 	resolveBlueskyOAuthService,
 } from '@app/api/middleware/ServiceRegistry';
 import {
-	ensureVirusScanInitialized,
 	getAdminApiKeyService,
 	getAdminArchiveService,
 	getAdminRepository,
@@ -90,8 +91,8 @@ import {
 	getKVAccountDeletionQueue,
 	getKVActivityTracker,
 	getKVBulkMessageDeletionQueue,
+	getKVThreadAutoArchiveQueue,
 	getLimitConfigService,
-	getNcmecSubmissionService,
 	getOAuth2TokenRepository,
 	getPasswordChangeRepository,
 	getPremiumStateReconciliationQueueService,
@@ -162,6 +163,7 @@ export function getReportServiceInstance(): ReportService {
 			getStorageService(),
 			getGatewayService(),
 			getRateLimitService(),
+			getWebhookRepository(),
 			getReportSearchService(),
 		);
 	}
@@ -215,6 +217,7 @@ class RequestServices implements RequestScopedServices {
 	private cachedSsoService: SsoService | undefined;
 	private cachedDesktopHandoffService: DesktopHandoffService | undefined;
 	private cachedChannelRequestService: ChannelRequestService | undefined;
+	private cachedThreadService: ThreadService | undefined;
 	private cachedMessageRequestService: MessageRequestService | undefined;
 	private cachedConnectionService: ConnectionService | undefined;
 	private cachedConnectionRequestService: ConnectionRequestService | undefined;
@@ -248,7 +251,7 @@ class RequestServices implements RequestScopedServices {
 
 	constructor(
 		private readonly context: ApiContext,
-		private readonly bluesky: IBlueskyOAuthService,
+		private readonly bluesky: IBlueskyOAuthService | null,
 		private readonly entityCache: RequestCache | undefined,
 	) {}
 
@@ -296,6 +299,7 @@ class RequestServices implements RequestScopedServices {
 							getChannelRepository(),
 							voiceRoomStore,
 							voiceAvailabilityService,
+							getInstanceConfigRepository(),
 						)
 					: null;
 		}
@@ -342,7 +346,7 @@ class RequestServices implements RequestScopedServices {
 		return this.guildStack.inviteService;
 	}
 
-	get blueskyOAuthService(): IBlueskyOAuthService {
+	get blueskyOAuthService(): IBlueskyOAuthService | null {
 		return this.bluesky;
 	}
 
@@ -352,10 +356,6 @@ class RequestServices implements RequestScopedServices {
 
 	get adminArchiveService() {
 		return getAdminArchiveService();
-	}
-
-	get applicationRepository() {
-		return getApplicationRepository();
 	}
 
 	get botAuthService() {
@@ -379,10 +379,6 @@ class RequestServices implements RequestScopedServices {
 
 	get emailService() {
 		return getEmailService();
-	}
-
-	get embedService() {
-		return getEmbedService();
 	}
 
 	get entityAssetService() {
@@ -433,10 +429,6 @@ class RequestServices implements RequestScopedServices {
 		return getLimitConfigService();
 	}
 
-	get ncmecSubmissionService() {
-		return getNcmecSubmissionService();
-	}
-
 	get oauth2TokenRepository() {
 		return getOAuth2TokenRepository();
 	}
@@ -453,24 +445,12 @@ class RequestServices implements RequestScopedServices {
 		return getReadStateRequestService();
 	}
 
-	get reportService() {
-		return getReportServiceInstance();
-	}
-
 	get snowflakeService() {
 		return getSnowflakeService();
 	}
 
 	get storageService() {
 		return getStorageService();
-	}
-
-	get streamPreviewService() {
-		return getStreamPreviewService();
-	}
-
-	get sweegoWebhookService() {
-		return getSweegoWebhookService();
 	}
 
 	get themeService() {
@@ -536,7 +516,6 @@ class RequestServices implements RequestScopedServices {
 	get applicationService(): ApplicationService {
 		this.cachedApplicationService ??= new ApplicationService(this.context, {
 			applicationRepository: getApplicationRepository(),
-			channelRepository: getChannelRepository(),
 			userCacheService: getUserCacheService(),
 			entityAssetService: getEntityAssetService(),
 			discriminatorService: getDiscriminatorService(),
@@ -586,15 +565,46 @@ class RequestServices implements RequestScopedServices {
 	get singleCommunityService(): SingleCommunityService {
 		this.cachedSingleCommunityService ??= new SingleCommunityService(
 			getInstanceConfigRepository(),
-			this.guildService.data,
+			this.guildService.data.operations,
 			this.guildService.members,
 		);
 		return this.cachedSingleCommunityService;
 	}
 
 	get channelRequestService(): ChannelRequestService {
-		this.cachedChannelRequestService ??= new ChannelRequestService(this.channelService, getUserCacheService());
+		this.cachedChannelRequestService ??= new ChannelRequestService(
+			this.channelService,
+			getUserCacheService(),
+			getCacheService(),
+		);
 		return this.cachedChannelRequestService;
+	}
+
+	get threadService(): ThreadService {
+		this.cachedThreadService ??= new ThreadService({
+			channelRepository: this.channelRepository,
+			guildRepository: this.requestGuildRepository,
+			userRepository: getUserRepository(),
+			channelAuth: this.channelService.channelData.auth,
+			gatewayService: this.gatewayService,
+			snowflakeService: getSnowflakeService(),
+			rateLimitService: getRateLimitService(),
+			cacheService: getCacheService(),
+			guildAuditLogService: getGuildAuditLogService(),
+			userCacheService: getUserCacheService(),
+			archiveQueue: getKVThreadAutoArchiveQueue(),
+			messagePersistence: this.channelService.messages.persistence,
+			threadMessageResponses: new ThreadMessageResponses(
+				this.channelRepository,
+				createMessageResponseDataService(),
+				getUserCacheService(),
+			),
+			purgeChannelAttachments: (channel) => this.channelService.attachments.purgeChannelAttachments(channel),
+			readStateService: getReadStateService(),
+			sendForumStarter: (params) => this.messageRequestService.sendForumStarter(params),
+			validateForumStarter: (params) => this.messageRequestService.validateForumStarter(params),
+		});
+		return this.cachedThreadService;
 	}
 
 	get messageRequestService(): MessageRequestService {
@@ -884,6 +894,7 @@ class RequestServices implements RequestScopedServices {
 			getSnowflakeService(),
 			getGuildAuditLogService(),
 			getLimitConfigService(),
+			() => this.threadService,
 		);
 		return this.cachedWebhookService;
 	}
@@ -898,6 +909,7 @@ class RequestServices implements RequestScopedServices {
 			getAvatarService(),
 			getCacheService(),
 			getSnowflakeService(),
+			this.gatewayService,
 		);
 		return this.cachedChannelFollowService;
 	}
@@ -923,7 +935,7 @@ export const ServiceMiddleware = createMiddleware<HonoEnv>(async (ctx, next) => 
 	});
 	ctx.set('apiContext', apiContext);
 	ctx.set('sudoModeValid', false);
-	await ensureVirusScanInitialized();
+	getVirusScanServiceInstance();
 	await ensureVoiceResourcesInitialized();
 	const blueskyOAuthService = await resolveBlueskyOAuthService(getInstanceConfigRepository());
 	installLazyServices(ctx, new RequestServices(apiContext, blueskyOAuthService, ctx.get('requestCache')));

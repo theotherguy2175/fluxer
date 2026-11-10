@@ -6,7 +6,7 @@ import {mapUserToAdminResponse} from '@app/api/admin/models/UserTypes';
 import type {AdminAuditService} from '@app/api/admin/services/AdminAuditService';
 import {createGuildID, createUserID, type UserID} from '@app/api/BrandedTypes';
 import {isSyntheticUserId} from '@app/api/constants/Core';
-import type {IGuildRepositoryAggregate} from '@app/api/guild/repositories/IGuildRepositoryAggregate';
+import type {GuildRepository} from '@app/api/guild/repositories/GuildRepository';
 import {Logger} from '@app/api/Logger';
 import {getGuildSearchService, getUserSearchService} from '@app/api/SearchFactory';
 import {FeatureTemporarilyDisabledError} from '@fluxer/errors/src/domains/core/FeatureTemporarilyDisabledError';
@@ -23,7 +23,8 @@ interface RefreshSearchIndexJobPayload extends WorkerJobPayload {
 		| 'channel_messages'
 		| 'favorite_memes'
 		| 'guild_members'
-		| 'discovery';
+		| 'discovery'
+		| 'threads';
 	admin_user_id: string;
 	audit_log_reason: string | null;
 	job_id: string;
@@ -33,7 +34,7 @@ interface RefreshSearchIndexJobPayload extends WorkerJobPayload {
 
 interface AdminSearchServiceDeps {
 	apiContext: ApiContext;
-	guildRepository: IGuildRepositoryAggregate;
+	guildRepository: GuildRepository;
 	auditService: AdminAuditService;
 }
 
@@ -111,16 +112,7 @@ export class AdminSearchService {
 		const lastActiveIp = data.last_active_ip?.trim();
 		if (lastActiveIp) {
 			const {userIds, total} = await userRepository.listUserIdsByLastActiveIp(lastActiveIp, data.limit, data.offset);
-			const users = await userRepository.listUsers(userIds);
-			const usersById = new Map(users.map((user) => [user.id.toString(), user]));
-			const orderedUsers = [];
-			for (const userId of userIds) {
-				const user = usersById.get(userId.toString());
-				if (user) {
-					orderedUsers.push(user);
-				}
-			}
-			const response = await Promise.all(orderedUsers.map((user) => mapUserToAdminResponse(user, cacheService, acls)));
+			const response = await this.mapOrderedUsers(userIds, acls);
 			return {
 				users: response,
 				total,
@@ -143,16 +135,7 @@ export class AdminSearchService {
 		]);
 		const {hits, total} = searchResult;
 		const userIds = hits.map((hit) => createUserID(BigInt(hit.id)));
-		const users = await userRepository.listUsers(userIds);
-		const usersById = new Map(users.map((user) => [user.id.toString(), user]));
-		const orderedUsers = [];
-		for (const userId of userIds) {
-			const user = usersById.get(userId.toString());
-			if (user) {
-				orderedUsers.push(user);
-			}
-		}
-		const response = await Promise.all(orderedUsers.map((user) => mapUserToAdminResponse(user, cacheService, acls)));
+		const response = await this.mapOrderedUsers(userIds, acls);
 		if (directUser && data.offset === 0) {
 			const directId = directUser.id.toString();
 			if (!response.some((u) => u.id === directId)) {
@@ -175,7 +158,8 @@ export class AdminSearchService {
 				| 'channel_messages'
 				| 'guild_members'
 				| 'favorite_memes'
-				| 'discovery';
+				| 'discovery'
+				| 'threads';
 			guild_id?: bigint;
 			user_id?: bigint;
 		},
@@ -194,6 +178,12 @@ export class AdminSearchService {
 		if (data.index_type === 'channel_messages') {
 			if (!data.guild_id) {
 				throw InputValidationError.create('guild_id', 'guild_id is required for the channel_messages index type');
+			}
+			payload.guild_id = data.guild_id.toString();
+		}
+		if (data.index_type === 'threads') {
+			if (!data.guild_id) {
+				throw InputValidationError.create('guild_id', 'guild_id is required for the threads index type');
 			}
 			payload.guild_id = data.guild_id.toString();
 		}
@@ -258,5 +248,17 @@ export class AdminSearchService {
 			};
 		}
 		return status;
+	}
+
+	private async mapOrderedUsers(userIds: Array<UserID>, acls: ReadonlySet<string>) {
+		const {users: userRepository, cache: cacheService} = this.deps.apiContext.services;
+		const users = await userRepository.listUsers(userIds);
+		const usersById = new Map(users.map((user) => [user.id.toString(), user]));
+		const orderedUsers = [];
+		for (const userId of userIds) {
+			const user = usersById.get(userId.toString());
+			if (user) orderedUsers.push(user);
+		}
+		return Promise.all(orderedUsers.map((user) => mapUserToAdminResponse(user, cacheService, acls)));
 	}
 }

@@ -1,23 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import {
-	hookKeyNameForLayoutKey,
 	hookKeyNameToDomCode,
 	MODIFIER_KEY_CODES,
 	type ModifierKind,
 	modifierKindForCode,
-	shouldPreferLayoutKey,
 	usLayoutKeyToDomCode,
 } from '@electron/main/GlobalShortcutKeys';
+import {hookKeyNameForLayoutKey, shouldPreferLayoutKey} from '@fluxer/desktop_ipc/src/GlobalShortcutKeyNames';
 
-export interface ShortcutModifiers {
+interface ShortcutModifiers {
 	ctrl: boolean;
 	alt: boolean;
 	shift: boolean;
 	meta: boolean;
 }
 
-export type ShortcutTrigger =
+type ShortcutTrigger =
 	| {kind: 'key'; layoutKey: string | null; code: string | null}
 	| {kind: 'mouse'; button: number}
 	| {kind: 'modifier-only'; modifiers: Array<ModifierKind>; bothSides: boolean};

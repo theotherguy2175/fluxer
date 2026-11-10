@@ -14,7 +14,7 @@ import {GuildSoundboardController} from '@app/api/guild/soundboard/GuildSoundboa
 import {GuildSoundboardPlayController} from '@app/api/guild/soundboard/GuildSoundboardPlayController';
 import type {HonoApp} from '@app/api/types/HonoEnv';
 
-export function registerGuildControllers(app: HonoApp) {
+export function GuildController(app: HonoApp) {
 	GuildBaseController(app);
 	GuildMemberController(app);
 	GuildMemberSearchController(app);
