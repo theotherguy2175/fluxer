@@ -38,7 +38,8 @@ def resolve(path):
     while i < len(lines):
         if not lines[i].startswith('<<<<<<< '):
             out.append(lines[i]); i += 1; continue
-        ours, theirs, base, cur = [], [], [], ours
+        ours, theirs, base = [], [], []
+        cur = ours
         i += 1
         while i < len(lines) and not lines[i].startswith('>>>>>>> '):
             if lines[i].startswith('||||||| '):
