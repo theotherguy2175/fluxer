@@ -59,6 +59,7 @@ import {getEffectiveAudioState} from '@app/features/voice/engine/VoiceEffectiveA
 import {selectVoiceMediaGraphViewerStreamKeys} from '@app/features/voice/engine/VoiceMediaGraph';
 import {voiceMediaGraphStore} from '@app/features/voice/engine/VoiceMediaGraphStore';
 import type {LivekitParticipantSnapshot} from '@app/features/voice/engine/VoiceParticipantStateMachine';
+import VoiceRuntime from '@app/features/voice/engine/VoiceRuntime';
 import {stopWatchingStreamKey} from '@app/features/voice/engine/VoiceStreamWatchState';
 import {VoiceTrackSource} from '@app/features/voice/engine/VoiceTrackSource';
 import {useCameraUserCapBlocked} from '@app/features/voice/hooks/useCameraUserCapBlocked';
@@ -240,7 +241,7 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 	const isGuildDeafened = voiceState?.deaf ?? false;
 	const canStream = !guildId || !channelId || Permission.can(Permissions.STREAM, {channelId});
 	const screenShareDisabled = !canStream && !isScreenShareEnabled;
-	const muteReason = MediaEngine.getMuteReason(voiceState);
+	const muteReason = VoiceRuntime.getMuteReason(voiceState);
 	const isPermissionMuted = muteReason === 'permission';
 	const isPushToTalkEffective = Keybind.isPushToTalkEffective();
 	const effectiveAudioState = getEffectiveAudioState({
@@ -700,7 +701,11 @@ const VoiceControlBarInner = observer(function VoiceControlBarInner() {
 	const cameraSettingsLabel = i18n._(VOICE_CAMERA_SETTINGS_DESCRIPTOR);
 	const screenShareSettingsLabel = i18n._(VOICE_SCREEN_SHARE_SETTINGS_DESCRIPTOR);
 	return (
-		<div className={styles.container} data-flx="voice.voice-control-bar.voice-control-bar-inner.container">
+		<div
+			className={styles.container}
+			data-voice-call-control-bar
+			data-flx="voice.voice-control-bar.voice-control-bar-inner.container"
+		>
 			<div
 				className={styles.buttonContainer}
 				data-flx="voice.voice-control-bar.voice-control-bar-inner.button-container"

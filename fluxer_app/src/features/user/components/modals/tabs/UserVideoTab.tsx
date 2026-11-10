@@ -4,8 +4,11 @@ import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
 import {
 	CAMERA_DESCRIPTOR as CAMERA_2_DESCRIPTOR,
 	GET_PREMIUM_DESCRIPTOR,
+	INSTANCE_WITHOUT_HTTPS_DESCRIPTOR,
+	MEDIA_NEEDS_HTTPS_DESCRIPTOR,
 } from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {ComponentBus} from '@app/features/platform/utils/ComponentBus';
+import {isInsecureBrowserContext} from '@app/features/platform/utils/SecureContext';
 import * as PremiumModalCommands from '@app/features/premium/commands/PremiumModalCommands';
 import {getPremiumProductName, shouldShowPremiumFeatures} from '@app/features/premium/utils/PremiumUtils';
 import {remFromPx} from '@app/features/theme/layout/RemFromPx';
@@ -33,22 +36,27 @@ import {CameraPreviewModalStandalone} from '@app/features/voice/components/modal
 import {
 	CAPTURE_DEVICES_USE_THE_GAMING_PRESET_DESCRIPTOR,
 	type OfferedScreenShareResolution,
+	offeredScreenShareResolution,
 } from '@app/features/voice/components/StreamSettingsMenuContentStateMachine';
+import {getCameraCaptureDimensions} from '@app/features/voice/engine/v2/VoiceEngineV2AppCameraResolutionPresets';
 import ActiveScreenShareSource from '@app/features/voice/state/ActiveScreenShareSource';
 import type VoiceSettings from '@app/features/voice/state/VoiceSettings';
 import type {CameraResolution} from '@app/features/voice/state/VoiceSettings';
 import {
+	maxScreenShareResolution,
+	resolveScreenShareFrameRate,
 	resolveScreenShareQualityPick,
 	type ScreenShareQualityInput,
 	type SupportedScreenShareFrameRate,
 } from '@app/features/voice/utils/ScreenShareOptions';
 import {buildSettingsDeviceOptions} from '@app/features/voice/utils/SettingsDeviceOptions';
-import {hasHigherVideoQuality} from '@app/features/voice/utils/VideoQualityEntitlement';
+import {isFullVideoQuality} from '@app/features/voice/utils/VideoQualityCaps';
+import {getVideoQualityCaps} from '@app/features/voice/utils/VideoQualityEntitlement';
 import {resolveEffectiveDeviceId} from '@app/features/voice/utils/VoiceDeviceManager';
 import type {I18n} from '@lingui/core';
 import {msg, ph} from '@lingui/core/macro';
 import {Trans, useLingui} from '@lingui/react/macro';
-import {CrownIcon, GearIcon} from '@phosphor-icons/react';
+import {AtomIcon, GearIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
 import {useCallback, useMemo} from 'react';
@@ -74,8 +82,9 @@ const HIGH_FRAME_RATE_REQUIRES_PREMIUM_DESCRIPTOR = msg({
 	comment: 'Video settings note shown when higher frame rates require premium.',
 });
 const SELF_HOSTED_VIDEO_QUALITY_LIMIT_DESCRIPTOR = msg({
-	message: 'This instance currently allows screen sharing up to 720p at 30 FPS.',
-	comment: 'Neutral video settings note shown when higher screen share quality is disabled by instance limits.',
+	message: 'This instance currently allows screen sharing up to {resolution} at {frameRate} FPS.',
+	comment:
+		'Neutral video settings note shown when instance limits cap screen share quality. {resolution} is a short label such as 1080p and {frameRate} is a whole number such as 30. FPS is a technical token.',
 });
 const SCREEN_SHARE_RESOLUTION_LABELS: Record<Exclude<OfferedScreenShareResolution, 'source'>, string> = {
 	low_480p: '480p',
@@ -144,7 +153,9 @@ export const VideoTab: React.FC<VideoTabProps> = observer(({voiceSettings}) => {
 		streamingMode,
 		screenShareContentHint,
 	} = voiceSettings;
-	const hasHigherQuality = hasHigherVideoQuality();
+	const videoQualityCaps = getVideoQualityCaps();
+	const hasHigherQuality = isFullVideoQuality(videoQualityCaps);
+	const cameraHighAllowed = getCameraCaptureDimensions('high').height <= videoQualityCaps.cameraMaxHeight;
 	const showPremium = shouldShowPremiumFeatures();
 	const {devices, deviceState, status: permissionStatus, requestPermission} = useMediaPermission('video');
 	const videoDeviceOptions = useMemo(
@@ -155,12 +166,12 @@ export const VideoTab: React.FC<VideoTabProps> = observer(({voiceSettings}) => {
 	const cameraResolutionOptions: ReadonlyArray<ComboboxOption<CameraResolution>> = [
 		{value: 'low', label: LOW_480P_LABEL},
 		{value: 'medium', label: MEDIUM_720P_LABEL},
-		...(hasHigherQuality || showPremium
+		...(cameraHighAllowed || showPremium
 			? [
 					{
 						value: 'high' as const,
 						label: HIGH_1080P_LABEL,
-						isDisabled: !hasHigherQuality,
+						isDisabled: !cameraHighAllowed,
 					},
 				]
 			: []),
@@ -170,7 +181,7 @@ export const VideoTab: React.FC<VideoTabProps> = observer(({voiceSettings}) => {
 		mode: streamingMode,
 		storedResolution: screenshareResolution,
 		storedFrameRate: videoFrameRate,
-		entitled: hasHigherQuality,
+		caps: videoQualityCaps,
 		context: liveShareContext ?? 'display',
 	};
 	const screenShareState = resolveUserVideoTabScreenShareState({
@@ -228,41 +239,59 @@ export const VideoTab: React.FC<VideoTabProps> = observer(({voiceSettings}) => {
 			section: getAdvancedSettingsCategorySectionId('media'),
 		});
 	}, []);
-	return (
-		<div className={styles.content} data-flx="user.video-tab.content">
-			{devices.length === 0 && permissionStatus !== 'loading' ? (
-				<div className={styles.deviceNotice} data-flx="user.video-tab.device-notice">
-					<div className={styles.deviceNoticeText} data-flx="user.video-tab.device-notice-text">
-						<div className={styles.deviceNoticeTitle} data-flx="user.video-tab.device-notice-title">
-							<Trans>No camera found</Trans>
-						</div>
-						<p className={styles.deviceNoticeDescription} data-flx="user.video-tab.device-notice-description">
-							{permissionStatus === 'denied' ? (
-								<Trans comment="Shown in video settings on the macOS app when camera access is denied. {ph({PRODUCT_NAME: RuntimeConfig.productName})} is the app name. Keep 'System Settings', 'Privacy & Security' and the permission name as macOS shows them in this language.">
-									Allow {ph({PRODUCT_NAME: RuntimeConfig.productName})} to access your camera in System Settings →
-									Privacy & Security → Camera.
-								</Trans>
-							) : permissionStatus === 'granted' ? (
-								<Trans>Connect a camera and try again.</Trans>
-							) : (
-								i18n._(PRODUCT_NEEDS_CAMERA_ACCESS_DESCRIPTOR, {productName: RuntimeConfig.productName})
-							)}
-						</p>
-					</div>
-					{permissionStatus !== 'granted' ? (
-						<Button
-							variant="secondary"
-							small={true}
-							onClick={() => {
-								void requestPermission();
-							}}
-							data-flx="user.video-tab.button"
-						>
-							<Trans>Allow camera</Trans>
-						</Button>
-					) : null}
+	const contentClassName = styles.content;
+	const mediaBlocked = isInsecureBrowserContext();
+	let deviceNotice: React.ReactNode = null;
+	if (devices.length === 0 && permissionStatus !== 'loading') {
+		const noticeClassName = styles.deviceNotice;
+		const noticeTextClassName = styles.deviceNoticeText;
+		const noticeTitle = (
+			<div className={styles.deviceNoticeTitle} data-flx="user.video-tab.device-notice-title">
+				{mediaBlocked ? i18n._(INSTANCE_WITHOUT_HTTPS_DESCRIPTOR) : <Trans>No camera found</Trans>}
+			</div>
+		);
+		const descriptionClassName = styles.deviceNoticeDescription;
+		let noticeDescription: React.ReactNode;
+		if (mediaBlocked) {
+			noticeDescription = i18n._(MEDIA_NEEDS_HTTPS_DESCRIPTOR);
+		} else if (permissionStatus === 'denied') {
+			noticeDescription = (
+				<Trans comment="Shown in video settings on the macOS app when camera access is denied. {ph({PRODUCT_NAME: RuntimeConfig.productName})} is the app name. Keep 'System Settings', 'Privacy & Security' and the permission name as macOS shows them in this language.">
+					Allow {ph({PRODUCT_NAME: RuntimeConfig.productName})} to access your camera in System Settings → Privacy &
+					Security → Camera.
+				</Trans>
+			);
+		} else if (permissionStatus === 'granted') {
+			noticeDescription = <Trans>Connect a camera and try again.</Trans>;
+		} else {
+			noticeDescription = i18n._(PRODUCT_NEEDS_CAMERA_ACCESS_DESCRIPTOR, {productName: RuntimeConfig.productName});
+		}
+		deviceNotice = (
+			<div className={noticeClassName} data-flx="user.video-tab.device-notice">
+				<div className={noticeTextClassName} data-flx="user.video-tab.device-notice-text">
+					{noticeTitle}
+					<p className={descriptionClassName} data-flx="user.video-tab.device-notice-description">
+						{noticeDescription}
+					</p>
 				</div>
-			) : null}
+				{permissionStatus !== 'granted' && !mediaBlocked ? (
+					<Button
+						variant="secondary"
+						small={true}
+						onClick={() => {
+							void requestPermission();
+						}}
+						data-flx="user.video-tab.button"
+					>
+						<Trans>Allow camera</Trans>
+					</Button>
+				) : null}
+			</div>
+		);
+	}
+	return (
+		<div className={contentClassName} data-flx="user.video-tab.content">
+			{deviceNotice}
 			<div className={styles.controlGroup} data-flx="user.video-tab.camera-settings-group">
 				<CompactComboboxRow
 					label={i18n._(CAMERA_2_DESCRIPTOR)}
@@ -316,7 +345,7 @@ export const VideoTab: React.FC<VideoTabProps> = observer(({voiceSettings}) => {
 				{!hasHigherQuality && showPremium && (
 					<div className={styles.premiumCard} data-flx="user.video-tab.premium-card">
 						<div className={styles.premiumHeader} data-flx="user.video-tab.premium-header">
-							<CrownIcon
+							<AtomIcon
 								weight="fill"
 								size={remFromPx(18)}
 								className={styles.premiumIcon}
@@ -354,7 +383,7 @@ export const VideoTab: React.FC<VideoTabProps> = observer(({voiceSettings}) => {
 				/>
 				{!hasHigherQuality && showPremium && (
 					<div className={styles.frameRateNote} data-flx="user.video-tab.frame-rate-note">
-						<CrownIcon
+						<AtomIcon
 							weight="fill"
 							size={remFromPx(14)}
 							className={styles.frameRateIcon}
@@ -365,7 +394,13 @@ export const VideoTab: React.FC<VideoTabProps> = observer(({voiceSettings}) => {
 				)}
 				{!hasHigherQuality && !showPremium && (
 					<div className={styles.frameRateNote} data-flx="user.video-tab.instance-limit-note">
-						{i18n._(SELF_HOSTED_VIDEO_QUALITY_LIMIT_DESCRIPTOR)}
+						{i18n._(SELF_HOSTED_VIDEO_QUALITY_LIMIT_DESCRIPTOR, {
+							frameRate: resolveScreenShareFrameRate(videoQualityCaps.screenShareMaxFrameRate),
+							resolution: getScreenShareResolutionLabel(
+								i18n,
+								offeredScreenShareResolution(maxScreenShareResolution(videoQualityCaps)),
+							),
+						})}
 					</div>
 				)}
 				{screenShareState.preset !== null && (
@@ -382,7 +417,7 @@ export const VideoTab: React.FC<VideoTabProps> = observer(({voiceSettings}) => {
 				)}
 				{screenShareState.saved !== null && (
 					<div className={styles.frameRateNote} data-flx="user.video-tab.tier-limit-note">
-						<CrownIcon
+						<AtomIcon
 							weight="fill"
 							size={remFromPx(14)}
 							className={styles.frameRateIcon}

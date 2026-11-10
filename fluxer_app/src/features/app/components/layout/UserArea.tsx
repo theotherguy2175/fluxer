@@ -33,10 +33,10 @@ import {
 import type {User} from '@app/features/user/models/User';
 import UserSettings from '@app/features/user/state/UserSettings';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
+import {LazyVoiceAudioSettingsMenu} from '@app/features/voice/components/LazyVoiceComponents';
 import {VoiceConnectionStatus} from '@app/features/voice/components/VoiceConnectionStatus';
-import {VoiceAudioSettingsMenu} from '@app/features/voice/components/VoiceSettingsMenus';
-import MediaEngine from '@app/features/voice/engine/MediaEngineFacade';
 import {getEffectiveAudioState} from '@app/features/voice/engine/VoiceEffectiveAudioState';
+import VoiceRuntime from '@app/features/voice/engine/VoiceRuntime';
 import {useMediaDevices} from '@app/features/voice/hooks/useMediaDevices';
 import LocalVoiceState from '@app/features/voice/state/LocalVoiceState';
 import {
@@ -76,7 +76,7 @@ const OPEN_USER_MENU_FOR_DESCRIPTOR = msg({
 });
 const VOICE_CONNECTION_HEIGHT_VARIABLE = '--layout-voice-connection-height';
 
-function getResizeObserverEntryBlockSize(entry: ResizeObserverEntry): number {
+export function getResizeObserverEntryBlockSize(entry: ResizeObserverEntry): number {
 	const borderBoxSize = entry.borderBoxSize;
 	const firstBorderBoxSize = Array.isArray(borderBoxSize) ? borderBoxSize[0] : borderBoxSize;
 	return firstBorderBoxSize?.blockSize ?? entry.contentRect.height;
@@ -122,7 +122,7 @@ const UserAreaInner = observer(
 			event.preventDefault();
 			event.stopPropagation();
 			ContextMenuCommands.openFromEvent(event, (props) => (
-				<VoiceAudioSettingsMenu
+				<LazyVoiceAudioSettingsMenu
 					inputDevices={inputDevices}
 					outputDevices={outputDevices}
 					onClose={props.onClose}
@@ -134,7 +134,7 @@ const UserAreaInner = observer(
 			event.preventDefault();
 			event.stopPropagation();
 			ContextMenuCommands.openFromEvent(event, (props) => (
-				<VoiceAudioSettingsMenu
+				<LazyVoiceAudioSettingsMenu
 					inputDevices={inputDevices}
 					outputDevices={outputDevices}
 					onClose={props.onClose}
@@ -146,7 +146,7 @@ const UserAreaInner = observer(
 		const settingsLabel = privacySetupPending
 			? i18n._(USER_SETTINGS_PRIVACY_REVIEW_NEEDED_DESCRIPTOR)
 			: i18n._(USER_SETTINGS_LABEL_DESCRIPTOR);
-		const storeConnectedChannelId = MediaEngine.channelId;
+		const storeConnectedChannelId = VoiceRuntime.channelId;
 		const hasVoiceConnection = !MobileLayout.enabled && !!storeConnectedChannelId;
 		useEffect(() => {
 			const root = document.documentElement;
@@ -349,7 +349,7 @@ const UserAreaInner = observer(
 										onClick={isMuteToggleLocked ? undefined : () => VoiceStateCommands.toggleSelfMute(null)}
 										onContextMenu={handleMicContextMenu}
 										disabled={isMuteToggleLocked}
-										data-flx="app.user-area.user-area-inner.control-button.undefined"
+										data-flx="app.user-area.user-area-inner.control-button.mute"
 									>
 										{effectiveMuted ? (
 											<MicrophoneSlashIcon
@@ -399,7 +399,7 @@ const UserAreaInner = observer(
 										onClick={isGuildDeafened ? undefined : () => VoiceStateCommands.toggleSelfDeaf(null)}
 										onContextMenu={handleSpeakerContextMenu}
 										disabled={isGuildDeafened}
-										data-flx="app.user-area.user-area-inner.control-button.undefined--2"
+										data-flx="app.user-area.user-area-inner.control-button.deafen"
 									>
 										{isDeafened || isGuildDeafened ? (
 											<SpeakerSlashIcon
@@ -465,8 +465,8 @@ const UserAreaInner = observer(
 	},
 );
 export const UserArea = observer(function UserArea({user}: {user: User}) {
-	const connectedGuildId = MediaEngine.guildId;
-	const voiceState = MediaEngine.getVoiceState(connectedGuildId);
+	const connectedGuildId = VoiceRuntime.guildId;
+	const voiceState = VoiceRuntime.getVoiceState(connectedGuildId);
 	const localSelfMute = LocalVoiceState.getSelfMute();
 	const localSelfDeaf = LocalVoiceState.getSelfDeaf();
 	const isMobile = MobileLayout.isMobileLayout();
@@ -475,7 +475,7 @@ export const UserArea = observer(function UserArea({user}: {user: User}) {
 	}
 	const isGuildMuted = voiceState?.mute ?? false;
 	const isGuildDeafened = voiceState?.deaf ?? false;
-	const muteReason = MediaEngine.getMuteReason(voiceState);
+	const muteReason = VoiceRuntime.getMuteReason(voiceState);
 	const isPermissionMuted = muteReason === 'permission';
 	const effectiveAudioState = getEffectiveAudioState({
 		selfMute: localSelfMute,

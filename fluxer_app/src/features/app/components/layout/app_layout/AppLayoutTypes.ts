@@ -7,6 +7,7 @@ export const NagbarType = {
 	CONNECTION: 'connection',
 	CORRUPTED_INSTALLATION: 'corrupted-installation',
 	SCHEDULED_MAINTENANCE: 'scheduled-maintenance',
+	INSTANCE_NOTICE: 'instance-notice',
 	UNCLAIMED_ACCOUNT: 'unclaimed-account',
 	EMAIL_VERIFICATION: 'email-verification',
 	ACCOUNT_LIMITED: 'account-limited',
@@ -18,6 +19,7 @@ export const NagbarType = {
 	LEGACY_PRICE_OPT_IN: 'legacy-price-opt-in',
 	GIFT_INVENTORY: 'gift-inventory',
 	DESKTOP_DOWNLOAD: 'desktop-download',
+	ANDROID_APP: 'android-app',
 	GUILD_MEMBERSHIP_CTA: 'guild-membership-cta',
 	VISIONARY_MFA: 'visionary-mfa',
 	VOICE_SESSION_RESTORE: 'voice-session-restore',
@@ -26,6 +28,7 @@ export const NagbarType = {
 	STREAMER_MODE: 'streamer-mode',
 	DOMAIN_MOVED: 'domain-moved',
 	WINDOWS_FONT: 'windows-font',
+	CUSTOM_CSS_OFF: 'custom-css-off',
 } as const;
 
 export type NagbarType = ValueOf<typeof NagbarType>;
@@ -46,6 +49,7 @@ export interface NagbarConditions {
 	canShowConnection: boolean;
 	canShowCorruptedInstallation: boolean;
 	canShowScheduledMaintenance: boolean;
+	canShowInstanceNotice: boolean;
 	userIsUnclaimed: boolean;
 	userNeedsVerification: boolean;
 	canShowAccountLimited: boolean;
@@ -57,6 +61,7 @@ export interface NagbarConditions {
 	canShowLegacyPriceOptIn: boolean;
 	canShowGiftInventory: boolean;
 	canShowDesktopDownload: boolean;
+	canShowAndroidApp: boolean;
 	canShowGuildMembershipCta: boolean;
 	canShowVisionaryMfa: boolean;
 	canShowVoiceSessionRestore: boolean;
@@ -65,4 +70,5 @@ export interface NagbarConditions {
 	canShowStreamerMode: boolean;
 	canShowDomainMoved: boolean;
 	canShowWindowsFont: boolean;
+	canShowCustomCssOff: boolean;
 }

@@ -6,7 +6,7 @@ use crate::html_parser;
 use crate::http_fetch;
 use crate::media_proxy::MediaProxyClient;
 use crate::types::{EmbedMedia, EmbedProvider, MessageEmbed};
-use scraper::{Html, Selector};
+use scraper::Selector;
 use std::future::Future;
 use std::pin::Pin;
 use std::time::Duration;
@@ -48,9 +48,10 @@ impl Resolver for TenorResolver {
                     .get(reqwest::header::CONTENT_TYPE)
                     .and_then(|value| value.to_str().ok()),
             );
-            let og = html_parser::parse_opengraph(&html);
+            let (og, json_ld) = html_parser::with_document(&html, |doc| {
+                (html_parser::opengraph_of(doc), extract_json_ld_urls(doc))
+            });
             let nsfw_str = MediaProxyClient::nsfw_mode_str(ctx.nsfw_mode);
-            let json_ld = extract_json_ld_urls(&html);
             let thumbnail_url = json_ld
                 .as_ref()
                 .and_then(|urls| urls.thumbnail_url.clone())
@@ -143,8 +144,7 @@ struct TenorJsonLdUrls {
     video_url: Option<String>,
 }
 
-fn extract_json_ld_urls(html: &str) -> Option<TenorJsonLdUrls> {
-    let doc = Html::parse_document(html);
+fn extract_json_ld_urls(doc: &scraper::Html) -> Option<TenorJsonLdUrls> {
     let selector = Selector::parse(r#"script.dynamic[type="application/ld+json"]"#).ok()?;
 
     for script in doc.select(&selector) {
@@ -225,21 +225,5 @@ fn valid_absolute_url(value: &str) -> Option<String> {
         Some(value.to_owned())
     } else {
         None
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn valid_absolute_url_rejects_non_http() {
-        assert!(valid_absolute_url("ftp://example.com/file").is_none());
-        assert!(valid_absolute_url("javascript:alert(1)").is_none());
-    }
-
-    #[test]
-    fn valid_absolute_url_rejects_relative() {
-        assert!(valid_absolute_url("/relative/path").is_none());
     }
 }

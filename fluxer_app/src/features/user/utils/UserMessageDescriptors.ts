@@ -237,6 +237,28 @@ export const PROFILE_CUSTOMIZATION_DESCRIPTOR = msg({
 	comment: 'Settings section label for editing profile appearance and identity.',
 });
 
+export const PROFILE_BADGES_DESCRIPTOR = msg({
+	message: 'Badges',
+	comment: 'Title of the profile settings section that lists the badges you hold and lets you hide each one.',
+});
+
+export const MORE_BADGES_DESCRIPTOR = msg({
+	message: '+{count}',
+	comment:
+		'Short count of badges that are not shown next to a name or on a profile, such as +3. Pressing it opens the full list. Keep it as short as possible.',
+});
+
+export const SHOW_ALL_BADGES_DESCRIPTOR = msg({
+	message: 'Show all badges',
+	comment: 'Tooltip for the +3 style button that opens the full list of badges.',
+});
+
+export const SHOW_ALL_BADGES_COUNT_DESCRIPTOR = msg({
+	message: '{count, plural, one {+# more badge, show all} other {+# more badges, show all}}',
+	comment:
+		'Screen reader label for the +3 style button that opens the full list of badges. It starts with the same +3 text that is shown on the button, so voice control users can say it.',
+});
+
 export const COMMUNITY_NICKNAME_DESCRIPTOR = msg({
 	message: 'Community nickname',
 	comment: 'Settings search entry label. Also used as a search synonym in the settings search bar.',
@@ -293,7 +315,7 @@ export const ESCAPE_KEY_EXITS_KEYBOARD_MODE_DESCRIPTOR = msg({
 });
 
 export const SHOW_CONTEXT_MENU_SHORTCUTS_DESCRIPTOR = msg({
-	message: 'Show context menu shortcuts',
+	message: 'Show context menu keybinds',
 	comment: 'Settings search entry label. Names the settings search entry in the settings UI.',
 });
 
@@ -404,6 +426,11 @@ export const DOWNLOAD_SOURCE_MAPS_DESCRIPTOR = msg({
 
 export const USE_NATIVE_TITLE_BAR_DESCRIPTOR = msg({
 	message: 'Use native title bar',
+	comment: 'Settings search entry label. Names the settings search entry in the settings UI.',
+});
+
+export const DISABLE_AUTOMATIC_UPDATES_DESCRIPTOR = msg({
+	message: 'Disable automatic updates',
 	comment: 'Settings search entry label. Names the settings search entry in the settings UI.',
 });
 
@@ -631,17 +658,17 @@ export const RESET_TO_DEFAULTS_DESCRIPTOR = msg({
 });
 
 export const SYNC_SHORTCUTS_DESCRIPTOR = msg({
-	message: 'Sync shortcuts',
+	message: 'Sync keybinds',
 	comment: 'Settings search synonym. Used to match this term when the user types it in the settings search bar.',
 });
 
 export const CUSTOM_SHORTCUTS_DESCRIPTOR = msg({
-	message: 'Custom shortcuts',
+	message: 'Custom keybinds',
 	comment: 'Settings search entry label. Also used as a search synonym in the settings search bar.',
 });
 
 export const DEFAULT_SHORTCUTS_DESCRIPTOR = msg({
-	message: 'Default shortcuts',
+	message: 'Default keybinds',
 	comment: 'Settings search entry label. Also used as a search synonym in the settings search bar.',
 });
 
@@ -743,4 +770,10 @@ export const STREAM_PREVIEW_DESCRIPTOR = msg({
 export const GIFTS_DESCRIPTOR = msg({
 	message: 'Gifts',
 	comment: 'Settings search entry label. Also used as a search synonym in the settings search bar.',
+});
+
+export const OPERATORS_MEMBERS_SEE_YOU_DESCRIPTOR = msg({
+	message: "People in #operators can see that you're in it.",
+	comment:
+		'Sentence after a note about how Fluxer Labs shows a person with a hidden Operator Pass or Visionary badge, and in the "Show #operators" setting. #operators is a channel name, keep it as is. Everyone who can open the channel sees who else is in it.',
 });

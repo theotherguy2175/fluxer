@@ -46,7 +46,7 @@ import {msg} from '@lingui/core/macro';
 import {Trans, useLingui} from '@lingui/react/macro';
 import {GearIcon} from '@phosphor-icons/react';
 import {observer} from 'mobx-react-lite';
-import {useCallback} from 'react';
+import {type ReactNode, useCallback} from 'react';
 
 const SHOW_MESSAGE_ACTION_BAR_DESCRIPTOR = msg({
 	message: 'Show message action bar',
@@ -120,6 +120,12 @@ const SHOW_EMOJI_BUTTON_DESCRIPTOR = msg({
 const SHOW_SEND_BUTTON_DESCRIPTOR = msg({
 	message: 'Show send button',
 	comment: 'Short label for an advanced message input preference.',
+});
+
+const DOUBLE_CLICK_MESSAGE_ACTIONS_DESCRIPTOR = msg({
+	message: 'Double-click a message to edit or reply',
+	comment:
+		"Short label for an advanced preference that edits your own message or replies to someone else's when you double-click it.",
 });
 
 const HIDE_MUTED_CHANNELS_BY_DEFAULT_PROMPT_DESCRIPTOR = msg({
@@ -273,14 +279,18 @@ const SearchProviderSettingsModal = observer(({mode, title}: SearchProviderSetti
 	const handleClose = useCallback(() => {
 		ModalCommands.pop();
 	}, []);
-	const content =
-		mode === 'image' ? (
+	let content: ReactNode;
+	if (mode === 'image') {
+		content = (
 			<ReverseImageSearchContent data-flx="user.advanced-settings-tab.provider-settings-modal.reverse-image-search-content" />
-		) : mode === 'translate' ? (
-			<TranslatorsContent data-flx="user.advanced-settings-tab.provider-settings-modal.translators-content" />
-		) : (
+		);
+	} else if (mode === 'translate') {
+		content = <TranslatorsContent data-flx="user.advanced-settings-tab.provider-settings-modal.translators-content" />;
+	} else {
+		content = (
 			<TextSearchEnginesContent data-flx="user.advanced-settings-tab.provider-settings-modal.search-engines-content" />
 		);
+	}
 	return (
 		<Modal.Root
 			size="medium"
@@ -451,16 +461,24 @@ const SwitchGroupSettingsModal = observer(({mode, title}: SwitchGroupSettingsMod
 	const handleClose = useCallback(() => {
 		ModalCommands.pop();
 	}, []);
-	const content =
-		mode === 'message-action-bar' ? (
+	let content: ReactNode;
+	if (mode === 'message-action-bar') {
+		content = (
 			<MessageActionBarContent data-flx="user.advanced-settings-tab.advanced-chat-controls.switch-group-settings-modal.message-action-bar-content" />
-		) : mode === 'media-buttons' ? (
+		);
+	} else if (mode === 'media-buttons') {
+		content = (
 			<MediaButtonsContent data-flx="user.advanced-settings-tab.advanced-chat-controls.switch-group-settings-modal.media-buttons-content" />
-		) : mode === 'expression-autocomplete' ? (
+		);
+	} else if (mode === 'expression-autocomplete') {
+		content = (
 			<ExpressionAutocompleteContent data-flx="user.advanced-settings-tab.advanced-chat-controls.switch-group-settings-modal.expression-autocomplete-content" />
-		) : (
+		);
+	} else {
+		content = (
 			<InputButtonsContent data-flx="user.advanced-settings-tab.advanced-chat-controls.switch-group-settings-modal.input-buttons-content" />
 		);
+	}
 	return (
 		<Modal.Root
 			size="medium"
@@ -607,6 +625,19 @@ export const SkipMarkAllAsReadControl = observer(() => {
 			onChange={(value) => Inbox.setSkipMarkAllAsReadConfirmation(value)}
 			compact
 			data-flx="user.advanced-settings-tab.switch.skip-mark-all-as-read-confirmation"
+		/>
+	);
+});
+
+export const DoubleClickMessageActionsControl = observer(() => {
+	const {i18n} = useLingui();
+	return (
+		<Switch
+			ariaLabel={i18n._(DOUBLE_CLICK_MESSAGE_ACTIONS_DESCRIPTOR)}
+			value={Accessibility.messageDoubleClickActions}
+			onChange={(value) => AccessibilityCommands.update({messageDoubleClickActions: value})}
+			compact
+			data-flx="user.advanced-settings-tab.switch.double-click-message-actions"
 		/>
 	);
 });

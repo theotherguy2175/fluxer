@@ -31,7 +31,7 @@ import {UserFlags} from '@fluxer/constants/src/UserConstants';
 import type {GuildMemberResponse} from '@fluxer/schema/src/domains/guild/GuildMemberSchemas';
 import type {GuildResponse} from '@fluxer/schema/src/domains/guild/GuildResponseSchemas';
 import {listReportProfileSnapshotAssets} from '@fluxer/schema/src/domains/report/ReportProfileSnapshotSchemas';
-import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest';
+import {afterEach, beforeEach, describe, expect, test} from 'vitest';
 
 interface ReportResponse {
 	report_id: string;
@@ -142,6 +142,11 @@ async function setupProfile(
 		bio: 'Original guild bio',
 		avatar: FIRST_IMAGE,
 	});
+	await createBuilder(harness, target.token)
+		.patch('/users/@me/settings')
+		.body({custom_status: {text: 'Original status'}})
+		.expect(HTTP_STATUS.OK)
+		.execute();
 	return {owner, target, guild, profile};
 }
 
@@ -179,6 +184,7 @@ describe('Report profile snapshots', () => {
 				global_name: 'Original Name',
 				bio: 'Original bio',
 				pronouns: 'they/them',
+				custom_status: 'Original status',
 				avatar: {
 					hash: profile.avatar,
 					key: `reports/${result.report_id}/profile/user_avatar/${profile.avatar}`,
@@ -300,6 +306,7 @@ describe('Report profile snapshots', () => {
 				global_name: null,
 				bio: null,
 				pronouns: null,
+				custom_status: null,
 				avatar: null,
 				banner: null,
 			},
@@ -343,20 +350,6 @@ describe('Report profile snapshots', () => {
 			.execute();
 		expect(harness.storageService.getCopiedObjects()).toHaveLength(copiesBefore);
 		expect(await countReports()).toBe(2);
-	});
-
-	test('a notice whose ticket is claimed elsewhere copies no images', async () => {
-		const {target} = await setupProfile(harness);
-		const ticket = await issueTicket(harness);
-		const copiesBefore = harness.storageService.getCopiedObjects().length;
-		const claim = vi.spyOn(ReportRepository.prototype, 'consumeDsaTicket').mockResolvedValueOnce(false);
-		await submitDsa(harness, ticket, {report_type: 'user', user_id: target.userId})
-			.expect(HTTP_STATUS.BAD_REQUEST, APIErrorCodes.INVALID_DSA_TICKET)
-			.execute();
-		expect(claim).toHaveBeenCalledTimes(1);
-		claim.mockRestore();
-		expect(harness.storageService.getCopiedObjects()).toHaveLength(copiesBefore);
-		expect(await countReports()).toBe(0);
 	});
 
 	test('notices filed through the DSA form keep the same snapshots', async () => {

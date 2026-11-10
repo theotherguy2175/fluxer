@@ -226,7 +226,7 @@ export class RepositoryBackedMessageResponseDataService extends MessageResponseD
 			options.includeReactions ? this.mapReactions(message, options.currentUserId) : Promise.resolve(null),
 			this.resolveReferencedMessage(message, options),
 		]);
-		return {
+		const responseFields = {
 			id: message.id.toString(),
 			channel_id: message.channelId.toString(),
 			author,
@@ -246,14 +246,19 @@ export class RepositoryBackedMessageResponseDataService extends MessageResponseD
 			attachments: await this.mapAttachments(message.attachments, message),
 			stickers: this.mapStickers(message.stickers),
 			reactions,
-			message_reference: message.reference
-				? {
-						channel_id: message.reference.channelId.toString(),
-						...(message.reference.messageId ? {message_id: message.reference.messageId.toString()} : {}),
-						guild_id: message.reference.guildId?.toString() ?? null,
-						type: message.reference.type,
-					}
-				: null,
+		};
+		let messageReference: MessageResponse['message_reference'] = null;
+		if (message.reference) {
+			messageReference = {
+				channel_id: message.reference.channelId.toString(),
+				...(message.reference.messageId ? {message_id: message.reference.messageId.toString()} : {}),
+				guild_id: message.reference.guildId?.toString() ?? null,
+				type: message.reference.type,
+			};
+		}
+		return {
+			...responseFields,
+			message_reference: messageReference,
 			message_snapshots: await this.mapSnapshots(message.messageSnapshots, message),
 			nonce: options.nonce ?? null,
 			call: this.mapCall(message.call),
@@ -535,7 +540,7 @@ export class RepositoryBackedMessageResponseDataService extends MessageResponseD
 		>();
 		for (const reaction of reactions) {
 			const emojiId = reaction.emojiId.toString() === '0' ? null : reaction.emojiId.toString();
-			const key = `${emojiId ?? ''}:${reaction.emojiName}`;
+			const key = emojiId ? `custom_${emojiId}` : `unicode_${reaction.emojiName}`;
 			const entry = byEmoji.get(key) ?? {
 				id: emojiId,
 				name: reaction.emojiName,

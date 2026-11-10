@@ -78,7 +78,7 @@ import type {MenuActionEvent, MenuGroupType, MenuItemType} from '@app/features/u
 import UserGuildSettings from '@app/features/user/state/UserGuildSettings';
 import UserSettings from '@app/features/user/state/UserSettings';
 import {VoiceP2pConsentModal} from '@app/features/voice/components/alerts/VoiceP2pConsentModal';
-import MediaEngine from '@app/features/voice/engine/MediaEngineFacade';
+import VoiceRuntime from '@app/features/voice/engine/VoiceRuntime';
 import CompactVoiceCallHeight, {getGuildVoiceCallExpansionKey} from '@app/features/voice/state/CompactVoiceCallHeight';
 import VoiceP2pConsent from '@app/features/voice/state/VoiceP2pConsent';
 import VoiceP2pRollout from '@app/features/voice/state/VoiceP2pRollout';
@@ -184,7 +184,7 @@ function getChannelMenuState(channel: Channel, guild: Guild | undefined): Channe
 		isVoiceChannel &&
 		!channel.rtcP2p &&
 		VoiceP2pRollout.enabled &&
-		Object.keys(MediaEngine.getAllVoiceStatesInChannel(channel.guildId ?? ME, channel.id)).length === 0 &&
+		Object.keys(VoiceRuntime.getAllVoiceStatesInChannel(channel.guildId ?? ME, channel.id)).length === 0 &&
 		Permission.can(Permissions.CONNECT, {channelId: channel.id, guildId: channel.guildId});
 	const canFollow = canFollowAnnouncementChannel(channel);
 	const developerMode = UserSettings.developerMode;
@@ -298,7 +298,7 @@ export function useChannelMenuData(
 							allowStandard={false}
 							onP2p={() => {
 								VoiceP2pConsent.agree(channel.id);
-								void MediaEngine.connectToVoiceChannel(guildId, channel.id);
+								void VoiceRuntime.withEngine('join', (engine) => engine.connectToVoiceChannel(guildId, channel.id));
 							}}
 							onCancel={() => {}}
 							data-flx="ui.action-menu.items.channel-menu-data.handle-start-p2p-call.voice-p2p-consent-modal"
@@ -431,7 +431,7 @@ export function useChannelMenuData(
 
 		if (guild && (state.isTextChannel || state.isVoiceChannel || state.isLinkChannel || channel.isThreadOnly())) {
 			const voiceItems: Array<MenuItemType> = [];
-			if (state.isVoiceChannel && !Accessibility.voiceChannelJoinRequiresDoubleClick) {
+			if (state.isVoiceChannel) {
 				voiceItems.push({
 					icon: <MessageUserIcon size={20} data-flx="ui.action-menu.items.channel-menu-data.groups.open-chat-icon" />,
 					label: i18n._(OPEN_CHAT_DESCRIPTOR),
@@ -458,7 +458,8 @@ export function useChannelMenuData(
 					onClick: handlers.handleMarkAsRead,
 				});
 			}
-			if (Accessibility.showFavorites && !channel.isThread() && !channel.isThreadOnly()) {
+			const previewing = guild?.visiting === true;
+			if (Accessibility.showFavorites && !previewing && !channel.isThread() && !channel.isThreadOnly()) {
 				metaItems.push({
 					icon: (
 						<FavoriteIcon
@@ -475,7 +476,7 @@ export function useChannelMenuData(
 				menuGroups.push({items: metaItems});
 			}
 			const inviteItems: Array<MenuItemType> = [];
-			if (state.canInvite && !channel.isThreadOnly()) {
+			if (state.canInvite) {
 				inviteItems.push({
 					icon: <InviteIcon size={20} data-flx="ui.action-menu.items.channel-menu-data.groups.invite-icon" />,
 					label: i18n._(INVITE_PEOPLE_DESCRIPTOR),
@@ -519,7 +520,7 @@ export function useChannelMenuData(
 			});
 			menuGroups.push({items: inviteItems});
 			const notificationItems: Array<MenuItemType> = [];
-			if (!state.isLinkChannel) {
+			if (!state.isLinkChannel && !previewing) {
 				notificationItems.push({
 					icon: state.isMuted ? (
 						<MuteIcon size={20} data-flx="ui.action-menu.items.channel-menu-data.groups.mute-icon" />
@@ -533,17 +534,19 @@ export function useChannelMenuData(
 					onClick: handlers.handleOpenMuteSheet,
 				});
 			}
-			notificationItems.push({
-				icon: (
-					<NotificationSettingsIcon
-						size={20}
-						data-flx="ui.action-menu.items.channel-menu-data.groups.notification-settings-icon--2"
-					/>
-				),
-				label: i18n._(NOTIFICATION_SETTINGS_DESCRIPTOR),
-				onClick: handlers.handleNotificationSettings,
-			});
-			menuGroups.push({items: notificationItems});
+			if (!previewing) {
+				notificationItems.push({
+					icon: (
+						<NotificationSettingsIcon
+							size={20}
+							data-flx="ui.action-menu.items.channel-menu-data.groups.notification-settings-icon--2"
+						/>
+					),
+					label: i18n._(NOTIFICATION_SETTINGS_DESCRIPTOR),
+					onClick: handlers.handleNotificationSettings,
+				});
+			}
+			if (notificationItems.length > 0) menuGroups.push({items: notificationItems});
 			if (channel.isThreadOnly()) {
 				menuGroups.push({
 					items: [
@@ -612,7 +615,7 @@ export function useChannelMenuData(
 					danger: true,
 				});
 			}
-			if (state.isTextChannel || state.isVoiceChannel) {
+			if (state.isTextChannel || state.isVoiceChannel || channel.isThreadOnly()) {
 				destructiveItems.push({
 					icon: <DeleteIcon size={20} data-flx="ui.action-menu.items.channel-menu-data.groups.delete-icon--3" />,
 					label: i18n._(DELETE_MY_MESSAGES_DESCRIPTOR),

@@ -13,17 +13,24 @@ import {Logger} from '@app/api/Logger';
 import {createRequestCache} from '@app/api/middleware/RequestCacheMiddleware';
 import {addGiftCodeDuration} from '@app/api/models/GiftCode';
 import type {User} from '@app/api/models/User';
+import type {OperatorPassLabsRoleService} from '@app/api/operator_pass/OperatorPassLabsRole';
 import {
 	getSubscriptionCurrentPeriodStart,
 	getSubscriptionPremiumPeriodEnd,
 } from '@app/api/stripe/StripeSubscriptionPeriod';
+import type {TierContext} from '@app/api/user/AccountTier';
 import {shiftGiftExtensionPastPremiumUntil} from '@app/api/user/GiftExtensionShift';
 import type {UserRepository} from '@app/api/user/repositories/UserRepository';
 import {clearPerksSanitizedFlag, createPremiumClearPatch, getEffectivePremiumUntil} from '@app/api/user/UserHelpers';
 import {dispatchUserUpdate} from '@app/api/user/UserMappers';
 import {UserPremiumTypes} from '@fluxer/constants/src/UserConstants';
 import {MissingAccessError} from '@fluxer/errors/src/domains/core/MissingAccessError';
+import {BannedFromGuildError} from '@fluxer/errors/src/domains/guild/BannedFromGuildError';
+import {IpBannedFromGuildError} from '@fluxer/errors/src/domains/guild/IpBannedFromGuildError';
+import {MaxGuildMembersError} from '@fluxer/errors/src/domains/guild/MaxGuildMembersError';
+import {MaxGuildsError} from '@fluxer/errors/src/domains/guild/MaxGuildsError';
 import {StripeError} from '@fluxer/errors/src/domains/payment/StripeError';
+import {AccountLimitedError} from '@fluxer/errors/src/domains/user/AccountLimitedError';
 import type Stripe from 'stripe';
 
 export class StripePremiumService {
@@ -32,6 +39,7 @@ export class StripePremiumService {
 		private gatewayService: IGatewayService,
 		private guildRepository: GuildRepository,
 		private guildService: GuildService,
+		private labsRoleService: Pick<OperatorPassLabsRoleService, 'resyncLabsRoles'>,
 	) {}
 
 	async setPremiumFromSubscriptionPeriod(
@@ -78,7 +86,7 @@ export class StripePremiumService {
 		);
 	}
 
-	async setPremiumLifetime(
+	private async setPremiumLifetime(
 		userId: UserID,
 		hasEverPurchased: boolean = false,
 		premiumSinceAnchor: Date | null = null,
@@ -88,7 +96,9 @@ export class StripePremiumService {
 			throw new StripeError('User not found for premium grant');
 		}
 		const now = new Date();
-		const visionarySequence = user.premiumLifetimeSequence ?? (await this.allocateVisionarySequence(userId));
+		const visionarySequence =
+			user.premiumLifetimeSequence ??
+			(Config.instance.selfHosted ? null : await this.allocateVisionarySequence(userId));
 		const updatedUser = await this.userRepository.patchUpsert(
 			userId,
 			{
@@ -105,6 +115,7 @@ export class StripePremiumService {
 			user.toRow(),
 		);
 		await dispatchUserUpdate(this.gatewayService, updatedUser);
+		await this.labsRoleService.resyncLabsRoles(userId);
 		Logger.debug({userId, visionarySequence}, 'Lifetime premium granted');
 	}
 
@@ -205,6 +216,7 @@ export class StripePremiumService {
 				user.toRow(),
 			);
 			await dispatchUserUpdate(this.gatewayService, updatedUser);
+			await this.labsRoleService.resyncLabsRoles(userId);
 			Logger.debug({userId, lifetimeSequence: visionarySequenceNumber}, 'Lifetime premium granted from gift');
 			return;
 		}
@@ -232,33 +244,27 @@ export class StripePremiumService {
 	}
 
 	private async allocateVisionarySequence(userId: UserID): Promise<number> {
-		const allSlots = await this.userRepository.listVisionarySlots();
-		const myReservedSlot = allSlots
-			.slice()
-			.sort((a, b) => a.slotIndex - b.slotIndex)
-			.find((slot) => slot.userId === userId);
+		const allSlots = (await this.userRepository.listVisionarySlots()).sort((a, b) => a.slotIndex - b.slotIndex);
+		const myReservedSlot = allSlots.find((slot) => slot.userId === userId);
 		if (myReservedSlot) {
 			await this.addToVisionariesGuild(userId);
 			return myReservedSlot.slotIndex;
 		}
-		const unreservedSlot = allSlots
-			.slice()
-			.sort((a, b) => a.slotIndex - b.slotIndex)
-			.find((slot) => !slot.isReserved());
-		let newSequence: number;
-		if (!unreservedSlot) {
-			const maxSlotIndex = allSlots.length > 0 ? Math.max(...allSlots.map((s) => s.slotIndex)) : -1;
-			newSequence = maxSlotIndex + 1;
-			await this.userRepository.expandVisionarySlots(1);
-			await this.userRepository.reserveVisionarySlot(newSequence, userId);
-			Logger.warn(
-				{userId, newSlotIndex: newSequence, totalSlots: allSlots.length + 1},
-				'Auto-expanded visionary slots due to payment completion',
-			);
-		} else {
-			newSequence = unreservedSlot.slotIndex;
-			await this.userRepository.reserveVisionarySlot(unreservedSlot.slotIndex, userId);
+		for (const slot of allSlots) {
+			if (!slot.isReserved() && (await this.userRepository.reserveVisionarySlot(slot.slotIndex, userId))) {
+				await this.addToVisionariesGuild(userId);
+				return slot.slotIndex;
+			}
 		}
+		const newSequence = allSlots.length > 0 ? Math.max(...allSlots.map((s) => s.slotIndex)) + 1 : 1;
+		await this.userRepository.expandVisionarySlots(1);
+		if (!(await this.userRepository.reserveVisionarySlot(newSequence, userId))) {
+			throw new StripeError('Visionary number was taken while it was being assigned');
+		}
+		Logger.warn(
+			{userId, newSlotIndex: newSequence, totalSlots: allSlots.length + 1},
+			'Auto-expanded visionary slots due to payment completion',
+		);
 		await this.addToVisionariesGuild(userId);
 		return newSequence;
 	}
@@ -281,9 +287,10 @@ export class StripePremiumService {
 		return true;
 	}
 
-	async rejoinVisionariesGuild(userId: UserID): Promise<void> {
+	async rejoinVisionariesGuild(userId: UserID, tierContext: TierContext): Promise<void> {
 		await this.assertHasVisionaryCommunityAccess(userId);
-		await this.addToVisionariesGuild(userId);
+		await this.joinVisionariesGuild(userId, tierContext);
+		await this.labsRoleService.resyncLabsRoles(userId);
 	}
 
 	private async assertHasVisionaryCommunityAccess(userId: UserID): Promise<void> {
@@ -315,6 +322,27 @@ export class StripePremiumService {
 	}
 
 	private async addToVisionariesGuild(userId: UserID): Promise<void> {
+		try {
+			await this.joinVisionariesGuild(userId);
+		} catch (error) {
+			if (
+				error instanceof BannedFromGuildError ||
+				error instanceof IpBannedFromGuildError ||
+				error instanceof AccountLimitedError ||
+				error instanceof MaxGuildsError ||
+				error instanceof MaxGuildMembersError
+			) {
+				Logger.info({userId, error}, 'Visionary was not added to the visionaries guild');
+			} else {
+				throw error;
+			}
+		}
+	}
+
+	private async joinVisionariesGuild(userId: UserID, tierContext?: TierContext): Promise<void> {
+		if (Config.instance.selfHosted && !Config.instance.visionariesGuildId) {
+			return;
+		}
 		if (!Config.instance.visionariesGuildId) {
 			throw new StripeError('Visionaries guild id not configured');
 		}
@@ -330,9 +358,8 @@ export class StripePremiumService {
 				userId,
 				guildId: visionariesGuildId,
 				sendJoinMessage: true,
-				skipBanCheck: true,
-				skipAccountLimitCheck: true,
 				requestCache,
+				tierContext,
 			});
 			Logger.debug({userId, guildId: visionariesGuildId}, 'Added visionary user to visionaries guild');
 		}

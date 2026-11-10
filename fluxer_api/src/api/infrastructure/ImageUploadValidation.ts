@@ -3,6 +3,7 @@
 import type {IMediaService, MediaProxyMetadataResponse} from '@app/api/infrastructure/IMediaService';
 import type {LimitConfigService} from '@app/api/limits/LimitConfigService';
 import {createLimitMatchContext} from '@app/api/limits/LimitMatchContextBuilder';
+import type {User} from '@app/api/models/User';
 import {
 	type AssetKind,
 	formatAssetUploadExtensions,
@@ -14,13 +15,26 @@ import {ValidationErrorCodes} from '@fluxer/constants/src/ValidationErrorCodes';
 import {InputValidationError} from '@fluxer/errors/src/domains/core/InputValidationError';
 import {resolveLimit} from '@fluxer/limits/src/LimitResolver';
 
+const EXPLICIT_IMAGERY_BLOCKED_KINDS: ReadonlySet<AssetKind> = new Set([
+	'avatar',
+	'banner',
+	'guild_icon',
+	'splash',
+	'embed_splash',
+	'role_icon',
+	'sign_in_backdrop',
+	'emoji',
+	'sticker',
+]);
+
 export function resolveAssetSizeLimit(
 	limitConfigService: Pick<LimitConfigService, 'getConfigSnapshot'>,
 	key: LimitKey,
 	fallback: number,
 	guildFeatures: Iterable<string> | null = null,
+	user: User | null = null,
 ): number {
-	const ctx = createLimitMatchContext({user: null, guildFeatures});
+	const ctx = createLimitMatchContext({user, guildFeatures});
 	const resolved = resolveLimit(limitConfigService.getConfigSnapshot(), ctx, key, {
 		evaluationContext: guildFeatures ? 'guild' : 'user',
 	});
@@ -41,7 +55,12 @@ export async function decodeValidatedImage(
 	}
 	const imageBuffer = new Uint8Array(Buffer.from(base64Data, 'base64'));
 	const metadata = requireAllowedMetadata({
-		metadata: await mediaService.getMetadata({type: 'base64', base64: base64Data, version: 2, nsfw: 'allow'}),
+		metadata: await mediaService.getMetadata({
+			type: 'base64',
+			base64: base64Data,
+			version: 2,
+			nsfw: EXPLICIT_IMAGERY_BLOCKED_KINDS.has(kind) ? 'block' : 'allow',
+		}),
 		kind,
 		errorPath,
 	});

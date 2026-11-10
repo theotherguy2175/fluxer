@@ -5,8 +5,15 @@ import {Config} from '@app/api/Config';
 import type {GuildRepository} from '@app/api/guild/repositories/GuildRepository';
 import type {GuildService} from '@app/api/guild/services/GuildService';
 import type {IGatewayService} from '@app/api/infrastructure/IGatewayService';
+import type {OperatorPassServices} from '@app/api/middleware/OperatorPassServiceFactory';
+import {getEmailService, getInstanceConfigRepository} from '@app/api/middleware/ServiceSingletons';
+import {
+	createOperatorPassFulfilmentService,
+	type OperatorPassFulfilmentService,
+} from '@app/api/operator_pass/OperatorPassFulfilmentService';
 import type {StoreBillingRepository} from '@app/api/store_billing/StoreBillingRepository';
 import type {StoreEntitlementService} from '@app/api/store_billing/StoreEntitlementService';
+import {DistributionPriceSync} from '@app/api/stripe/DistributionPriceSync';
 import {getProductRegistry, type ProductRegistry} from '@app/api/stripe/ProductRegistry';
 import {getStripeClient} from '@app/api/stripe/StripeClient';
 import {PremiumStateService} from '@app/api/stripe/services/PremiumStateService';
@@ -24,9 +31,11 @@ import type Stripe from 'stripe';
 export class StripeService {
 	private stripe: Stripe | null;
 	private productRegistry: ProductRegistry;
+	private readonly distributionPriceSync: DistributionPriceSync | null;
 	readonly checkout: StripeCheckoutService;
 	readonly subscriptions: StripeSubscriptionService;
 	readonly gifts: StripeGiftService;
+	readonly operatorPassFulfilment: OperatorPassFulfilmentService | null;
 	readonly premium: StripePremiumService;
 	readonly premiumState: PremiumStateService;
 	readonly refunds: StripeRefundService;
@@ -40,6 +49,7 @@ export class StripeService {
 		private billingRepository: BillingRepository,
 		private storeBillingRepository: StoreBillingRepository | null = null,
 		private storeEntitlementService: StoreEntitlementService | null = null,
+		operatorPassServices: OperatorPassServices,
 	) {
 		this.productRegistry = getProductRegistry();
 		this.stripe = getStripeClient();
@@ -48,6 +58,7 @@ export class StripeService {
 			this.gatewayService,
 			this.guildRepository,
 			this.guildService,
+			operatorPassServices.roleService,
 		);
 		this.premiumState = new PremiumStateService(
 			this.userRepository,
@@ -57,12 +68,16 @@ export class StripeService {
 			this.cacheService,
 			this.storeBillingRepository,
 		);
+		this.distributionPriceSync = this.stripe
+			? new DistributionPriceSync(this.stripe, getInstanceConfigRepository())
+			: null;
 		this.checkout = new StripeCheckoutService(
 			this.stripe,
 			this.userRepository,
 			this.productRegistry,
 			this.cacheService,
 			this.storeEntitlementService,
+			this.distributionPriceSync,
 		);
 		this.subscriptions = new StripeSubscriptionService(
 			this.stripe,
@@ -71,18 +86,30 @@ export class StripeService {
 			this.cacheService,
 			this.gatewayService,
 			this.storeEntitlementService,
+			this.distributionPriceSync,
 		);
+		this.operatorPassFulfilment = createOperatorPassFulfilmentService({
+			stripe: this.stripe,
+			userRepository: this.userRepository,
+			emailService: getEmailService(),
+			cacheService: this.cacheService,
+			services: operatorPassServices,
+		});
 		this.gifts = new StripeGiftService(
 			this.stripe,
 			this.userRepository,
 			this.cacheService,
 			this.gatewayService,
-			this.checkout,
 			this.premium,
 			this.subscriptions,
 			this.storeEntitlementService,
 		);
-		this.refunds = new StripeRefundService(this.stripe, this.userRepository, this.subscriptions);
+		this.refunds = new StripeRefundService(
+			this.stripe,
+			this.userRepository,
+			this.subscriptions,
+			this.storeEntitlementService,
+		);
 	}
 
 	getStripe(): Stripe | null {

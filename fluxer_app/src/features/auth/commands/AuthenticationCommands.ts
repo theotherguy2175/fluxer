@@ -2,6 +2,8 @@
 
 import {Endpoints} from '@app/features/app/constants/Endpoints';
 import type {RuntimeConfigSnapshot} from '@app/features/app/state/InstanceSnapshotStore';
+import {markSsoAutoStartSpent} from '@app/features/auth/flow/SsoAutoStart';
+import {parseAccountRestriction} from '@app/features/auth/state/AccountRestriction';
 import type {UserData} from '@app/features/auth/state/AccountStorageContract';
 import Accounts from '@app/features/auth/state/Accounts';
 import Authentication from '@app/features/auth/state/Authentication';
@@ -9,6 +11,7 @@ import {type InstanceHTTPTarget, instanceRequest} from '@app/features/platform/t
 import {HttpError} from '@app/features/platform/types/EndpointError';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {failureCode, ipAuthorizationRequiredResponseFromError} from '@app/features/platform/utils/ResponseInspection';
+import {forgetPurchaseIntent} from '@app/features/premium/state/PurchaseIntent';
 import {getCurrentOrDetectedLocale} from '@app/features/user/utils/LocaleUtils';
 import {APIErrorCodes} from '@fluxer/constants/src/ApiErrorCodes';
 import type {ValueOf} from '@fluxer/constants/src/ValueOf';
@@ -16,12 +19,14 @@ import type {
 	AuthRegistrationPendingApprovalResponse,
 	DesktopHandoffReturnMethod,
 	RegisterRequest,
+	SsoCompleteRequest,
 	SsoCompleteResponse,
 	SsoStartRequest,
 	SsoStartResponse,
 	UsernameAvailabilityResponse,
 	UsernameSuggestionsResponse,
 } from '@fluxer/schema/src/domains/auth/AuthSchemas';
+import type {GuildEntryResult} from '@fluxer/schema/src/domains/user/AccountSchemas';
 import type {UserPartial} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import type {AuthenticationResponseJSON, PublicKeyCredentialRequestOptionsJSON} from '@simplewebauthn/browser';
 
@@ -101,7 +106,9 @@ export function authResponseUserToUserData(user?: AuthResponseUserIdentity | nul
 
 export type TokenResponse = AuthTokenResponse;
 export type RegistrationPendingApprovalResponse = AuthRegistrationPendingApprovalResponse;
-export type RegisterResponse = TokenResponse | RegistrationPendingApprovalResponse;
+export type RegisterResponse =
+	| (TokenResponse & {entry?: GuildEntryResult | null})
+	| RegistrationPendingApprovalResponse;
 
 export function isIpAuthorizationRequiredResponse(
 	response: LoginResponse | IpAuthorizationRequiredResponse,
@@ -189,6 +196,7 @@ interface MfaWebAuthnOptionsRequest {
 
 interface WebAuthnOptionsRequest {
 	target: InstanceHTTPTarget;
+	rpId?: string;
 }
 
 interface WebAuthnLoginRequest {
@@ -376,11 +384,15 @@ export async function getWebAuthnMfaOptions({
 
 export async function getWebAuthnAuthenticationOptions({
 	target,
+	rpId,
 }: WebAuthnOptionsRequest): Promise<PublicKeyCredentialRequestOptionsJSON> {
 	try {
 		const response = await instanceRequest<PublicKeyCredentialRequestOptionsJSON>({
 			method: 'POST',
-			path: Endpoints.AUTH_WEBAUTHN_OPTIONS,
+			path:
+				rpId === undefined
+					? Endpoints.AUTH_WEBAUTHN_OPTIONS
+					: `${Endpoints.AUTH_WEBAUTHN_OPTIONS}?${new URLSearchParams({rp_id: rpId})}`,
 			target,
 			headers: withAuthLocaleHeader(),
 		});
@@ -612,8 +624,21 @@ export async function resendVerificationEmail(target: InstanceHTTPTarget): Promi
 	}
 }
 
-export async function logout(): Promise<void> {
-	await Accounts.logout();
+export async function logout(options: {notifyServer?: boolean} = {}): Promise<void> {
+	forgetPurchaseIntent();
+	markSsoAutoStartSpent();
+	await Accounts.logout(options);
+}
+
+export async function redeemSignInLink(token: string, target: InstanceHTTPTarget): Promise<AuthTokenResponse> {
+	const response = await instanceRequest<AuthTokenResponse>({
+		method: 'POST',
+		path: Endpoints.AUTH_SIGN_IN_LINK,
+		target,
+		body: tokenBody(token),
+		headers: withAuthLocaleHeader(),
+	});
+	return response.body;
 }
 
 export async function authorizeIp(token: string, target: InstanceHTTPTarget): Promise<VerificationResult> {
@@ -769,7 +794,7 @@ export async function fetchDesktopHandoffInfo({
 	return response.body;
 }
 
-export interface CompleteLoginOptions {
+interface CompleteLoginOptions {
 	redirectPath?: string | null;
 }
 
@@ -780,7 +805,7 @@ interface CompleteLoginPayload {
 	runtimeSnapshot: RuntimeConfigSnapshot;
 }
 
-export class InvalidLoginCredentialsError extends Error {
+class InvalidLoginCredentialsError extends Error {
 	constructor(field: 'token' | 'userId') {
 		super(`Login response ${field} must be a non-empty string`);
 		this.name = 'InvalidLoginCredentialsError';
@@ -834,17 +859,20 @@ export async function startSso({
 export async function completeSso({
 	code,
 	state,
+	clientBinding,
 	target,
 }: {
 	code: string;
 	state: string;
+	clientBinding: string | null;
 	target: InstanceHTTPTarget;
 }): Promise<SsoCompleteResponse> {
+	const body: SsoCompleteRequest = {code, state, client_binding: clientBinding};
 	const response = await instanceRequest<SsoCompleteResponse>({
 		method: 'POST',
 		path: Endpoints.AUTH_SSO_COMPLETE,
 		target,
-		body: {code, state},
+		body,
 		headers: withAuthLocaleHeader(),
 	});
 	return response.body;
@@ -866,4 +894,17 @@ export function setMfaTicket({ticket, totp, webauthn, backupCodes, runtimeSnapsh
 export function clearMfaTicket(): void {
 	logger.debug('Clearing MFA ticket');
 	Authentication.handleMfaTicketClear();
+}
+
+export function showAccountRestriction(error: unknown): boolean {
+	const restriction = parseAccountRestriction(error);
+	if (restriction == null) {
+		return false;
+	}
+	Authentication.handleAccountRestriction(restriction);
+	return true;
+}
+
+export function clearAccountRestriction(): void {
+	Authentication.handleAccountRestrictionClear();
 }

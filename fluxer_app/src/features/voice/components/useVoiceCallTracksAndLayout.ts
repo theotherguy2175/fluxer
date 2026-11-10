@@ -346,9 +346,16 @@ export function useVoiceCallTracksAndLayout({channel, expandedUserIds}: UseVoice
 		() => [...filteredCameraTracks].sort(compareTracks),
 		[filteredCameraTracks, compareTracks],
 	);
+	const showMyOwnScreenShare = VoiceSettings.showMyOwnScreenShare;
+	const visibleScreenShareTracks = useMemo(() => {
+		if (showMyOwnScreenShare || !localConnectionId) return screenShareTracksWithVirtual;
+		return screenShareTracksWithVirtual.filter(
+			(trackRef) => parseVoiceParticipantIdentity(trackRef.participant.identity).connectionId !== localConnectionId,
+		);
+	}, [screenShareTracksWithVirtual, showMyOwnScreenShare, localConnectionId]);
 	const sortedScreenShareTracksWithVirtual = useMemo(
-		() => [...screenShareTracksWithVirtual].sort(compareTracks),
-		[screenShareTracksWithVirtual, compareTracks],
+		() => [...visibleScreenShareTracks].sort(compareTracks),
+		[visibleScreenShareTracks, compareTracks],
 	);
 	const hasScreenShare = sortedScreenShareTracksWithVirtual.length > 0;
 	const prioritizeSpeakingParticipants = VoiceSettings.prioritizeSpeakingParticipants;
@@ -395,7 +402,14 @@ export function useVoiceCallTracksAndLayout({channel, expandedUserIds}: UseVoice
 				activityStates.delete(key);
 				activityState = undefined;
 			}
-			const priority = isStreaming ? 3 : isSpeaking ? 2 : activityState ? 1 : 0;
+			let priority = 0;
+			if (isStreaming) {
+				priority = 3;
+			} else if (isSpeaking) {
+				priority = 2;
+			} else if (activityState) {
+				priority = 1;
+			}
 			activeKeys.add(key);
 			activityByKey.set(key, {priority, promotedOrder: activityState?.promotedOrder ?? Number.MAX_SAFE_INTEGER});
 		}
@@ -465,6 +479,12 @@ export function useVoiceCallTracksAndLayout({channel, expandedUserIds}: UseVoice
 			CallMediaPrefs.setVideoDisabled(callId, identity, disabled);
 		}
 	}, [cameraTracksAll, VoiceSettings.showMyOwnCamera, localConnectionId]);
+	useEffect(() => {
+		if (showMyOwnScreenShare || !localConnectionId || !pinnedParticipantIdentity) return;
+		if (pinnedParticipantSource !== VoiceTrackSource.ScreenShare) return;
+		if (parseVoiceParticipantIdentity(pinnedParticipantIdentity).connectionId !== localConnectionId) return;
+		VoiceCallLayoutCommands.setPinnedParticipant(null);
+	}, [showMyOwnScreenShare, localConnectionId, pinnedParticipantIdentity, pinnedParticipantSource]);
 	useEffect(() => {
 		if (!pinnedParticipantIdentity) return;
 		if (cameraTracksAll.length === 0) return;

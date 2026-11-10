@@ -2,6 +2,7 @@
 
 import {organizeChannels} from '@app/features/app/components/layout/utils/ChannelOrganization';
 import {
+	isTextEditingShortcutEvent,
 	keyboardEventCanRecoverStaleMacMetaPress,
 	keyboardEventMatchesCombo,
 	keyboardEventReleasesComboModifier,
@@ -24,6 +25,7 @@ import type {
 } from '@app/features/app/keybindings/keybind_manager/shared';
 import {comboToCombokeysStrings} from '@app/features/app/keybindings/utils/ComboShortcutStrings';
 import {
+	CHANNEL_TEXTAREA_SELECTOR,
 	EDITABLE_CAPTURE_SHORTCUT_ACTIONS,
 	getEditableElementValue,
 	isChannelTextareaElement,
@@ -49,6 +51,8 @@ import {
 	sourceIdForKeybind,
 } from '@app/features/app/keybindings/utils/RuntimeKeybinds';
 import {LOCAL_SHORTCUT_ACTION_PRIORITY} from '@app/features/app/keybindings/utils/ShortcutPriority';
+import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
+import {isAccountHandoffArrival} from '@app/features/auth/state/AccountHandoffCapture';
 import Authentication from '@app/features/auth/state/Authentication';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
@@ -63,6 +67,7 @@ import Keybind, {
 	type KeybindConfig,
 	type KeyCombo,
 } from '@app/features/input/state/InputKeybind';
+import {isAccountKeybindCommand} from '@app/features/input/state/input_keybind/KeybindCommands';
 import {getSuppressedBuiltinActions} from '@app/features/input/state/KeybindResolution';
 import {isGamepadButtonPressed} from '@app/features/input/utils/GamepadButtonUtils';
 import {shouldUseKeyboardShortcutsOverlayFallbackFromEvent} from '@app/features/input/utils/KeyboardShortcutLayoutUtils';
@@ -78,11 +83,13 @@ import MacPermissions from '@app/features/permissions/system/state/MacPermission
 import {ensureMacPermission} from '@app/features/permissions/system/utils/MacPermissionGate';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import ReadStates from '@app/features/read_state/state/ReadStates';
+import ChannelThreads from '@app/features/threads/state/ChannelThreads';
+import ThreadGuilds from '@app/features/threads/state/ThreadGuilds';
 import KeyboardMode from '@app/features/ui/state/KeyboardMode';
 import {isWebReservedZoomShortcut} from '@app/features/ui/utils/AppZoomKeybindUtils';
 import {getElectronAPI, isNativeMacOS} from '@app/features/ui/utils/NativeUtils';
 import * as CallCommands from '@app/features/voice/commands/CallCommands';
-import MediaEngine from '@app/features/voice/engine/MediaEngineFacade';
+import VoiceRuntime from '@app/features/voice/engine/VoiceRuntime';
 import CallInitiator from '@app/features/voice/state/CallInitiator';
 import CallState from '@app/features/voice/state/CallState';
 import CompactVoiceCallHeight, {
@@ -106,7 +113,6 @@ import type {I18n} from '@lingui/core';
 import CombokeysImport from 'combokeys';
 import {autorun, compareStructural, computed, reaction} from 'mobx';
 
-const ROUTE_ALLOWED_ACTIONS = new Set<KeybindCommand>(['system_open_theme_studio_popout']);
 const GAMEPAD_POLL_INTERVAL_MS = 50;
 const PORTAL_SOURCE_ID_PREFIX = 'portal:';
 
@@ -248,7 +254,9 @@ class KeybindManager {
 	private readonly resolvedKeybindsValue = computed(
 		(): ReadonlyArray<RuntimeKeybind> => {
 			const skipDefaults = Keybind.getDisableBuiltinKeybinds();
-			const defaults = skipDefaults ? [] : Keybind.getDefaultsForRuntimeDispatch();
+			const defaults = skipDefaults
+				? Keybind.getDefaultsForRuntimeDispatch().filter((entry) => isAccountKeybindCommand(entry.action))
+				: Keybind.getDefaultsForRuntimeDispatch();
 			const customs = Keybind.getCustomKeybinds();
 			return [
 				...buildDefaultRuntimeKeybinds(defaults, getSuppressedBuiltinActions(customs)),
@@ -297,7 +305,7 @@ class KeybindManager {
 
 	navigateToDirectMessages(): void {
 		const channelId = SelectedChannel.selectedChannelIds.get(ME);
-		if (channelId && Channels.getChannel(channelId)) {
+		if (channelId && !RuntimeConfig.directMessagesDisabled && Channels.getChannel(channelId)) {
 			this.navigateToChannel(ME, channelId);
 			return;
 		}
@@ -352,15 +360,21 @@ class KeybindManager {
 	private getNavigableChannelsInCurrentContext(): ReadonlyArray<Channel> {
 		const guildId = this.currentGuildId;
 		if (!guildId) return [];
-		return this.flattenGuildChannelsByDisplayOrder(Channels.getGuildChannels(guildId));
+		return this.flattenGuildChannelsByDisplayOrder(guildId);
 	}
 
-	private flattenGuildChannelsByDisplayOrder(channels: ReadonlyArray<Channel>): Array<Channel> {
-		const groups = organizeChannels(channels);
+	private flattenGuildChannelsByDisplayOrder(guildId: string): Array<Channel> {
+		const groups = organizeChannels(Channels.getGuildChannels(guildId));
+		const threadsActive = ThreadGuilds.isActive(guildId);
+		const currentChannelId = this.currentChannelId;
+		const openThreadId =
+			Navigation.threadId ?? (currentChannelId && ChannelThreads.hasThread(currentChannelId) ? currentChannelId : null);
 		const flat: Array<Channel> = [];
 		for (const group of groups) {
 			for (const ch of group.textChannels) {
-				if (this.isNavigableChannel(ch)) flat.push(ch);
+				if (!this.isNavigableChannel(ch)) continue;
+				flat.push(ch);
+				if (threadsActive) flat.push(...ChannelThreads.getSidebarThreads(ch.id, openThreadId));
 			}
 			for (const ch of group.voiceChannels) {
 				if (this.isNavigableChannel(ch)) flat.push(ch);
@@ -386,6 +400,16 @@ class KeybindManager {
 		}
 	}
 
+	private getNextChannel(channels: ReadonlyArray<Channel>, direction: 1 | -1): Channel {
+		const current = this.currentChannelId;
+		const idx = current ? channels.findIndex((channel) => channel.id === current) : -1;
+		let base = idx;
+		if (idx === -1) {
+			base = direction === 1 ? -1 : 0;
+		}
+		return channels[(base + direction + channels.length) % channels.length];
+	}
+
 	cycleChannelInCurrentContext(direction: 1 | -1): void {
 		if (Navigation.context === 'dm') {
 			this.cycleDirectMessageContext(direction);
@@ -393,24 +417,16 @@ class KeybindManager {
 		}
 		const channels = this.getNavigableChannelsInCurrentContext();
 		if (!channels.length) return;
-		const current = this.currentChannelId;
-		const idx = current ? channels.findIndex((c) => c.id === current) : -1;
-		const base = idx === -1 ? (direction === 1 ? -1 : 0) : idx;
-		const target = channels[(base + direction + channels.length) % channels.length];
+		const target = this.getNextChannel(channels, direction);
 		this.navigateToChannel(target.guildId ?? null, target.id);
 	}
 
 	cycleFilteredChannelInCurrentGuild(predicate: (channel: Channel) => boolean, direction: 1 | -1): void {
 		const guildId = this.currentGuildId;
 		if (!guildId) return;
-		const channels = this.flattenGuildChannelsByDisplayOrder(Channels.getGuildChannels(guildId)).filter((c) =>
-			predicate(c),
-		);
+		const channels = this.flattenGuildChannelsByDisplayOrder(guildId).filter((c) => predicate(c));
 		if (!channels.length) return;
-		const current = this.currentChannelId;
-		const idx = current ? channels.findIndex((c) => c.id === current) : -1;
-		const base = idx === -1 ? (direction === 1 ? -1 : 0) : idx;
-		const target = channels[(base + direction + channels.length) % channels.length];
+		const target = this.getNextChannel(channels, direction);
 		this.navigateToChannel(guildId, target.id);
 	}
 
@@ -420,7 +436,7 @@ class KeybindManager {
 		const currentUserId = Authentication.currentUserId;
 		if (!currentUserId) return null;
 		for (const call of CallState.getActiveCalls()) {
-			if (MediaEngine.connected && MediaEngine.channelId === call.channelId) continue;
+			if (VoiceRuntime.connected && VoiceRuntime.channelId === call.channelId) continue;
 			if (CallInitiator.hasInitiated(call.channelId)) continue;
 			if (CallState.isUserPendingRinging(call.channelId, currentUserId)) {
 				return call.channelId;
@@ -453,11 +469,15 @@ class KeybindManager {
 			const channelId = this.currentChannelId;
 			return Boolean(channelId && ReadStates.hasUnread(channelId));
 		}
+		if (action === 'chat_focus_textarea') {
+			const composer = document.querySelector(CHANNEL_TEXTAREA_SELECTOR);
+			return this.currentChannelId != null && composer != null && composer.getAttribute('aria-disabled') !== 'true';
+		}
 		return true;
 	}
 
 	private isAppRoute(pathname: string): boolean {
-		return pathname.startsWith('/channels/');
+		return pathname.startsWith('/channels/') && !isAccountHandoffArrival(pathname);
 	}
 
 	private ensureCombokeys(): CombokeysInstance | null {
@@ -521,7 +541,7 @@ class KeybindManager {
 				}),
 			);
 		}
-		this.disposers.push(reactToPushToTalkModeChanges(() => MediaEngine.handlePushToTalkModeChange()));
+		this.disposers.push(reactToPushToTalkModeChanges(() => VoiceRuntime.engine?.handlePushToTalkModeChange()));
 		this.disposers.push(
 			reaction(
 				() => ({entries: this.buildHoldBindingEntries(), routing: this.getGlobalHoldRouting()}),
@@ -678,8 +698,8 @@ class KeybindManager {
 		const pushToMuteEngaged = Keybind.pushToMuteHeld;
 		Keybind.resetPushToTalkState();
 		Keybind.resetPushToMuteState();
-		if (pushToTalkEngaged) MediaEngine.applyPushToTalkHold(false);
-		if (pushToMuteEngaged) MediaEngine.applyPushToMuteHold(false);
+		if (pushToTalkEngaged) VoiceRuntime.engine?.applyPushToTalkHold(false);
+		if (pushToMuteEngaged) VoiceRuntime.engine?.applyPushToMuteHold(false);
 	}
 
 	private buildGlobalShortcutsSyncPayload(): GlobalShortcutsSyncPayload {
@@ -1734,7 +1754,7 @@ class KeybindManager {
 	}
 
 	private isActionAllowedForCurrentView(action: KeybindCommand): boolean {
-		if (this.routeSuspended && !ROUTE_ALLOWED_ACTIONS.has(action)) return false;
+		if (this.routeSuspended) return false;
 		if (this.isCompactCallTextareaActionBlocked(action)) return false;
 		return !VoiceCallFullscreen.isActive || isKeybindAllowedDuringVoiceCallFullscreen(action);
 	}
@@ -1758,7 +1778,7 @@ class KeybindManager {
 			});
 		}
 		if (!channel.isPrivate()) return false;
-		if (MediaEngine.channelId !== channel.id || !MediaEngine.connected) return false;
+		if (VoiceRuntime.channelId !== channel.id || !VoiceRuntime.connected) return false;
 		const call = CallState.getCall(channel.id);
 		if (!call) return false;
 		return isKeybindBlockedByCompactVoiceCallView({
@@ -1962,6 +1982,7 @@ class KeybindManager {
 		const target = event.target ?? null;
 		if (shouldSuppressLocalShortcutForModalFocus(entry, target)) return true;
 		if (!isEditableElement(target)) return false;
+		if (isTextEditingShortcutEvent(event)) return true;
 		if (this.shouldAllowLocalShortcutFromEditable(entry, target)) {
 			return false;
 		}
@@ -1979,7 +2000,6 @@ class KeybindManager {
 	}
 
 	private shouldPreserveEditableDefaultForShortcut(entry: RuntimeKeybind, event: KeyboardEvent): boolean {
-		if (entry.preventDefaultInEditable) return false;
 		const target = event.target ?? null;
 		return entry.section === 'voice_and_video' && isEditableElement(target);
 	}

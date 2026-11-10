@@ -186,7 +186,7 @@ class BillingMappingError extends Error {
 	}
 }
 
-export function unixToDate(seconds: number | null | undefined): Date | null {
+function unixToDate(seconds: number | null | undefined): Date | null {
 	if (seconds === null || seconds === undefined) {
 		return null;
 	}
@@ -196,7 +196,7 @@ export function unixToDate(seconds: number | null | undefined): Date | null {
 	return new Date(seconds * 1000);
 }
 
-export function safeMetadata(m: Stripe.Metadata | null | undefined): Map<string, string> | null {
+function safeMetadata(m: Stripe.Metadata | null | undefined): Map<string, string> | null {
 	if (m === null || m === undefined) {
 		return null;
 	}
@@ -207,7 +207,7 @@ export function safeMetadata(m: Stripe.Metadata | null | undefined): Map<string,
 	return new Map(entries);
 }
 
-export function computeStripeUpdatedAt(
+function computeStripeUpdatedAt(
 	obj: {
 		created?: number | null;
 		status_transitions?: object | null;
@@ -456,11 +456,7 @@ export interface MapStripeSubscriptionHints {
 export function mapStripeSubscriptionToRow(
 	s: StripeSubscriptionPayload,
 	hints?: MapStripeSubscriptionHints,
-): {
-	primary: BillingSubscriptionRow;
-	byCustomer: BillingSubscriptionByCustomerRow;
-	byUser: BillingSubscriptionByUserRow | null;
-} {
+): BillingSubscriptionRow {
 	if (!s.id) {
 		throw new BillingMappingError('Subscription is missing id');
 	}
@@ -530,23 +526,30 @@ export function mapStripeSubscriptionToRow(
 		mirrored_at: now,
 		version: null,
 	} as BillingSubscriptionRow;
+	return primary;
+}
+
+export function mapBillingSubscriptionIndexRows(row: BillingSubscriptionRow): {
+	byCustomer: BillingSubscriptionByCustomerRow;
+	byUser: BillingSubscriptionByUserRow | null;
+} {
 	const byCustomer: BillingSubscriptionByCustomerRow = {
-		customer_id: customerId,
-		provider_id: s.id,
-		status: s.status ?? null,
-		current_period_end: unixToDate(periodEnd),
+		customer_id: row.customer_id,
+		provider_id: row.provider_id,
+		status: row.status,
+		current_period_end: row.current_period_end,
 	} as BillingSubscriptionByCustomerRow;
 	const byUser: BillingSubscriptionByUserRow | null =
-		userId !== null && userId !== undefined
+		row.user_id !== null && row.user_id !== undefined
 			? ({
-					user_id: userId,
-					provider_id: s.id,
-					customer_id: customerId,
-					status: s.status ?? null,
-					current_period_end: unixToDate(periodEnd),
+					user_id: row.user_id,
+					provider_id: row.provider_id,
+					customer_id: row.customer_id,
+					status: row.status,
+					current_period_end: row.current_period_end,
 				} as BillingSubscriptionByUserRow)
 			: null;
-	return {primary, byCustomer, byUser};
+	return {byCustomer, byUser};
 }
 
 export function mapStripeInvoiceToRow(
@@ -608,8 +611,6 @@ export function mapStripeInvoiceToRow(
 		billing_reason: inv.billing_reason ?? null,
 		collection_method: inv.collection_method ?? null,
 		description: inv.description ?? null,
-		hosted_invoice_url: inv.hosted_invoice_url ?? null,
-		invoice_pdf: inv.invoice_pdf ?? null,
 		receipt_number: inv.receipt_number ?? null,
 		statement_descriptor: inv.statement_descriptor ?? null,
 		period_start: unixToDate(inv.period_start),
@@ -705,7 +706,6 @@ export function mapStripePaymentIntentToRow(pi: Stripe.PaymentIntent): {
 		payment_method_types: Array.isArray(pi.payment_method_types) ? pi.payment_method_types.slice() : null,
 		setup_future_usage: pi.setup_future_usage ?? null,
 		description: pi.description ?? null,
-		receipt_email: pi.receipt_email ?? null,
 		statement_descriptor: pi.statement_descriptor ?? null,
 		canceled_at: unixToDate(pi.canceled_at),
 		cancellation_reason: pi.cancellation_reason ?? null,
@@ -758,8 +758,6 @@ export function mapStripeChargeToRow(c: Stripe.Charge): {
 		card_brand: card?.brand ?? null,
 		card_last4: card?.last4 ?? null,
 		card_country: card?.country ?? billingDetails?.address?.country ?? null,
-		receipt_url: c.receipt_url ?? null,
-		receipt_email: c.receipt_email ?? null,
 		receipt_number: c.receipt_number ?? null,
 		description: c.description ?? null,
 		failure_code: c.failure_code ?? null,
@@ -777,6 +775,15 @@ export function mapStripeChargeToRow(c: Stripe.Charge): {
 		mirrored_at: now,
 	} as BillingChargeRow;
 	return {primary};
+}
+
+function refundLookupFields(refund: Stripe.Refund, createdAt: Date) {
+	return {
+		stripe_created_at: createdAt,
+		provider_id: refund.id,
+		status: refund.status ?? null,
+		amount: typeof refund.amount === 'number' ? BigInt(refund.amount) : null,
+	};
 }
 
 export function mapStripeRefundToRow(
@@ -827,30 +834,21 @@ export function mapStripeRefundToRow(
 		chargeId !== null
 			? ({
 					charge_id: chargeId,
-					stripe_created_at: createdAtForLookup,
-					provider_id: r.id,
-					status: r.status ?? null,
-					amount: typeof r.amount === 'number' ? BigInt(r.amount) : null,
+					...refundLookupFields(r, createdAtForLookup),
 				} as BillingRefundByChargeRow)
 			: null;
 	const byPaymentIntent: BillingRefundByPaymentIntentRow | null =
 		paymentIntentId !== null
 			? ({
 					payment_intent_id: paymentIntentId,
-					stripe_created_at: createdAtForLookup,
-					provider_id: r.id,
-					status: r.status ?? null,
-					amount: typeof r.amount === 'number' ? BigInt(r.amount) : null,
+					...refundLookupFields(r, createdAtForLookup),
 				} as BillingRefundByPaymentIntentRow)
 			: null;
 	const byInvoice: BillingRefundByInvoiceRow | null =
 		invoiceId !== null
 			? ({
 					invoice_id: invoiceId,
-					stripe_created_at: createdAtForLookup,
-					provider_id: r.id,
-					status: r.status ?? null,
-					amount: typeof r.amount === 'number' ? BigInt(r.amount) : null,
+					...refundLookupFields(r, createdAtForLookup),
 				} as BillingRefundByInvoiceRow)
 			: null;
 	return {primary, byCharge, byPaymentIntent, byInvoice};

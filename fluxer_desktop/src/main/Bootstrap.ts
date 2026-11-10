@@ -72,6 +72,7 @@ const MODULE_SYSTEM_LAUNCH = resolveModuleSystemLaunch({hasOfflineRenderer: CAN_
 const MODULE_LAUNCH_PERMIT = Symbol('fluxer.desktop.moduleLaunchPermit');
 
 const PENDING_UPDATE_MARKER_NAME = 'update-pending';
+const REQUESTED_UPDATE_MARKER_NAME = 'update-requested';
 const IN_PLACE_RELOAD_CONFIRM_TIMEOUT_MS = 45_000;
 const UPDATE_TAKEOVER_SPLASH_WAIT_MS = 250;
 const UPDATE_SPLASH_PRELOAD_DELAY_MS = 5000;
@@ -159,12 +160,14 @@ async function runModuleBootstrap(): Promise<void> {
 	const {configureUserDataPath} = await import('@electron/common/UserDataPath');
 	const {armNativeProbeCache} = await import('@electron/main/NativeProbeCache');
 	const {isStartMinimizedLaunch} = await import('@electron/main/AutostartLaunch');
-	const {isDesktopUpdateRequested} = await import('@electron/main/LaunchOptions');
+	const {isUpdateOnDemandLaunch} = await import('@electron/main/DesktopDebugInfo');
+	const {isDesktopUpdateRequested, shouldDisableModuleUpdatesForLaunch} = await import('@electron/main/LaunchOptions');
 	const {relaunchStableLaunchPath} = await import('@electron/main/LinuxLaunchPath');
 	const {getDesktopLocalAppProtocol} = await import('@electron/main/LocalAppProtocol');
 	const {
 		armSecondInstanceForwarding,
 		getMainWindowFactory,
+		hasQuitStarted,
 		onMainWindowCreated,
 		onMainWindowReady,
 		setCommittedModuleFiles,
@@ -185,6 +188,7 @@ async function runModuleBootstrap(): Promise<void> {
 	const {buildSplashDiagnosticsText} = await import('@electron/main/SplashDiagnostics');
 	const {
 		closeSplashWindow,
+		discardPreloadedSplashWindow,
 		focusSplashWindow,
 		markSplashLaunching,
 		onSplashCopyDiagnostics,
@@ -233,6 +237,10 @@ async function runModuleBootstrap(): Promise<void> {
 
 	await appendWindowsGpuDriverWorkaroundSwitches();
 	await app.whenReady();
+	if (hasQuitStarted()) {
+		logger.info('The app started quitting before it was ready, stopping the bootstrap');
+		return;
+	}
 
 	if (isStartMinimizedLaunch()) {
 		logger.info('Launched at login with start minimized, converging the modules without the splash');
@@ -391,13 +399,28 @@ async function runModuleBootstrap(): Promise<void> {
 				setAside: store.recoveredUnreadableState,
 			});
 		}
-		if (store.shellVersionChanged) {
-			logger.info('The shell version changed since the last boot, converging the modules before launch');
-		}
+		const moduleUpdatesForcedOff = shouldDisableModuleUpdatesForLaunch();
+		const updateOnDemand = isUpdateOnDemandLaunch();
 		const pendingUpdateMarker = path.join(store.root, PENDING_UPDATE_MARKER_NAME);
+		const requestedUpdateMarker = path.join(store.root, REQUESTED_UPDATE_MARKER_NAME);
 		const updateWasPending = fs.existsSync(pendingUpdateMarker);
-		if (updateWasPending) {
-			logger.info('An update was waiting when the app last quit, installing it before launch');
+		const updateWasRequested = isDesktopUpdateRequested() || fs.existsSync(requestedUpdateMarker);
+		if (moduleUpdatesForcedOff) {
+			logger.info('Module updates are disabled for this launch');
+		} else if (updateWasRequested) {
+			logger.info('The user asked for an update, installing it before launch');
+		} else if (updateOnDemand) {
+			logger.info('Updates install on demand, launching the installed modules', {
+				shellVersionChanged: store.shellVersionChanged,
+				updateWasPending,
+			});
+		} else {
+			if (store.shellVersionChanged) {
+				logger.info('The shell version changed since the last boot, converging the modules before launch');
+			}
+			if (updateWasPending) {
+				logger.info('An update was waiting when the app last quit, installing it before launch');
+			}
 		}
 		const recordPendingUpdate = (check: {readonly shellNewer: boolean; readonly modulesChanged: boolean}): void => {
 			try {
@@ -410,13 +433,27 @@ async function runModuleBootstrap(): Promise<void> {
 				logger.warn('Failed to record whether an update is waiting', error);
 			}
 		};
+		const recordRequestedUpdate = (requested: boolean): void => {
+			try {
+				if (requested) {
+					fs.writeFileSync(requestedUpdateMarker, '');
+				} else {
+					fs.rmSync(requestedUpdateMarker, {force: true});
+				}
+			} catch (error) {
+				logger.warn('Failed to record whether the user asked for an update', error);
+			}
+		};
 		const updater = new ModuleUpdater({
 			store,
 			shellVersion: app.getVersion(),
 			hasOfflineRenderer: HAS_OFFLINE_RENDERER,
 			bundledRendererVersion: BUNDLED_RENDERER_VERSION,
 			preferUnversionedBundle: app.isPackaged,
-			forceStartupUpdate: store.shellVersionChanged || updateWasPending || isDesktopUpdateRequested(),
+			forceStartupUpdate: store.shellVersionChanged || updateWasPending,
+			startupUpdateRequested: updateWasRequested,
+			moduleUpdatesDisabled: moduleUpdatesForcedOff,
+			updateOnDemand,
 			selfUpdateShellFirst:
 				shellUpdatePlan.capability === ShellUpdateCapability.SELF_UPDATE
 					? async (latestVersion) => {
@@ -601,15 +638,27 @@ async function runModuleBootstrap(): Promise<void> {
 		let takeoverSplash: BrowserWindow | null = null;
 		let takeoverHidden: ReadonlyArray<BrowserWindow> = [];
 		let takeoverActive = false;
-		const preloadUpdateSplash = (): void => {
+		let launchSettled = false;
+		let shellUpdatePending = false;
+		const syncUpdateSplashPreload = (): void => {
+			if (takeoverActive) return;
+			if (!shellUpdatePending) {
+				discardPreloadedSplashWindow();
+				return;
+			}
+			if (!launchSettled) return;
 			const timer = setTimeout(() => {
-				if (takeoverActive) return;
+				if (takeoverActive || !shellUpdatePending) return;
 				void import('@electron/main/Window').then((windows) => {
 					takeoverWindows = windows;
-					if (!takeoverActive) preloadSplashWindow();
+					if (!takeoverActive && shellUpdatePending) preloadSplashWindow();
 				});
 			}, UPDATE_SPLASH_PRELOAD_DELAY_MS);
 			timer.unref();
+		};
+		const trackShellUpdate = (check: {readonly shellNewer: boolean}): void => {
+			shellUpdatePending = check.shellNewer;
+			syncUpdateSplashPreload();
 		};
 		const updateTakeover: DesktopUpdateTakeover = {
 			begin: async () => {
@@ -651,7 +700,7 @@ async function runModuleBootstrap(): Promise<void> {
 				takeoverHidden = [];
 				closeSplashWindow();
 				takeoverActive = false;
-				preloadUpdateSplash();
+				syncUpdateSplashPreload();
 			},
 			closeApp: async () => {
 				if (takeoverSplash != null) {
@@ -663,7 +712,7 @@ async function runModuleBootstrap(): Promise<void> {
 				takeoverWindows?.endMainWindowTakeover();
 				takeoverActive = false;
 				reopenMainWindow(launchAttempt);
-				preloadUpdateSplash();
+				syncUpdateSplashPreload();
 			},
 			reloadInPlace: async (launchAttempt) => {
 				const windows = takeoverWindows ?? (await import('@electron/main/Window'));
@@ -705,63 +754,79 @@ async function runModuleBootstrap(): Promise<void> {
 			},
 		};
 
-		const desktopUpdate = new DesktopUpdateRun({
-			probe: () => updater.checkForUpdate(),
-			canSelfUpdateShell: shellUpdatePlan.capability === ShellUpdateCapability.SELF_UPDATE,
-			runShellSelfUpdate: () => runShellSelfUpdateOnSplash(),
-			installModules: async () => {
-				const launchAttempt = await updater.installPending();
-				if (launchAttempt != null) {
-					await refreshModuleRoots(launchAttempt.committed);
-				}
-				return launchAttempt;
-			},
-			takeover: updateTakeover,
-			publish: (check) => {
-				recordPendingUpdate(check);
-				publishDesktopUpdateCheck(check);
-			},
-			reportFailure: (failure) => {
-				void import('@electron/main/DesktopUpdatePrompt')
-					.then(({reportDesktopUpdateFailure}) => reportDesktopUpdateFailure(failure))
-					.catch((error: unknown) => {
-						logger.error('Failed to report the desktop update failure', error);
-					});
-			},
-			openDownloadsPage: async () => {
-				const {DOWNLOAD_PAGE_URL} = await import('@electron/main/UpdaterDownloads');
-				await shell.openExternal(DOWNLOAD_PAGE_URL);
-			},
-			logger,
-		});
+		const desktopUpdate = moduleUpdatesForcedOff
+			? null
+			: new DesktopUpdateRun({
+					probe: () => updater.checkForUpdate(),
+					canSelfUpdateShell: shellUpdatePlan.capability === ShellUpdateCapability.SELF_UPDATE,
+					runShellSelfUpdate: async () => {
+						recordRequestedUpdate(true);
+						const result = await runShellSelfUpdateOnSplash();
+						recordRequestedUpdate(false);
+						return result;
+					},
+					installModules: async () => {
+						const launchAttempt = await updater.installPending();
+						if (launchAttempt != null) {
+							await refreshModuleRoots(launchAttempt.committed);
+						}
+						return launchAttempt;
+					},
+					takeover: updateTakeover,
+					publish: (check) => {
+						recordPendingUpdate(check);
+						trackShellUpdate(check);
+						publishDesktopUpdateCheck(check);
+					},
+					reportFailure: (failure) => {
+						void import('@electron/main/DesktopUpdatePrompt')
+							.then(({reportDesktopUpdateFailure}) => reportDesktopUpdateFailure(failure))
+							.catch((error: unknown) => {
+								logger.error('Failed to report the desktop update failure', error);
+							});
+					},
+					openDownloadsPage: async () => {
+						const {DOWNLOAD_PAGE_URL} = await import('@electron/main/UpdaterDownloads');
+						await shell.openExternal(DOWNLOAD_PAGE_URL);
+					},
+					logger,
+				});
 
 		const permit = await runModuleUpdateLoop();
 		localNetworkHint.disarm();
 		if (!permit.unreachable) {
 			recordPendingUpdate({shellNewer: false, modulesChanged: false});
+			recordRequestedUpdate(false);
 		}
 		await refreshModuleRoots(permit.launchAttempt.committed);
-		setOnDemandModuleInstaller(
-			createOnDemandModuleInstaller({
-				ensure: (moduleName) => updater.ensureModule(moduleName),
-				refresh: serveOnDemandModules,
-				onFailure: (moduleName, error) => {
-					logger.error('Failed to install a module on demand', {module: moduleName, error});
-				},
-			}),
-		);
 		markSplashLaunching();
-		armDesktopUpdate({
-			check: async (manual) => {
-				const check = await desktopUpdate.check({manual});
-				recordPendingUpdate(check);
-				return check;
-			},
-			start: () => desktopUpdate.start(),
-		});
+		if (desktopUpdate != null) {
+			setOnDemandModuleInstaller(
+				createOnDemandModuleInstaller({
+					ensure: (moduleName) => updater.ensureModule(moduleName),
+					refresh: serveOnDemandModules,
+					onFailure: (moduleName, error) => {
+						logger.error('Failed to install a module on demand', {module: moduleName, error});
+					},
+				}),
+			);
+			armDesktopUpdate({
+				check: async (manual) => {
+					const check = await desktopUpdate.check({manual});
+					recordPendingUpdate(check);
+					trackShellUpdate(check);
+					return check;
+				},
+				start: () => desktopUpdate.start(),
+			});
+		}
 		armMainWindowHandoff(updater, permit.launchAttempt, () => {
+			if (desktopUpdate == null) {
+				return;
+			}
 			desktopUpdate.markLaunchSettled();
-			preloadUpdateSplash();
+			launchSettled = true;
+			syncUpdateSplashPreload();
 			armDesktopUpdatePoll(
 				{
 					plan: resolveModulePollPlan(readDevModulePollInterval()),
@@ -775,6 +840,10 @@ async function runModuleBootstrap(): Promise<void> {
 		app.once('before-quit', () => {
 			closeSplashWindow();
 		});
+		if (hasQuitStarted()) {
+			logger.info('The app started quitting during module convergence, not launching the main app');
+			return;
+		}
 		await launchMainApp(permit, logger);
 	} catch (error) {
 		logger.error('The module bootstrap failed unexpectedly', error);

@@ -13,7 +13,8 @@ import {getCachedNumberFormat} from '@app/features/i18n/utils/IntlCache';
 import {Message as MessageModel} from '@app/features/messaging/models/MessagingMessage';
 import {remFromPx} from '@app/features/theme/layout/RemFromPx';
 import {Button} from '@app/features/ui/button/Button';
-import {type ComboboxOption, resolveNearestNumericOption} from '@app/features/ui/components/form/FormCombobox';
+import {resolveNearestNumericOption} from '@app/features/ui/components/form/ComboboxNumericInput';
+import type {ComboboxOption} from '@app/features/ui/components/form/FormCombobox';
 import {Switch} from '@app/features/ui/components/form/FormSwitch';
 import {MockAvatar} from '@app/features/ui/components/MockAvatar';
 import MobileLayout from '@app/features/ui/state/MobileLayout';
@@ -30,6 +31,7 @@ import {
 	MOTION_DESCRIPTOR,
 } from '@app/features/user/components/settings_utils/section_registry/SharedDescriptors';
 import Users from '@app/features/user/state/Users';
+import {getFormattingLocale} from '@app/features/user/utils/LocaleUtils';
 import {
 	ANNOUNCE_NEW_MESSAGES_DESCRIPTOR,
 	DOC_I_M_FROM_THE_FUTURE_I_CAME_DESCRIPTOR,
@@ -216,7 +218,7 @@ const AccessibilityTabPreview = observer(() => {
 		</div>
 	);
 });
-export const AccessibilityScreenReaderTabContent: React.FC = observer(() => {
+const AccessibilityScreenReaderTabContent: React.FC = observer(() => {
 	const {i18n} = useLingui();
 	return (
 		<Switch
@@ -228,12 +230,15 @@ export const AccessibilityScreenReaderTabContent: React.FC = observer(() => {
 		/>
 	);
 });
-export const AccessibilityTtsTabContent: React.FC = observer(() => {
+const AccessibilityTtsTabContent: React.FC = observer(() => {
 	const {i18n} = useLingui();
 	const ttsRate = Accessibility.ttsRate;
 	const selectedTtsRate = getNearestTtsRate(ttsRate);
 	const ttsRateOptions: ReadonlyArray<ComboboxOption<number>> = useMemo(() => {
-		const formatter = getCachedNumberFormat(i18n.locale, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+		const formatter = getCachedNumberFormat(getFormattingLocale(), {
+			minimumFractionDigits: 1,
+			maximumFractionDigits: 1,
+		});
 		return TTS_RATE_OPTIONS.map((value) => ({value, label: `x${formatter.format(value)}`}));
 	}, [i18n.locale]);
 	const [isSpeaking, setIsSpeaking] = useState(false);
@@ -277,6 +282,14 @@ export const AccessibilityTtsTabContent: React.FC = observer(() => {
 			TtsUtils.stop();
 		};
 	}, []);
+	let previewDescription: string;
+	if (!synthesisSupported) {
+		previewDescription = i18n._(SPEECH_SYNTHESIS_IS_UNAVAILABLE_IN_YOUR_BROWSER_DESCRIPTOR);
+	} else if (playbackError) {
+		previewDescription = i18n._(SPEECH_PLAYBACK_FAILED_TRY_AGAIN_OR_CHECK_THAT_DESCRIPTOR);
+	} else {
+		previewDescription = i18n._(HEAR_THE_SAMPLE_LINE_SPOKEN_WITH_YOUR_CHOSEN_DESCRIPTOR);
+	}
 	return (
 		<div className={styles.ttsSection} data-flx="user.accessibility-tab.accessibility-tts-tab-content.tts-section">
 			<CompactComboboxRow<number>
@@ -322,11 +335,7 @@ export const AccessibilityTtsTabContent: React.FC = observer(() => {
 					className={styles.ttsPreviewDescription}
 					data-flx="user.accessibility-tab.accessibility-tts-tab-content.tts-preview-description"
 				>
-					{!synthesisSupported
-						? i18n._(SPEECH_SYNTHESIS_IS_UNAVAILABLE_IN_YOUR_BROWSER_DESCRIPTOR)
-						: playbackError
-							? i18n._(SPEECH_PLAYBACK_FAILED_TRY_AGAIN_OR_CHECK_THAT_DESCRIPTOR)
-							: i18n._(HEAR_THE_SAMPLE_LINE_SPOKEN_WITH_YOUR_CHOSEN_DESCRIPTOR)}
+					{previewDescription}
 				</p>
 			</div>
 		</div>

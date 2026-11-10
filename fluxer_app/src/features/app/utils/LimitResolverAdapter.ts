@@ -8,7 +8,7 @@ import type {LimitKey} from '@fluxer/constants/src/LimitConfigMetadata';
 import {resolveLimit} from '@fluxer/limits/src/LimitResolver';
 import type {LimitConfigSnapshot} from '@fluxer/limits/src/LimitTypes';
 
-export interface LimitResolveOptions {
+interface LimitResolveOptions {
 	key: LimitKey;
 	fallback: number;
 	context?: LimitContextInput;
@@ -27,7 +27,7 @@ class LimitResolverClass {
 		if (!Number.isFinite(resolved) || resolved < 0) {
 			return fallback;
 		}
-		return Math.floor(resolved);
+		return Math.min(Math.floor(resolved), Number.MAX_SAFE_INTEGER);
 	}
 
 	private getSnapshotForInstance(instanceDomain?: string): LimitConfigSnapshot | null {

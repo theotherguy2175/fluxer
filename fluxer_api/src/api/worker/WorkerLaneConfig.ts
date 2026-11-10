@@ -35,12 +35,16 @@ const LANE_CONFIG = {
 		consumerName: 'workers_lifecycle',
 		tasks: [
 			'processStripeWebhook',
+			'sendBillingEmail',
+			'closePaymentDisputeAccounts',
 			'sendSystemDm',
+			'notifyRegistrationApprovers',
 			'userProcessPendingDeletion',
 			'userProcessPendingDeletions',
 			'applicationProcessDeletion',
 			'guildProcessDeletion',
 			'bulkDeleteSelfMessagesImmediate',
+			'countBulkMessageDeletionTargets',
 			'bulkDeleteUserMessages',
 			'deleteUserMessagesInGuildByTime',
 			'messageShred',
@@ -49,6 +53,8 @@ const LANE_CONFIG = {
 			'batchGuildAuditLogMessageDeletes',
 			'reconcileUserPayments',
 			'syncStripeCustomerEmail',
+			'sendOperatorPassWithdrawalReceipt',
+			'recordOperatorPassDelivery',
 			'processAppStoreNotification',
 			'processGooglePlayNotification',
 			'refreshStorePurchase',
@@ -56,10 +62,14 @@ const LANE_CONFIG = {
 			'bulkScheduleUserDeletion',
 			'bulkUpdateGuildFeatures',
 			'bulkAddGuildMembers',
+			'joinSingleCommunityMembers',
 			'bulkBanFileShas',
 			'bulkDeleteMessagesForUsers',
 			'drainActivitySpool',
 			'liftExpiredGuildInvitePauses',
+			'endGuildVisitsForCode',
+			'pruneGuildVisits',
+			'endUnassignedGuildVisits',
 		] as const,
 		retiredTasks: ['sendScheduledMessage', 'finalizeNcmecAttachmentReport'],
 		concurrency: 8,
@@ -88,6 +98,8 @@ const LANE_CONFIG = {
 			'pollGooglePlayVoidedPurchases',
 			'pollAppStoreNotificationHistory',
 			'prunePostgresKvTtl',
+			'sweepFilesystemStorage',
+			'sweepVoiceParticipants',
 			'refreshSearchIndex',
 			'seedThreadPermissions',
 			'archiveInactiveThreads',
@@ -96,12 +108,28 @@ const LANE_CONFIG = {
 			'removeThreadMembershipsForGuildMember',
 			'syncThreadSearchDocument',
 			'backfillThreadSearch',
+			'backfillPasskeyTrait',
+			'backfillFavoriteMemeNsfw',
+			'backfillUserAclIndex',
+			'backfillDeletedUsers',
+			'backfillHiddenProfileBadges',
 			'syncDiscoveryIndex',
 			'syncUrlBlocklists',
 			'syncFileShaBlocklists',
 			'flushUserActivityBuffer',
+			'operatorPassWaitlistCleanup',
+			'operatorPassRemovalExpiry',
+			'operatorPassOfferCompletion',
+			'operatorPassWallRetention',
+			'scanBillingNotices',
+			'importLegacyBillingDocuments',
+			'operatorPassConsentRetention',
+			'operatorPassFulfilmentSweep',
+			'operatorPassLabsVisionaryRoleSync',
+			'operatorPassLabsGreeting',
+			'operatorPassLabsDelivery',
 		] as const,
-		retiredTasks: [],
+		retiredTasks: ['operatorPassWallAutoApprove', 'operatorPassSaleBroadcast', 'operatorPassVisionaryNotice'],
 		concurrency: 12,
 		maxAckPending: 100,
 		ackWaitMs: 120000,
@@ -142,6 +170,17 @@ interface WorkerLaneRuntimeConfig {
 	laneName?: APIWorkerLaneName;
 	taskName?: WorkerTaskName;
 	laneConcurrencyOverrides: Partial<Record<APIWorkerLaneName, number>>;
+	availableParallelism: number;
+}
+
+const FULL_CONCURRENCY_CORES = 4;
+
+function scaleLaneToCores(lane: WorkerLaneDefinition, cores: number): WorkerLaneDefinition {
+	const concurrency = Math.max(
+		1,
+		Math.min(lane.concurrency, Math.ceil((lane.concurrency * cores) / FULL_CONCURRENCY_CORES)),
+	);
+	return {...lane, concurrency};
 }
 
 function makeLane(name: APIWorkerLaneName): WorkerLaneDefinition {
@@ -245,11 +284,11 @@ function applyLaneConcurrencyOverride(
 
 function resolveWorkerLanes(config: WorkerLaneRuntimeConfig): Array<WorkerLaneDefinition> {
 	if (config.mode === 'single_task') {
-		return [resolveSingleTaskLane(config.taskName)];
+		return [scaleLaneToCores(resolveSingleTaskLane(config.taskName), config.availableParallelism)];
 	}
 	const laneNames = resolveLaneNames(config);
 	return laneNames.map((laneName) => {
-		const lane = resolveLaneByName(laneName);
+		const lane = scaleLaneToCores(resolveLaneByName(laneName), config.availableParallelism);
 		return applyLaneConcurrencyOverride(lane, config.laneConcurrencyOverrides);
 	});
 }

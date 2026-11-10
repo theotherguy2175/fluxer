@@ -48,11 +48,11 @@
 
 .checked {
 	background-color: var(--brand-primary);
-	border: 0.0625rem solid var(--brand-primary);
+	border: 0.0625rem solid var(--brand-primary-foreground);
 }
 
 .checkIcon {
-	color: white;
+	color: var(--brand-primary-fill);
 }
 
 .label {
@@ -74,18 +74,14 @@
 	line-height: 1.25rem;
 }
 
-.labelFocusRing {
-	border-radius: var(--radius-sm);
-}
-
 .menuChecked {
 	background-color: var(--brand-primary);
-	border-color: var(--brand-primary);
+	border-color: var(--brand-primary-foreground);
 }
 
 .menuChecked:hover {
 	background-color: var(--brand-primary);
-	border-color: var(--brand-primary);
+	border-color: var(--brand-primary-foreground);
 }
 
 .checkboxIndicator {

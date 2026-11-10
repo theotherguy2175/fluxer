@@ -18,7 +18,11 @@ import {
 	dispatchMessageCreateBroadcast,
 	dispatchMessageUpdateBroadcast,
 } from '@app/api/channel/services/message/MessageGatewayDispatch';
-import {isOperationDisabled, purgeMessageAttachments} from '@app/api/channel/services/message/MessageHelpers';
+import {
+	attachmentStorageChannelId,
+	isOperationDisabled,
+	purgeMessageAttachments,
+} from '@app/api/channel/services/message/MessageHelpers';
 import type {MessagePersistenceService} from '@app/api/channel/services/message/MessagePersistenceService';
 import type {MessageSearchService} from '@app/api/channel/services/message/MessageSearchService';
 import {MessageWriteLock} from '@app/api/channel/services/message/MessageWriteLock';
@@ -50,6 +54,7 @@ import type {Message} from '@app/api/models/Message';
 import type {Webhook} from '@app/api/models/Webhook';
 import {deleteMessageSearchDocuments} from '@app/api/search/MessageSearchIndexCleanup';
 import type {UserRepository} from '@app/api/user/repositories/UserRepository';
+import {compareText} from '@app/api/utils/StringComparison';
 import type {WebhookRepository} from '@app/api/webhook/WebhookRepository';
 import {
 	CROSSPOST_PENDING_RECLAIM_AFTER_MS,
@@ -84,6 +89,7 @@ export interface CrosspostSourceContext {
 	fingerprint: string;
 	accessCache: Map<string, Promise<boolean>>;
 	authorAvatarCache: Map<string, Promise<string | null>>;
+	classifiedAttachments: Promise<Array<MessageAttachment>> | null;
 }
 
 export type CrosspostSourceLoadResult =
@@ -151,7 +157,7 @@ function toStableValue(value: unknown): unknown {
 	if (value instanceof Map) {
 		return [...value.entries()]
 			.map(([key, entry]) => [String(key), toStableValue(entry)] as const)
-			.sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+			.sort(([a], [b]) => compareText(a, b));
 	}
 	if (Array.isArray(value)) return value.map(toStableValue);
 	if (typeof value === 'object') {
@@ -235,6 +241,7 @@ export class CrosspostDeliveryService {
 			fingerprint: crosspostSourceFingerprint(message),
 			accessCache: new Map(),
 			authorAvatarCache: new Map(),
+			classifiedAttachments: null,
 		};
 	}
 
@@ -251,7 +258,7 @@ export class CrosspostDeliveryService {
 		return {kind: 'ready', context};
 	}
 
-	isSourceGuildActive(guild: GuildResponse): boolean {
+	private isSourceGuildActive(guild: GuildResponse): boolean {
 		return (
 			!isGuildUnavailable(guild) &&
 			!isOperationDisabled(guild, GuildOperations.SEND_MESSAGE) &&
@@ -328,7 +335,7 @@ export class CrosspostDeliveryService {
 			}
 		}
 		const authorAvatar = await this.resolveCopyAuthorAvatar(context, webhook);
-		const built = this.buildCopyPayload(context, target);
+		const built = await this.buildCopyPayload(context, target);
 		if (built.kind === 'blocked') {
 			Logger.warn(
 				{sourceMessageId: context.message.id.toString(), webhookId: webhook.id.toString()},
@@ -511,7 +518,7 @@ export class CrosspostDeliveryService {
 			await this.markCopySourceDeleted(row);
 			return;
 		}
-		const built = this.buildCopyPayload(source, target);
+		const built = await this.buildCopyPayload(source, target);
 		if (built.kind === 'blocked') {
 			Logger.warn(
 				{sourceMessageId: row.source_message_id.toString(), webhookId: row.webhook_id.toString()},
@@ -739,20 +746,27 @@ export class CrosspostDeliveryService {
 		await deleteMessageSearchDocuments([messageId], {context: {source: 'crosspost_family_purge'}});
 	}
 
-	private buildCopyPayload(source: CrosspostSourceContext, target: CrosspostTarget): CrosspostCopyPayloadResult {
+	private async buildCopyPayload(
+		source: CrosspostSourceContext,
+		target: CrosspostTarget,
+	): Promise<CrosspostCopyPayloadResult> {
 		const message = source.message;
 		if (this.isBlocked(source)) {
 			return {kind: 'blocked'};
 		}
-		const nsfwAllowed = this.targetAllowsNsfw(target);
+		const targetNsfw = this.targetIsNsfw(target);
+		const nsfwAllowed = targetNsfw || this.targetAcceptsFlaggedMedia(target);
+		const sourceAttachments = targetNsfw
+			? message.attachments.map((attachment) => attachment.toMessageAttachment())
+			: await this.classifiedAttachments(source);
 		const excludedAttachmentIds = new Set<string>();
 		const attachments: Array<MessageAttachment> = [];
-		for (const attachment of message.attachments) {
+		for (const attachment of sourceAttachments) {
 			if (!nsfwAllowed && attachment.nsfw) {
-				excludedAttachmentIds.add(attachment.id.toString());
+				excludedAttachmentIds.add(attachment.attachment_id.toString());
 				continue;
 			}
-			attachments.push(attachment.toMessageAttachment());
+			attachments.push(attachment);
 		}
 		let embeds = message.embeds.map((embed) => cloneEmbed(embed.toMessageEmbed()));
 		if (!nsfwAllowed) {
@@ -797,16 +811,29 @@ export class CrosspostDeliveryService {
 		return false;
 	}
 
-	private targetAllowsNsfw(target: CrosspostTarget): boolean {
-		if (
-			computeEffectiveChannelNsfw(
-				channelToContentWarningView(target.channel),
-				target.parent ? channelToContentWarningView(target.parent) : null,
-				guildResponseToContentWarningView(target.guild),
-			)
-		) {
-			return true;
+	private classifiedAttachments(source: CrosspostSourceContext): Promise<Array<MessageAttachment>> {
+		if (!source.classifiedAttachments) {
+			const pending = this.deps.persistenceService.classifyStoredAttachments(
+				source.message.attachments.map((attachment) => attachment.toMessageAttachment()),
+				attachmentStorageChannelId(source.message),
+			);
+			source.classifiedAttachments = pending;
+			pending.catch(() => {
+				if (source.classifiedAttachments === pending) source.classifiedAttachments = null;
+			});
 		}
+		return source.classifiedAttachments;
+	}
+
+	private targetIsNsfw(target: CrosspostTarget): boolean {
+		return computeEffectiveChannelNsfw(
+			channelToContentWarningView(target.channel),
+			target.parent ? channelToContentWarningView(target.parent) : null,
+			guildResponseToContentWarningView(target.guild),
+		);
+	}
+
+	private targetAcceptsFlaggedMedia(target: CrosspostTarget): boolean {
 		return this.contentService.isNSFWContentAllowed({
 			channel: target.channel,
 			guild: target.guild,

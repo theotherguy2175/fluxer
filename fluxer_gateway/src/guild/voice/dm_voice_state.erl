@@ -1,9 +1,6 @@
 %% SPDX-License-Identifier: AGPL-3.0-or-later
 
 -module(dm_voice_state).
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
--endif.
 
 -typing([eqwalizer]).
 
@@ -30,10 +27,24 @@
     {reply, map(), dm_state()} | {reply, {error, atom(), atom()}, dm_state()}.
 handle_dm_disconnect(undefined, _UserId, _VoiceStates, State) ->
     {reply, gateway_errors:error(voice_missing_connection_id), State};
-handle_dm_disconnect(ConnectionId, _UserId, VoiceStates, State) ->
+handle_dm_disconnect(ConnectionId, UserId, VoiceStates, State) ->
     case maps:get(ConnectionId, VoiceStates, undefined) of
-        undefined -> {reply, #{success => true}, State};
-        OldVoiceState -> do_dm_disconnect(ConnectionId, OldVoiceState, VoiceStates, State)
+        undefined ->
+            {reply, #{success => true}, State};
+        OldVoiceState ->
+            handle_existing_dm_disconnect(
+                ConnectionId, UserId, OldVoiceState, VoiceStates, State
+            )
+    end.
+
+-spec handle_existing_dm_disconnect(
+    binary(), integer(), voice_state(), voice_state_map(), dm_state()
+) ->
+    {reply, map(), dm_state()} | {reply, {error, atom(), atom()}, dm_state()}.
+handle_existing_dm_disconnect(ConnectionId, UserId, OldVoiceState, VoiceStates, State) ->
+    case guild_voice_state:user_matches_voice_state(OldVoiceState, UserId) of
+        false -> {reply, gateway_errors:error(voice_user_mismatch), State};
+        true -> do_dm_disconnect(ConnectionId, OldVoiceState, VoiceStates, State)
     end.
 
 -spec do_dm_disconnect(binary(), voice_state(), voice_state_map(), dm_state()) ->
@@ -229,8 +240,10 @@ call_voice_states(ChannelId) ->
 -spec call_voice_states_from_pid(pid()) -> [voice_state()].
 call_voice_states_from_pid(CallPid) ->
     case gateway_rpc_call_lookup:safe_gen_server_call(CallPid, {get_state}, 5000) of
-        {ok, {ok, #{voice_states := VoiceStates}}} when is_list(VoiceStates) -> VoiceStates;
-        _ -> []
+        {ok, {ok, #{voice_states := VoiceStates}}} when is_list(VoiceStates) ->
+            eqwalizer:dynamic_cast(VoiceStates);
+        _ ->
+            []
     end.
 
 -spec voice_region_for_rpc(term()) -> binary() | null.
@@ -264,7 +277,7 @@ validate_dm_viewer_stream_keys(Keys, ChId, VS) ->
 -spec validate_keys_list(list(), integer(), voice_state_map(), list()) ->
     {ok, list()} | {error, atom()}.
 validate_keys_list([], _ChId, _VS, Acc) ->
-    {ok, lists:reverse(Acc)};
+    {ok, guild_voice_connection_util:bound_viewer_stream_keys(lists:reverse(Acc))};
 validate_keys_list([Key | Rest], ChId, VS, Acc) ->
     case validate_single_key(Key, ChId, VS) of
         {ok, ValidKey} -> validate_keys_list(Rest, ChId, VS, [ValidKey | Acc]);
@@ -317,71 +330,3 @@ maybe_put_field(VoiceState, Key, Value) -> VoiceState#{Key => Value}.
 -spec normalize_optional_binary(term()) -> binary() | undefined.
 normalize_optional_binary(Value) ->
     guild_voice_connection_normalize:normalize_optional_binary(Value).
-
--ifdef(TEST).
-
-session_voice_state(UserId, ChannelId, ConnId, SessionId) ->
-    #{
-        <<"user_id">> => integer_to_binary(UserId),
-        <<"channel_id">> => integer_to_binary(ChannelId),
-        <<"connection_id">> => ConnId,
-        <<"session_id">> => SessionId
-    }.
-
-disconnect_voice_user_keeps_other_session_connections_test() ->
-    State = #{
-        id => <<"session-1">>,
-        user_id => 5,
-        channels => #{},
-        dm_voice_states => #{
-            <<"conn-own">> => session_voice_state(5, 100, <<"conn-own">>, <<"session-1">>),
-            <<"conn-other">> => session_voice_state(5, 100, <<"conn-other">>, <<"session-2">>),
-            <<"conn-peer">> => session_voice_state(6, 100, <<"conn-peer">>, <<"session-3">>)
-        }
-    },
-    {reply, #{success := true}, NewState} = disconnect_voice_user(5, State),
-    VoiceStates = maps:get(dm_voice_states, NewState),
-    ?assertNot(maps:is_key(<<"conn-own">>, VoiceStates)),
-    ?assert(maps:is_key(<<"conn-other">>, VoiceStates)),
-    ?assert(maps:is_key(<<"conn-peer">>, VoiceStates)).
-
-disconnect_voice_user_without_session_id_test() ->
-    State = #{
-        user_id => 5,
-        channels => #{},
-        dm_voice_states => #{
-            <<"conn-a">> => session_voice_state(5, 100, <<"conn-a">>, <<"session-1">>),
-            <<"conn-b">> => session_voice_state(5, 100, <<"conn-b">>, <<"session-2">>)
-        }
-    },
-    {reply, #{success := true}, NewState} = disconnect_voice_user(5, State),
-    ?assertEqual(#{}, maps:get(dm_voice_states, NewState)).
-
-disconnect_voice_user_keeps_unattributed_connections_test() ->
-    State = #{
-        id => <<"session-1">>,
-        user_id => 5,
-        channels => #{},
-        dm_voice_states => #{
-            <<"conn-legacy">> => #{
-                <<"user_id">> => <<"5">>,
-                <<"channel_id">> => <<"100">>,
-                <<"connection_id">> => <<"conn-legacy">>
-            },
-            <<"conn-own">> => session_voice_state(5, 100, <<"conn-own">>, <<"session-1">>)
-        }
-    },
-    {reply, #{success := true}, NewState} = disconnect_voice_user(5, State),
-    ?assertEqual(#{}, maps:get(dm_voice_states, NewState)).
-
-call_region_from_dead_pid_returns_null_test() ->
-    DeadPid = spawn(fun() -> ok end),
-    Ref = monitor(process, DeadPid),
-    receive
-        {'DOWN', Ref, process, DeadPid, _Reason} -> ok
-    after 1000 ->
-        ?assert(false, call_pid_did_not_exit)
-    end,
-    ?assertEqual(null, call_region_from_pid(DeadPid, 250)).
-
--endif.

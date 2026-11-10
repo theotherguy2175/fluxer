@@ -35,7 +35,7 @@ export const InstanceConfigAdminAuditCases: ReadonlyArray<AdminAuditCoverageCase
 					action: 'get_instance_config',
 					targetType: 'instance_config',
 					targetId: '0',
-					metadata: {registration_url_count: '1', pending_registration_count: '0'},
+					metadata: {registration_url_count: '1'},
 				},
 			};
 		},
@@ -90,7 +90,7 @@ export const InstanceConfigAdminAuditCases: ReadonlyArray<AdminAuditCoverageCase
 					action: 'test_smtp_connection',
 					targetType: 'instance_config',
 					targetId: '0',
-					metadata: {port: '1', tls_mode: 'none', ok: 'false'},
+					metadata: {port: '1', tls_mode: 'none', ok: 'false', sent_message: 'false'},
 				},
 			};
 		},
@@ -125,6 +125,46 @@ export const InstanceConfigAdminAuditCases: ReadonlyArray<AdminAuditCoverageCase
 					targetType: 'registration_url',
 					targetId: '0',
 					metadata: {},
+				},
+			};
+		},
+	},
+	{
+		method: 'PATCH',
+		route: '/admin/instance/registration-urls/:registration_url_id',
+		async prepare({harness, admin}) {
+			const registrationUrlId = await createRegistrationUrl(harness, admin);
+			return {
+				request: {path: `/admin/instance/registration-urls/${registrationUrlId}`, body: {label: 'Renamed'}},
+				expected: {
+					action: 'rename_registration_url',
+					targetType: 'registration_url',
+					targetId: '0',
+					metadata: {},
+				},
+			};
+		},
+	},
+	{
+		method: 'GET',
+		route: '/admin/instance/pending-registrations',
+		async prepare({harness}) {
+			await getInstanceConfigRepository().setRegistrationConfig({mode: 'approval'});
+			await registerUser(harness, {
+				email: createUniqueEmail('coverage-listed'),
+				username: createUniqueUsername('coveragelisted'),
+				global_name: 'Coverage Listed',
+				password: 'coverage-listed-password',
+				date_of_birth: '2000-01-01',
+				consent: true,
+			});
+			return {
+				request: {path: '/admin/instance/pending-registrations'},
+				expected: {
+					action: 'list_pending_registrations',
+					targetType: 'instance_config',
+					targetId: '0',
+					metadata: {pending_registration_count: '1'},
 				},
 			};
 		},

@@ -109,9 +109,9 @@ pub fn normalize_url(url: &str) -> Option<String> {
 
 pub async fn fetch_oembed_data(
     ctx: &ResolveContext<'_>,
-    html: &str,
+    page: &crate::html_parser::PageMetadata,
 ) -> Option<oembed::OEmbedResponse> {
-    for ep in &oembed::discover_oembed_url(html) {
+    for ep in &page.oembed_endpoints {
         let endpoint = ctx
             .url
             .join(&ep.url)
@@ -136,9 +136,9 @@ pub struct MediaWikiArticle {
 
 pub async fn fetch_mediawiki_article(
     ctx: &ResolveContext<'_>,
-    html: &str,
+    page: &crate::html_parser::PageMetadata,
 ) -> Option<MediaWikiArticle> {
-    let query_url = mediawiki_query_url(&ctx.url, html)?;
+    let query_url = mediawiki_query_url(&ctx.url, page.rsd_url.as_deref()?)?;
     let result = http_fetch::fetch_url(
         &ctx.http_client,
         &query_url,
@@ -175,9 +175,8 @@ fn mediawiki_text(page: &serde_json::Value, key: &str) -> Option<String> {
     (!value.is_empty()).then(|| value.to_owned())
 }
 
-fn mediawiki_query_url(page_url: &Url, html: &str) -> Option<String> {
-    let rsd = crate::html_parser::find_rsd_url(html)?;
-    let endpoint = page_url.join(&rsd).ok()?;
+fn mediawiki_query_url(page_url: &Url, rsd: &str) -> Option<String> {
+    let endpoint = page_url.join(rsd).ok()?;
     if !matches!(endpoint.scheme(), "http" | "https") {
         return None;
     }
@@ -213,7 +212,7 @@ pub fn parse_text(value: &str, max_len: usize) -> String {
 }
 
 pub fn decode_html_text(input: &str) -> String {
-    scraper::Html::parse_fragment(input)
+    crate::html_parser::parse_fragment(input)
         .root_element()
         .text()
         .collect()
@@ -237,8 +236,16 @@ pub fn normalize_timestamp(value: &str) -> String {
         .unwrap_or_else(|_| value.to_owned())
 }
 
+pub fn format_timestamp(unix_seconds: i64) -> Option<String> {
+    chrono::DateTime::from_timestamp(unix_seconds, 0)
+        .map(|dt| dt.to_rfc3339_opts(chrono::SecondsFormat::Secs, true))
+}
+
 pub fn sanitize_absolute_url(value: &str) -> Option<String> {
-    Url::parse(value.trim()).ok().map(|url| url.to_string())
+    Url::parse(value.trim())
+        .ok()
+        .filter(|url| matches!(url.scheme(), "http" | "https"))
+        .map(|url| url.to_string())
 }
 
 #[cfg(test)]

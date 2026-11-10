@@ -25,6 +25,7 @@ import {
 	guildToContentWarningView,
 } from '@app/api/channel/utils/EffectiveContentWarning';
 import {resolveNsfwScopeChannel} from '@app/api/channel/utils/ThreadNsfwScope';
+import {isSyntheticUserId} from '@app/api/constants/Core';
 import type {MessageAttachment} from '@app/api/database/types/MessageTypes';
 import type {
 	DSAReportTicketRow,
@@ -32,10 +33,18 @@ import type {
 	MessageReportSubmissionByReporterRow,
 	UserReportSubmissionByReporterRow,
 } from '@app/api/database/types/ReportTypes';
+import {isDecisionExpired} from '@app/api/enforcement/DecisionStatus';
+import {listActiveFeatureLimits} from '@app/api/enforcement/FeatureLimitState';
 import type {ThreadViewer} from '@app/api/experiment/ChannelThreadsGate';
 import type {GuildRepository} from '@app/api/guild/repositories/GuildRepository';
+import {channelToVisitorInput} from '@app/api/guild/visits/GuildVisitorAccess';
 import {emitActivity} from '@app/api/infrastructure/activity/ActivityEvents';
-import type {ReportOutcome, ReportTarget, ResolvedBy} from '@app/api/infrastructure/activity/Contract.generated';
+import type {
+	ReporterTier,
+	ReportOutcome,
+	ReportTarget,
+	ResolvedBy,
+} from '@app/api/infrastructure/activity/Contract.generated';
 import {emitReportResolved} from '@app/api/infrastructure/activity/ModerationEvents';
 import type {EmailDnsValidationService} from '@app/api/infrastructure/EmailDnsValidationService';
 import type {IGatewayService} from '@app/api/infrastructure/IGatewayService';
@@ -44,6 +53,7 @@ import type {IStorageService} from '@app/api/infrastructure/IStorageService';
 import {usesUniqueUsernames} from '@app/api/instance/AccountIdentityModeCache';
 import type {InviteRepository} from '@app/api/invite/InviteRepository';
 import {Logger} from '@app/api/Logger';
+import {getEnforcementDecisionRepository} from '@app/api/middleware/ServiceSingletons';
 import type {Attachment} from '@app/api/models/Attachment';
 import type {Channel} from '@app/api/models/Channel';
 import type {Guild} from '@app/api/models/Guild';
@@ -61,23 +71,26 @@ import {
 } from '@app/api/report/ReportModels';
 import type {ReportRepository} from '@app/api/report/ReportRepository';
 import type {IReportSearchService} from '@app/api/search/IReportSearchService';
-import {isUnderEnforcement} from '@app/api/user/ProfileVisibility';
 import type {UserRepository} from '@app/api/user/repositories/UserRepository';
 import {findPersonByLoginHandle, type ParsedLoginHandle, parseLoginHandle} from '@app/api/user/UniqueUsernames';
 import {isAccountClosed} from '@app/api/user/UserHelpers';
+import {dispatchUserUpdate} from '@app/api/user/UserMappers';
 import type {WebhookRepository} from '@app/api/webhook/WebhookRepository';
 import {buildHashedAssetKey} from '@app/api/worker/utils/AssetArchiveHelpers';
 import {APIErrorCodes} from '@fluxer/constants/src/ApiErrorCodes';
 import {ME} from '@fluxer/constants/src/AppConstants';
 import {InviteTypes, MessageFlags, Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {GuildFeatures} from '@fluxer/constants/src/GuildConstants';
+import {
+	computeGuildVisitorChannelPermissions,
+	GUILD_VISITOR_PERMISSIONS_MASK,
+} from '@fluxer/constants/src/GuildVisitConstants';
 import {DELETED_USER_USERNAME, UserFlags} from '@fluxer/constants/src/UserConstants';
 import {ValidationErrorCodes} from '@fluxer/constants/src/ValidationErrorCodes';
 import {CannotReportOwnMessageError} from '@fluxer/errors/src/domains/channel/CannotReportOwnMessageError';
 import {UnknownChannelError} from '@fluxer/errors/src/domains/channel/UnknownChannelError';
 import {UnknownMessageError} from '@fluxer/errors/src/domains/channel/UnknownMessageError';
 import {ConflictError} from '@fluxer/errors/src/domains/core/ConflictError';
-import {FeatureTemporarilyDisabledError} from '@fluxer/errors/src/domains/core/FeatureTemporarilyDisabledError';
 import {InputValidationError} from '@fluxer/errors/src/domains/core/InputValidationError';
 import {RateLimitError} from '@fluxer/errors/src/domains/core/RateLimitError';
 import {ServiceUnavailableError} from '@fluxer/errors/src/domains/core/ServiceUnavailableError';
@@ -92,6 +105,7 @@ import {InvalidDsaVerificationCodeError} from '@fluxer/errors/src/domains/modera
 import {ReportBannedError} from '@fluxer/errors/src/domains/moderation/ReportBannedError';
 import {UnknownReportError} from '@fluxer/errors/src/domains/moderation/UnknownReportError';
 import {UnknownUserError} from '@fluxer/errors/src/domains/user/UnknownUserError';
+import type {ReportItemOutcome} from '@fluxer/schema/src/domains/admin/AdminSchemas';
 import type {ReportFlowSurface} from '@fluxer/schema/src/domains/report/ReportFlowSchemas';
 import {
 	type ReportProfileAssetSnapshot,
@@ -112,6 +126,8 @@ interface ReporterMetadata {
 	email: string | null;
 	fullLegalName: string | null;
 	countryOfResidence: string | null;
+	tier?: ReporterTier;
+	urgent?: boolean;
 }
 
 export interface ReportFlowRecord {
@@ -242,9 +258,12 @@ const DSA_EMAIL_SEND_RECIPIENT_WINDOW = ms('1 hour');
 const DSA_EMAIL_RESEND_COOLDOWN = ms('1 minute');
 const DSA_EMAIL_VERIFY_ADDRESS_MAX = 5;
 const DSA_EMAIL_VERIFY_ADDRESS_WINDOW = ms('10 minutes');
-const PUBLIC_CHANNEL_PERMISSIONS = Permissions.VIEW_CHANNEL | Permissions.READ_MESSAGE_HISTORY;
 
-async function emitReportFiled(row: IARSubmissionRow, target: ReportTarget): Promise<void> {
+async function emitReportFiled(
+	row: IARSubmissionRow,
+	target: ReportTarget,
+	reporterTier: ReporterTier = 'verified',
+): Promise<void> {
 	const key = row.reported_user_id ?? row.reporter_id ?? 0n;
 	await emitActivity(
 		'report_filed',
@@ -252,6 +271,7 @@ async function emitReportFiled(row: IARSubmissionRow, target: ReportTarget): Pro
 		{
 			report_id: row.report_id.toString(),
 			reporter_id: (row.reporter_id ?? 0n).toString(),
+			reporter_tier: reporterTier,
 			category: row.category,
 			target_type: target,
 			reported_user_id: row.reported_user_id?.toString() ?? null,
@@ -299,8 +319,7 @@ export class ReportService {
 		flow: ReportFlowRecord | null = null,
 	): Promise<IARSubmission> {
 		await this.checkReportBan(reporter.id);
-		const reporterKey = this.getReporterRateLimitKey(reporter);
-		await this.ensureReportRateLimit(this.createReportRateLimitIdentifier(reporterKey), REPORT_RATE_LIMIT_MAX, false);
+		await this.ensureReporterAllowance(reporter, false);
 		const {authChannel, channel, message} = await this.getReportableMessageForReporter({
 			reporterId: reporter.id,
 			viewer,
@@ -365,6 +384,14 @@ export class ReportService {
 				reported_at: reportData.reported_at,
 			};
 			if (!(await this.reportRepository.reserveMessageReportByReporter(reservation))) {
+				const existing = reporter.urgent
+					? await this.reportRepository.findMessageReportByReporter({
+							reporter_id: reporter.id,
+							channel_id: channelId,
+							message_id: messageId,
+						})
+					: null;
+				if (existing) return existing;
 				throw new ConflictError({code: APIErrorCodes.CONFLICT});
 			}
 		}
@@ -375,7 +402,7 @@ export class ReportService {
 				memberGuildId: channel.guildId,
 			});
 			const report = await this.reportRepository.createReport(reportData);
-			await emitReportFiled(reportData, 'message');
+			await emitReportFiled(reportData, 'message', reporter.tier);
 			await this.reportSearchService?.indexReport(report).catch((error) => {
 				Logger.error({error, reportId: report.reportId}, 'Failed to index message report in search');
 			});
@@ -398,13 +425,14 @@ export class ReportService {
 		flow: ReportFlowRecord | null = null,
 	): Promise<IARSubmission> {
 		await this.checkReportBan(reporter.id);
-		const rateLimitIdentifier = this.createReportRateLimitIdentifier(this.getReporterRateLimitKey(reporter));
-		await this.ensureReportRateLimit(rateLimitIdentifier, REPORT_RATE_LIMIT_MAX, false);
+		await this.ensureReporterAllowance(reporter, false);
 		if (reporter.id && reportedUserId === reporter.id) {
 			throw new CannotReportYourselfError();
 		}
-		const reportedUser = await this.userRepository.findUnique(reportedUserId);
-		if (!reportedUser) {
+		const reportedUser = isSyntheticUserId(reportedUserId)
+			? null
+			: await this.userRepository.findUnique(reportedUserId);
+		if (!reportedUser || reportedUser.isSystem) {
 			throw new UnknownUserError();
 		}
 		const reportId = createReportID(await this.snowflakeService.generate());
@@ -449,17 +477,24 @@ export class ReportService {
 				reported_at: reportData.reported_at,
 			};
 			if (!(await this.reportRepository.reserveUserReportByReporter(reservation))) {
+				const existing = reporter.urgent
+					? await this.reportRepository.findUserReportByReporter({
+							reporter_id: reporter.id,
+							reported_user_id: reportedUserId,
+						})
+					: null;
+				if (existing) return existing;
 				throw new ConflictError({code: APIErrorCodes.CONFLICT});
 			}
 		}
 		try {
-			await this.ensureReportRateLimit(rateLimitIdentifier, REPORT_RATE_LIMIT_MAX, true);
+			await this.ensureReporterAllowance(reporter, true);
 			reportData.reported_profile_snapshot = await this.captureProfileSnapshot(reportId, {
 				user: reportedUser,
 				memberGuildId: guildId,
 			});
 			const report = await this.reportRepository.createReport(reportData);
-			await emitReportFiled(reportData, 'user');
+			await emitReportFiled(reportData, 'user', reporter.tier);
 			await this.reportSearchService?.indexReport(report).catch((error) => {
 				Logger.error({error, reportId: report.reportId}, 'Failed to index user report in search');
 			});
@@ -479,10 +514,10 @@ export class ReportService {
 		guildId: GuildID,
 		category: string,
 		inviteCode?: InviteCode,
+		flow: ReportFlowRecord | null = null,
 	): Promise<IARSubmission> {
 		await this.checkReportBan(reporter.id);
-		const rateLimitIdentifier = this.createReportRateLimitIdentifier(this.getReporterRateLimitKey(reporter));
-		await this.ensureReportRateLimit(rateLimitIdentifier, REPORT_RATE_LIMIT_MAX, false);
+		await this.ensureReporterAllowance(reporter, false);
 		const guild = await this.guildRepository.findUnique(guildId);
 		if (!guild) {
 			throw new UnknownGuildError();
@@ -521,7 +556,7 @@ export class ReportService {
 			audit_log_reason: null,
 			reported_guild_invite_code: reportedInviteCode,
 			...contentWarningSnapshot,
-			...buildReportFlowColumns(null),
+			...buildReportFlowColumns(flow),
 			...buildReportedWebhookColumns(null),
 		};
 		let reservation: GuildReportSubmissionByReporterRow | null = null;
@@ -533,14 +568,21 @@ export class ReportService {
 				reported_at: reportData.reported_at,
 			};
 			if (!(await this.reportRepository.reserveGuildReportByReporter(reservation))) {
+				const existing = reporter.urgent
+					? await this.reportRepository.findGuildReportByReporter({
+							reporter_id: reporter.id,
+							reported_guild_id: guildId,
+						})
+					: null;
+				if (existing) return existing;
 				throw new ConflictError({code: APIErrorCodes.CONFLICT});
 			}
 		}
 		try {
-			await this.ensureReportRateLimit(rateLimitIdentifier, REPORT_RATE_LIMIT_MAX, true);
+			await this.ensureReporterAllowance(reporter, true);
 			reportData.reported_profile_snapshot = await this.captureProfileSnapshot(reportId, {guild});
 			const report = await this.reportRepository.createReport(reportData);
-			await emitReportFiled(reportData, 'guild');
+			await emitReportFiled(reportData, 'guild', reporter.tier);
 			await this.reportSearchService?.indexReport(report).catch((error) => {
 				Logger.error({error, reportId: report.reportId}, 'Failed to index guild report in search');
 			});
@@ -611,10 +653,10 @@ export class ReportService {
 			last_sent_at: new Date(),
 		});
 		await this.rateLimitService.resetLimit(this.createDsaVerifyAttemptIdentifier(normalizedEmail));
-		const sent = await this.emailService.sendDsaReportVerificationCode(
+		const sent = await this.emailService.send(
+			'dsa_report_verification',
 			normalizedEmail,
-			verificationCode,
-			expiresAt,
+			{code: verificationCode, expiresAt},
 			locale,
 		);
 		if (!sent) {
@@ -696,8 +738,7 @@ export class ReportService {
 			fullLegalName: report.reporter_full_legal_name ?? null,
 			countryOfResidence: report.reporter_country_of_residence,
 		};
-		const reporterKey = this.getReporterRateLimitKey(reporterMeta);
-		await this.ensureReportRateLimit(this.createReportRateLimitIdentifier(reporterKey), REPORT_RATE_LIMIT_MAX, false);
+		await this.ensureReporterAllowance(reporterMeta, false);
 		const reportId = createReportID(await this.snowflakeService.generate());
 		const {row: reportRow, profileSubject} = await this.buildDsaReportRow(
 			reportId,
@@ -705,7 +746,7 @@ export class ReportService {
 			reporterMeta,
 			classification,
 		);
-		await this.ensureReportRateLimit(this.createReportRateLimitIdentifier(reporterKey), REPORT_RATE_LIMIT_MAX, true);
+		await this.ensureReporterAllowance(reporterMeta, true);
 		const claimed = await this.reportRepository.consumeDsaTicket(report.ticket, ticket.email_lower);
 		if (!claimed) {
 			throw new InvalidDsaTicketError();
@@ -732,7 +773,12 @@ export class ReportService {
 		locale: string | null,
 	): Promise<void> {
 		try {
-			const sent = await this.emailService.sendReportReceivedEmail(email, reportId.toString(), targetKind, locale);
+			const sent = await this.emailService.send(
+				'report_received',
+				email,
+				{reportId: reportId.toString(), targetKind},
+				locale,
+			);
 			if (!sent) {
 				Logger.warn({template: 'report_received', reportId}, 'DSA report receipt was not sent');
 			}
@@ -994,6 +1040,7 @@ export class ReportService {
 			userId: reporterId,
 			channelId,
 			viewer,
+			access: 'visitor_read',
 		});
 		if (!(await this.canAccessMessage(authChannel, messageId))) {
 			throw new UnknownMessageError();
@@ -1174,14 +1221,14 @@ export class ReportService {
 		if (!everyoneRole) {
 			return false;
 		}
-		if ((everyoneRole.permissions & Permissions.ADMINISTRATOR) !== 0n) {
-			return true;
-		}
-		const overwrite = channel.permissionOverwrites.get(everyoneRole.id);
-		const permissions = overwrite
-			? (everyoneRole.permissions & ~overwrite.deny) | overwrite.allow
-			: everyoneRole.permissions;
-		return (permissions & PUBLIC_CHANNEL_PERMISSIONS) === PUBLIC_CHANNEL_PERMISSIONS;
+		const permissions = computeGuildVisitorChannelPermissions({
+			guildId: channel.guildId.toString(),
+			everyonePermissions: everyoneRole.permissions,
+			guildNsfw: false,
+			channel: channelToVisitorInput(channel),
+			adultContentAllowed: true,
+		});
+		return (permissions & GUILD_VISITOR_PERMISSIONS_MASK) === GUILD_VISITOR_PERMISSIONS_MASK;
 	}
 
 	private async readDsaTicket(ticket: string): Promise<DSAReportTicketRow> {
@@ -1278,53 +1325,25 @@ export class ReportService {
 		return report;
 	}
 
-	async listReportsByStatus(
-		status: number,
-		limit?: number,
-		offset?: number,
-	): Promise<{reports: Array<IARSubmission>; total: number}> {
-		if (!this.reportSearchService) {
-			throw new FeatureTemporarilyDisabledError();
-		}
-		const {hits, total} = await this.reportSearchService.listReportsByStatus(status, limit, offset);
-		const reportIds = hits.map((hit) => createReportID(BigInt(hit.id)));
-		const loaded = await Promise.all(reportIds.map((id) => this.reportRepository.getReport(id)));
-		const reports = loaded.filter((report): report is IARSubmission => report !== null);
-		const orphanedReportIds = reportIds.filter((_, index) => loaded[index] === null).map((id) => id.toString());
-		if (orphanedReportIds.length > 0) {
-			Logger.warn(
-				{orphanedReportIds, status},
-				'Report search index lists reports that are no longer stored, run refresh_search_index reports',
-			);
-		}
-		return {reports, total};
-	}
-
 	async resolveReport(
 		reportId: ReportID,
 		adminUserId: UserID,
 		publicComment: string | null,
 		auditLogReason: string | null,
-		resolution: {outcome?: ReportOutcome; resolvedBy?: ResolvedBy} = {},
+		resolution: {outcome: ReportOutcome; resolvedBy: ResolvedBy; reporterOutcome: ReportItemOutcome | null},
 	): Promise<IARSubmission> {
-		const report = await this.reportRepository.resolveReport(reportId, adminUserId, publicComment, auditLogReason);
+		const report = await this.reportRepository.resolveReport(
+			reportId,
+			adminUserId,
+			publicComment,
+			auditLogReason,
+			resolution.reporterOutcome,
+		);
 		await this.reportSearchService?.updateReport(report).catch((error) => {
 			Logger.error({error, reportId: report.reportId}, 'Failed to update report in search index');
 		});
-		const outcome = resolution.outcome ?? (await this.observedOutcome(report));
-		await emitReportResolved(report, outcome, resolution.resolvedBy ?? 'staff');
+		await emitReportResolved(report, resolution.outcome, resolution.resolvedBy);
 		return report;
-	}
-
-	private async observedOutcome(report: IARSubmission): Promise<ReportOutcome> {
-		if (!report.reportedUserId) return 'unspecified';
-		try {
-			const reported = await this.userRepository.findUnique(report.reportedUserId);
-			return reported && isUnderEnforcement(reported) ? 'actioned' : 'unspecified';
-		} catch (error) {
-			Logger.warn({error, reportId: report.reportId}, 'Could not read the reported account for a resolved report');
-			return 'unspecified';
-		}
 	}
 
 	private async gatherMessageContext(
@@ -1554,10 +1573,12 @@ export class ReportService {
 				global_name: null,
 				bio: null,
 				pronouns: null,
+				custom_status: null,
 				avatar: null,
 				banner: null,
 			};
 		}
+		const customStatus = (await this.userRepository.findSettings(user.id))?.customStatus ?? null;
 		return {
 			id,
 			username: user.username,
@@ -1565,6 +1586,7 @@ export class ReportService {
 			global_name: user.globalName,
 			bio: user.bio,
 			pronouns: user.pronouns,
+			custom_status: customStatus && !customStatus.isExpired() ? customStatus.text : null,
 			avatar: await this.cloneProfileAssetForReport(reportId, 'user_avatar', 'avatars', id, user.avatarHash),
 			banner: await this.cloneProfileAssetForReport(reportId, 'user_banner', 'banners', id, user.bannerHash),
 		};
@@ -1625,8 +1647,16 @@ export class ReportService {
 			return;
 		}
 		const user = await this.userRepository.findUnique(userId);
-		if (user && (user.flags & UserFlags.REPORT_BANNED) !== 0n) {
+		if (!user || (user.flags & UserFlags.REPORT_BANNED) === 0n) {
+			return;
+		}
+		const limits = await listActiveFeatureLimits(getEnforcementDecisionRepository(), userId, 'reports');
+		if (limits.length === 0 || limits.some((decision) => !isDecisionExpired(decision))) {
 			throw new ReportBannedError();
+		}
+		const updated = await this.userRepository.updateFlags(userId, (flags) => flags & ~UserFlags.REPORT_BANNED);
+		if (updated) {
+			await dispatchUserUpdate(this.gatewayService, updated);
 		}
 	}
 
@@ -1653,22 +1683,22 @@ export class ReportService {
 		channel: Channel;
 		message: Message;
 	}): Promise<void> {
+		if (reporter.urgent) {
+			return;
+		}
 		const reporterKey = this.getReporterRateLimitKey(reporter);
 		const checks: Array<{
 			identifier: string;
 			maxAttempts: number;
 		}> = [
 			{
-				identifier: this.createReportRateLimitIdentifier(reporterKey),
-				maxAttempts: REPORT_RATE_LIMIT_MAX,
+				identifier: `report:message:target:${message.id.toString()}`,
+				maxAttempts: MESSAGE_REPORT_TARGET_MESSAGE_RATE_LIMIT_MAX,
 			},
+			{identifier: this.createReportRateLimitIdentifier(reporterKey), maxAttempts: REPORT_RATE_LIMIT_MAX},
 			{
 				identifier: `report:message:channel:${reporterKey}:${channel.id.toString()}`,
 				maxAttempts: MESSAGE_REPORT_USER_CHANNEL_RATE_LIMIT_MAX,
-			},
-			{
-				identifier: `report:message:target:${message.id.toString()}`,
-				maxAttempts: MESSAGE_REPORT_TARGET_MESSAGE_RATE_LIMIT_MAX,
 			},
 		];
 		if (channel.guildId) {
@@ -1683,6 +1713,14 @@ export class ReportService {
 		for (const check of checks) {
 			await this.ensureReportRateLimit(check.identifier, check.maxAttempts, true);
 		}
+	}
+
+	private async ensureReporterAllowance(reporter: ReporterMetadata, consume: boolean): Promise<void> {
+		if (reporter.urgent) {
+			return;
+		}
+		const identifier = this.createReportRateLimitIdentifier(this.getReporterRateLimitKey(reporter));
+		await this.ensureReportRateLimit(identifier, REPORT_RATE_LIMIT_MAX, consume);
 	}
 
 	private async ensureReportRateLimit(identifier: string, maxAttempts: number, consume: boolean): Promise<void> {

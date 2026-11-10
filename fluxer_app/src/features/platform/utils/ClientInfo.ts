@@ -14,7 +14,6 @@ import {
 	normalizeArchitectureValue,
 } from '@fluxer/desktop_ipc/src/DesktopLabels';
 import Bowser from 'bowser';
-import {isE2EESupported} from 'livekit-client';
 
 const logger = new Logger('ClientInfoUtils');
 
@@ -252,8 +251,8 @@ function formatTranslationDomGuardFires(): string {
 }
 
 export function formatClientBuildInfo(info: ClientInfo, options: {unknownLabel?: string} = {}): string {
-	const releaseChannel = formatReleaseChannelLabel(Config.PUBLIC_RELEASE_CHANNEL);
-	const buildVersion = Config.PUBLIC_BUILD_VERSION || 'dev';
+	const releaseChannel = formatReleaseChannelLabel(Config.RELEASE_CHANNEL);
+	const buildVersion = Config.BUILD_VERSION || 'dev';
 	const browserName = info.browserName || options.unknownLabel || '';
 	const browserVersion = info.browserVersion || '';
 	const browserInfo = `${browserName} ${browserVersion}`.trim();
@@ -310,12 +309,10 @@ function isLiveKitE2EECapable(): boolean {
 	if (!globalThis.crypto?.subtle) {
 		return false;
 	}
-	try {
-		return isE2EESupported();
-	} catch (error) {
-		logger.warn('Failed to detect LiveKit E2EE support', error);
-		return false;
+	if (typeof window.RTCRtpScriptTransform !== 'undefined') {
+		return true;
 	}
+	return typeof window.RTCRtpSender !== 'undefined' && 'createEncodedStreams' in window.RTCRtpSender.prototype;
 }
 
 export async function getGatewayClientProperties(geo?: {latitude?: string | null; longitude?: string | null}) {
@@ -329,7 +326,7 @@ export async function getGatewayClientProperties(geo?: {latitude?: string | null
 		system_locale: navigator.language,
 		locale: navigator.language,
 		user_agent: navigator.userAgent,
-		build_version: Config.PUBLIC_BUILD_VERSION ?? 'dev',
+		build_version: Config.BUILD_VERSION ?? 'dev',
 		desktop_app_version: info.desktopVersion ?? null,
 		desktop_app_channel: info.desktopChannel ?? null,
 		desktop_arch: info.desktopArch ?? info.arch ?? null,

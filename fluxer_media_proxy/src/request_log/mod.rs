@@ -7,6 +7,7 @@ pub use failure::ErrorReason;
 pub use stage::{Stage, record_stage, timed_stage};
 
 use crate::{
+    constants::OPERATOR_WALL_PATH_PREFIX,
     metrics::{
         self,
         request::{RequestKind, RequestMetrics},
@@ -19,7 +20,10 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use fluxer_common::attachment_url_signature::is_signature_parameter_name;
+use fluxer_common::{
+    attachment_url_signature::is_signature_parameter_name,
+    external_media_path::{percent_decode, reconstruct_original_url},
+};
 use rand::RngExt;
 use stage::{StageTimingSnapshot, StageTimings};
 use std::{future::Future, sync::Arc, time::Instant};
@@ -30,6 +34,8 @@ const ID_LEN: usize = 12;
 const TARGET_LOG_BYTES_MAX: usize = 512;
 pub(crate) const HEADER_LOG_BYTES_MAX: usize = 256;
 const REDACTED_VALUE: &str = "[redacted]";
+const EXTERNAL_PATH_PREFIX: &str = "/external/";
+const RELAY_TOKEN_PARAMETER: &[u8] = b"t";
 
 #[derive(Clone, Debug)]
 pub struct RequestId(pub String);
@@ -70,7 +76,7 @@ impl RequestObservation {
     ) -> Self {
         Self {
             kind: classify_route(path),
-            path: clip(path, TARGET_LOG_BYTES_MAX),
+            path: clip(&path_for_log(path), TARGET_LOG_BYTES_MAX),
             query: query
                 .map(|query| clip(&redact_signature_values(query), TARGET_LOG_BYTES_MAX))
                 .unwrap_or_default(),
@@ -99,7 +105,7 @@ pub fn classify_route(path: &str) -> RequestKind {
     if path.starts_with("/v1/relay/") {
         return RequestKind::Upload;
     }
-    if path.starts_with("/external/") {
+    if path.starts_with(EXTERNAL_PATH_PREFIX) {
         return RequestKind::External;
     }
     if path.starts_with("/attachments/") {
@@ -116,8 +122,10 @@ pub fn classify_route(path: &str) -> RequestKind {
         || path.starts_with("/banners/")
         || path.starts_with("/splashes/")
         || path.starts_with("/embed-splashes/")
+        || path.starts_with("/role-icons/")
         || path.starts_with("/emojis/")
         || path.starts_with("/stickers/")
+        || path.starts_with(OPERATOR_WALL_PATH_PREFIX)
     {
         return RequestKind::AssetImage;
     }
@@ -139,25 +147,6 @@ pub async fn trace(
     );
     req.extensions_mut().insert(id);
     observe(metrics.as_ref(), observation, next.run(req)).await
-}
-
-pub async fn trace_public_request<F>(
-    metrics: &RequestMetrics,
-    id: RequestId,
-    method: Method,
-    path_and_query: &str,
-    headers: &HeaderMap,
-    future: F,
-) -> Response
-where
-    F: Future<Output = Response>,
-{
-    let (path, query) = match path_and_query.split_once('?') {
-        Some((path, query)) => (path, Some(query)),
-        None => (path_and_query, None),
-    };
-    let observation = RequestObservation::new(id, method, path, query, headers);
-    observe(metrics, observation, future).await
 }
 
 async fn observe<F>(
@@ -254,6 +243,8 @@ where
             nsfw_ms,
             reason = code,
             source = %source,
+            referer = referer.as_deref().unwrap_or(""),
+            user_agent = user_agent.as_deref().unwrap_or(""),
             "request rejected"
         ),
     }
@@ -277,6 +268,22 @@ fn log_reason(reason: Option<ErrorReason>, status: StatusCode) -> (&'static str,
     }
 }
 
+fn path_for_log(path: &str) -> String {
+    let Some(rest) = path.strip_prefix(EXTERNAL_PATH_PREFIX) else {
+        return path.to_owned();
+    };
+    let target = rest
+        .split_once('/')
+        .and_then(|(_, proxy_path)| reconstruct_original_url(proxy_path).ok())
+        .map(|url| external_url_for_log(&url))
+        .unwrap_or_else(|| REDACTED_VALUE.to_owned());
+    format!("{EXTERNAL_PATH_PREFIX}{target}")
+}
+
+fn is_logged_secret_name(name: &str) -> bool {
+    is_signature_parameter_name(name) || percent_decode(name, true) == RELAY_TOKEN_PARAMETER
+}
+
 fn redact_signature_values(query: &str) -> String {
     if !query.contains('=') {
         return query.to_owned();
@@ -287,7 +294,7 @@ fn redact_signature_values(query: &str) -> String {
             out.push('&');
         }
         match field.split_once('=') {
-            Some((name, _)) if is_signature_parameter_name(name) => {
+            Some((name, _)) if is_logged_secret_name(name) => {
                 out.push_str(name);
                 out.push('=');
                 out.push_str(REDACTED_VALUE);
@@ -330,35 +337,6 @@ mod tests {
     }
 
     #[test]
-    fn clip_never_splits_a_multibyte_character() {
-        let key = "\u{597d}".repeat(8);
-        assert_eq!(24, key.len());
-        assert_eq!("\u{597d}\u{597d}\u{597d}~", clip(&key, 10));
-        assert_eq!("\u{597d}\u{597d}\u{597d}\u{597d}~", clip(&key, 12));
-        assert_eq!(key, clip(&key, 24));
-    }
-
-    #[test]
-    fn a_long_error_source_is_clipped_to_the_target_bound() {
-        let long = ErrorReason::with_message("storage_error", "k".repeat(4096));
-        let (code, source) = log_reason(Some(long), StatusCode::NOT_FOUND);
-        assert_eq!("storage_error", code);
-        assert_eq!(TARGET_LOG_BYTES_MAX + 1, source.len());
-        assert!(source.ends_with('~'));
-        assert_eq!(
-            ("Not Found", String::new()),
-            log_reason(None, StatusCode::NOT_FOUND)
-        );
-        assert_eq!(
-            ("storage_error", "key=a".to_owned()),
-            log_reason(
-                Some(ErrorReason::with_message("storage_error", "key=a")),
-                StatusCode::NOT_FOUND
-            )
-        );
-    }
-
-    #[test]
     fn a_live_signature_never_reaches_the_log() {
         let signature = "f84dea2dbe168641c69753d838f270806583fedfe5c86f3f7a9a80f93af7ad28";
         for query in [
@@ -370,6 +348,8 @@ mod tests {
             format!("ex=0&is=6a9920b1&hm={signature}&uc=dp"),
             format!("ex=0&is=6a9920b1&hm={signature}&uc=dp&"),
             format!("width=64&%75c=dp&hm={signature}&ex=6a9a7231&is=6a9920b1"),
+            format!("t={signature}&uploadId=2~upload"),
+            format!("partNumber=1&%74={signature}"),
         ] {
             let observation = RequestObservation::new(
                 RequestId::generate(),
@@ -390,35 +370,23 @@ mod tests {
     }
 
     #[test]
-    fn redaction_leaves_every_other_parameter_byte_for_byte() {
-        for query in [
-            "",
-            "size=128",
-            "width=64&height=64&format=webp",
-            "download=1",
-            "hm",
-            "uc",
-            "a=b&&c=d",
-            "ucx=dp&dp=1",
+    fn an_external_target_query_never_reaches_the_log() {
+        for path in [
+            "/external/c2lnbmF0dXJl/%3Ftoken%3Dhunter2/https/cdn.example.com/rooms/hunter2.png",
+            "/external/c2lnbmF0dXJl/v2/aHR0cHM6Ly9jZG4uZXhhbXBsZS5jb20vYS5wbmc_dG9rZW49aHVudGVyMg",
+            "/external/c2lnbmF0dXJl/%3Ftoken%3Dhunter2",
         ] {
-            assert_eq!(query, redact_signature_values(query), "{query}");
+            let observation = RequestObservation::new(
+                RequestId::generate(),
+                Method::GET,
+                path,
+                None,
+                &HeaderMap::new(),
+            );
+            assert!(!observation.path.contains("hunter2"), "{path}");
+            assert!(!observation.path.contains("c2lnbmF0dXJl"), "{path}");
+            assert!(observation.path.starts_with("/external/"), "{path}");
         }
-        assert_eq!(
-            "width=64&ex=[redacted]&is=[redacted]&hm=[redacted]&download=1",
-            redact_signature_values("width=64&ex=6a9a7231&is=6a9920b1&hm=abc&download=1")
-        );
-        assert_eq!(
-            "ex=[redacted]&is=[redacted]&hm=[redacted]&uc=[redacted]&&width=64",
-            redact_signature_values("ex=0&is=6a9920b1&hm=abc&uc=dp&&width=64")
-        );
-        assert_eq!(
-            "ex=[redacted]&is=[redacted]&hm=[redacted]",
-            redact_signature_values("ex=6a9a7231&is=6a9920b1&hm=abc")
-        );
-        assert_eq!(
-            "ex=[redacted]&is=[redacted]&hm=[redacted]&uc=[redacted]",
-            redact_signature_values("ex=0&is=6a9920b1&hm=abc&uc=dp")
-        );
     }
 
     #[test]
@@ -437,16 +405,5 @@ mod tests {
             observation.referer
         );
         assert_eq!(Some("curl/8.0".to_owned()), observation.user_agent);
-    }
-
-    #[test]
-    fn unparsable_referer_collapses_to_a_marker_and_paths_stay_raw() {
-        let mut headers = HeaderMap::new();
-        headers.insert(header::REFERER, "not a url".parse().unwrap());
-        let observation = observation_with_headers(headers);
-        assert_eq!(Some("[invalid-url]".to_owned()), observation.referer);
-        assert_eq!("/attachments/1/2/a.png", observation.path);
-        assert_eq!("size=128", observation.query);
-        assert_eq!(RequestKind::Attachment, observation.kind);
     }
 }

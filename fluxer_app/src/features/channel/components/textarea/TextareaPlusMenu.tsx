@@ -113,11 +113,6 @@ export const TextareaPlusMenu = observer(
 			uploadActionHint = cannotUploadFilesHint;
 		}
 		const sendGiftHint = !canSendMessages ? cannotSendMessagesHint : undefined;
-		const sendVoiceMessageDisabledHint = !canSendMessages
-			? cannotSendMessagesHint
-			: !canAttachFiles
-				? cannotUploadFilesHint
-				: undefined;
 		const createPollHint = !canSendMessages
 			? cannotSendMessagesHint
 			: !canSendPolls
@@ -178,7 +173,7 @@ export const TextareaPlusMenu = observer(
 						icon={<MicrophoneIcon weight="bold" data-flx="channel.textarea.textarea-plus-menu.microphone-icon" />}
 						onClick={onSendVoiceMessage}
 						disabled={!canSendMessages || !canAttachFiles}
-						hint={sendVoiceMessageDisabledHint ?? sendVoiceMessageKeybindHint}
+						hint={uploadActionHint ?? sendVoiceMessageKeybindHint}
 						data-flx="channel.textarea.textarea-plus-menu.menu-item.send-voice-message"
 					>
 						{i18n._(SEND_VOICE_MESSAGE_DESCRIPTOR)}

@@ -12,7 +12,6 @@ import {formatDuration, getFileExtension} from '@app/features/channel/components
 import {PickerThumbnail} from '@app/features/channel/components/pickers/shared/PickerThumbnail';
 import {usePooledVideo} from '@app/features/channel/components/pickers/shared/usePooledVideo';
 import MemesPicker from '@app/features/emoji/state/MemesPicker';
-
 import {EditFavoriteMemeModal} from '@app/features/expressions/components/modals/EditFavoriteMemeModal';
 import type {FavoriteMeme} from '@app/features/expressions/models/FavoriteMeme';
 import {isKeyboardActivationKey} from '@app/features/input/utils/KeyboardUtils';
@@ -23,6 +22,7 @@ import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
+import {getFormattingLocale} from '@app/features/user/utils/LocaleUtils';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
 import {MusicNoteIcon, PencilSimpleIcon, TrashIcon} from '@phosphor-icons/react';
@@ -61,7 +61,7 @@ const GifIndicator = observer(() => (
 const VideoPoster = ({src, placeholder}: {src: string; placeholder: string | null}) => {
 	return (
 		<PickerThumbnail
-			src={buildMediaProxyURL(src, {format: 'webp'})}
+			src={src && buildMediaProxyURL(src, {format: 'webp'})}
 			alt=""
 			className={gifStyles.gif}
 			placeholder={placeholder}
@@ -104,10 +104,10 @@ export const MemeGridItem = observer(
 			isHovering: isVideoPreviewActive,
 		});
 		const shouldRenderVideoPreview = !isAudio && isVideo && isVideoPreviewActive && shouldAnimateGif;
-		const memeUrl = AttachmentUrlRefresher.fresh(meme.url, {refreshUnsigned: true});
+		const memeUrl = AttachmentUrlRefresher.freshWhenReady(meme.url, {refreshUnsigned: true}) ?? '';
 		const thumbnailSrc =
 			isGifImage && !shouldAnimateGif
-				? AttachmentUrlRefresher.fresh(buildStaticGifPreviewURL(meme.url), {refreshUnsigned: true})
+				? (AttachmentUrlRefresher.freshWhenReady(buildStaticGifPreviewURL(meme.url), {refreshUnsigned: true}) ?? '')
 				: memeUrl;
 		const videoPreviewStartTime = meme.duration && meme.duration > 0 ? meme.duration / 2 : null;
 		usePooledVideo({
@@ -222,7 +222,7 @@ export const MemeGridItem = observer(
 							<div className={styles.audioMeta} data-flx="channel.pickers.memes.meme-grid-item.audio-meta">
 								{meme.duration && (
 									<div className={styles.audioDuration} data-flx="channel.pickers.memes.meme-grid-item.audio-duration">
-										{formatDuration(meme.duration, i18n.locale)}
+										{formatDuration(meme.duration, getFormattingLocale())}
 									</div>
 								)}
 								<Tooltip text={meme.filename} data-flx="channel.pickers.memes.meme-grid-item.tooltip">

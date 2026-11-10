@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-import {stripBannerForUser} from '@app/api/infrastructure/AssetEntitlementUtils';
 import type {Application} from '@app/api/models/Application';
 import type {User} from '@app/api/models/User';
 import type {UserRepository} from '@app/api/user/repositories/UserRepository';
-import {mapUserToPartialResponse} from '@app/api/user/UserMappers';
-import {type UserAuthenticatorType, UserAuthenticatorTypes} from '@fluxer/constants/src/UserConstants';
+import {
+	getActiveAuthenticatorTypes,
+	mapUserToPartialResponse,
+	mapUserToProfileResponse,
+} from '@app/api/user/UserMappers';
 import type {
 	ApplicationBotResponse,
 	ApplicationResponse,
@@ -17,13 +19,6 @@ export function findBotUser(users: Pick<UserRepository, 'findUnique'>, applicati
 	return application.botUserId ? users.findUnique(application.botUserId) : Promise.resolve(null);
 }
 
-function getActiveAuthenticatorTypes(user: User): Array<UserAuthenticatorType> {
-	return Array.from(user.authenticatorTypes ?? []).filter(
-		(type): type is UserAuthenticatorType =>
-			type === UserAuthenticatorTypes.TOTP || type === UserAuthenticatorTypes.WEBAUTHN,
-	);
-}
-
 export function mapBotUserToResponse(
 	user: User,
 	opts?: {
@@ -31,14 +26,15 @@ export function mapBotUserToResponse(
 	},
 ): ApplicationBotResponse {
 	const partial = mapUserToPartialResponse(user);
+	const profile = mapUserToProfileResponse(user);
 	const authenticatorTypes = getActiveAuthenticatorTypes(user);
 	return {
 		id: partial.id,
 		username: partial.username,
 		discriminator: partial.discriminator,
 		avatar: partial.avatar,
-		banner: stripBannerForUser(user),
-		bio: user.bio ?? null,
+		banner: profile.banner,
+		bio: profile.bio ?? null,
 		token: opts?.token,
 		mfa_enabled: authenticatorTypes.length > 0,
 		authenticator_types: authenticatorTypes,
@@ -82,13 +78,14 @@ export function mapBotTokenResetResponse(user: User, token: string): BotTokenRes
 
 export function mapBotProfileToResponse(user: User): BotProfileResponse {
 	const partial = mapUserToPartialResponse(user);
+	const profile = mapUserToProfileResponse(user);
 	return {
 		id: partial.id,
 		username: partial.username,
 		discriminator: partial.discriminator,
 		avatar: partial.avatar,
-		banner: stripBannerForUser(user),
-		bio: user.bio ?? null,
+		banner: profile.banner,
+		bio: profile.bio ?? null,
 		flags: partial.flags,
 	};
 }

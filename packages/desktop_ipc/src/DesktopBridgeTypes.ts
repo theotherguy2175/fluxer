@@ -100,6 +100,31 @@ export interface ThemeLinkedFileChange {
 	error?: ThemeLinkedFileError;
 }
 
+export type ThemeFolderStatus = 'live' | 'missing' | 'not_allowed';
+
+export interface ThemeFolderRename {
+	from: string;
+	to: string;
+	fileName: string;
+}
+
+export interface ThemeFolderChange {
+	folder: string;
+	status: ThemeFolderStatus;
+	truncated: boolean;
+	snapshot: boolean;
+	added: Array<ThemeDirectoryCssFile>;
+	changed: Array<ThemeDirectoryCssFile>;
+	removed: Array<string>;
+	renamed: Array<ThemeFolderRename>;
+}
+
+export type ThemeFolderImportError = {error: 'folder_limit'; limit: number} | {error: 'unreadable'};
+
+export type ThemeFolderImportResult =
+	| {folder: string; files: Array<ThemeDirectoryCssFile>; truncated: boolean}
+	| ThemeFolderImportError;
+
 export type VoiceBackgroundMediaKind = 'static' | 'animated' | 'video';
 
 export interface VoiceBackgroundMediaCacheRequest {
@@ -122,11 +147,16 @@ export interface VoiceBackgroundMediaReadResult {
 
 export interface DesktopTroubleshootingSettings {
 	disableHardwareAcceleration: boolean;
+	disableModuleUpdates: boolean;
 }
 
 export interface SetDesktopTroubleshootingDisableHardwareAccelerationOptions {
 	disable: boolean;
 	restart?: boolean;
+}
+
+export interface SetDesktopTroubleshootingDisableModuleUpdatesOptions {
+	disable: boolean;
 }
 
 export interface DesktopVoiceDebugEventSinkEntry {
@@ -158,7 +188,7 @@ export interface UpdaterDownloadOption {
 	sha256?: string | null;
 }
 
-export type MediaAccessType = 'microphone' | 'camera' | 'screen' | 'audio-capture';
+export type MediaAccessType = 'microphone' | 'camera' | 'screen';
 
 export type MediaAccessStatus = 'granted' | 'denied' | 'not-determined' | 'restricted' | 'unknown';
 
@@ -175,7 +205,7 @@ export interface VirtmicLinkOptions {
 	workaround?: boolean;
 }
 
-export type NativeAudioBackend = 'macos-sck' | 'macos-coreaudio' | 'windows-wasapi-loopback' | 'linux-pipewire';
+export type NativeAudioBackend = 'macos-sck' | 'windows-wasapi-loopback' | 'linux-pipewire';
 
 export interface NativeAudioAvailability {
 	available: boolean;
@@ -187,6 +217,7 @@ export interface NativeAudioAvailability {
 		processInclude?: boolean;
 		processExclude?: boolean;
 		sessionMixer?: boolean;
+		endpointSelect?: boolean;
 		systemLoopbackMode?: 'process-exclude' | 'session-mixer' | 'unavailable';
 	};
 	reason?:
@@ -210,15 +241,30 @@ export interface NativeAudioApplication {
 export interface NativeAudioStartOptions {
 	targetPid?: number;
 	includeProcessTree?: boolean;
-	macBackend?: 'sck' | 'coreaudio' | 'auto';
 	macCaptureScope?: 'process' | 'system';
 	winCaptureScope?: 'process' | 'system' | 'session-mixer';
+	winEndpoints?: Array<string>;
 	linuxRule?: VirtmicLinkOptions & {
 		include?: Array<VirtmicNode>;
 		exclude?: Array<VirtmicNode>;
 		onlySpeakers?: boolean;
 		onlyDefaultSpeakers?: boolean;
 	};
+}
+
+export interface NativeAudioPlaybackDeviceSession {
+	pid: number;
+	rootPid: number;
+	exe: string;
+	state: 'active' | 'inactive';
+	excluded: boolean;
+}
+
+export interface NativeAudioPlaybackDevice {
+	id: string;
+	name: string;
+	isDefault: boolean;
+	sessions: Array<NativeAudioPlaybackDeviceSession>;
 }
 
 export interface NativeAudioStartResult {
@@ -275,6 +321,8 @@ export interface TrayRuntimeStatePayload {
 	selfDeaf: boolean;
 	presenceStatus: TrayPresenceStatus | null;
 	buildInfo: string | null;
+	hidePersonalInformation: boolean;
+	customCssOff: boolean | null;
 }
 
 export type GlobalShortcutsBackend = 'portal' | 'x11' | 'evdev' | 'windows' | 'macos' | 'none';

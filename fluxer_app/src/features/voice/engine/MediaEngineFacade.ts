@@ -2,6 +2,7 @@
 
 import assert from 'node:assert/strict';
 import {showGenericErrorModal} from '@app/features/app/components/alerts/GenericErrorModalCommands';
+import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
 import Authentication from '@app/features/auth/state/Authentication';
 import type {Channel} from '@app/features/channel/models/Channel';
 import Channels from '@app/features/channel/state/Channels';
@@ -15,18 +16,20 @@ import {SOMETHING_WENT_WRONG_DESCRIPTOR} from '@app/features/i18n/utils/CommonMe
 import Keybind from '@app/features/input/state/InputKeybind';
 import GuildMembers from '@app/features/member/state/GuildMembers';
 import * as NavigationCommands from '@app/features/navigation/commands/NavigationCommands';
-import {SoundType, setSoundOutputDeviceIdResolver} from '@app/features/notification/utils/SoundUtils';
+import {SoundType} from '@app/features/notification/utils/SoundUtils';
 import MediaPermission from '@app/features/permissions/system/state/MediaPermission';
 import NativePermission from '@app/features/permissions/system/state/NativePermission';
 import {Logger} from '@app/features/platform/utils/AppLogger';
+import {isInsecureBrowserContext} from '@app/features/platform/utils/SecureContext';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';
 import * as SoundCommands from '@app/features/ui/commands/SoundCommands';
 import * as ToastCommands from '@app/features/ui/commands/ToastCommands';
 import Idle from '@app/features/ui/state/Idle';
-import Sound from '@app/features/ui/state/Sound';
 import {getElectronAPI, isDesktop} from '@app/features/ui/utils/NativeUtils';
 import Users from '@app/features/user/state/Users';
+import {openAccountGateFlow} from '@app/features/user/utils/AccountGatePresentation';
+import {canPerform} from '@app/features/user/utils/AccountGates';
 import * as NicknameUtils from '@app/features/user/utils/NicknameUtils';
 import {VoiceP2pPeerFailedModal} from '@app/features/voice/components/alerts/VoiceP2pPeerFailedModal';
 import {getStreamKey, parseStreamKey} from '@app/features/voice/components/StreamKeys';
@@ -48,14 +51,13 @@ import {
 } from '@app/features/voice/engine/MediaEngineFacadeStateMachine';
 import {
 	AFK_CHECK_INTERVAL_MS,
-	CLAIM_YOUR_ACCOUNT_TO_JOIN_THIS_VOICE_CHANNEL_DESCRIPTOR,
-	CLAIM_YOUR_ACCOUNT_TO_JOIN_VOICE_CHANNELS_YOU_DESCRIPTOR,
-	CLAIM_YOUR_ACCOUNT_TO_START_OR_JOIN_1_DESCRIPTOR,
 	DEFERRED_DISCONNECT_TIMEOUT_MS,
 	RECONNECT_SUCCEEDED_PICK_A_SCREEN_AGAIN_IF_YOU_DESCRIPTOR,
 	VOICE_CHANNEL_NO_LONGER_AVAILABLE_DESCRIPTOR,
 	VOICE_CONNECTION_FAILED_DESCRIPTOR,
 	VOICE_CONNECTION_LIMIT_REACHED_DESCRIPTOR,
+	VOICE_E2EE_NEEDS_HTTPS_DESCRIPTOR,
+	VOICE_E2EE_REQUIRED_DESCRIPTOR,
 	YOU_CAN_T_JOIN_WHILE_YOU_RE_ON_DESCRIPTOR,
 } from '@app/features/voice/engine/media_engine_facade/shared';
 import {
@@ -102,6 +104,7 @@ import {startVoiceMediaGraphTimerScheduler} from '@app/features/voice/engine/Voi
 import {bindOutputDeviceSync} from '@app/features/voice/engine/VoiceOutputDeviceSync';
 import type {LivekitParticipantSnapshot} from '@app/features/voice/engine/VoiceParticipantStateMachine';
 import {bindRoomEvents, type RoomEventDependencies} from '@app/features/voice/engine/VoiceRoomEventBinder';
+import VoiceRuntime from '@app/features/voice/engine/VoiceRuntime';
 import type {VoiceStateSyncPartial, VoiceStateSyncPayload} from '@app/features/voice/engine/VoiceStateSyncTypes';
 import {
 	deferStopWatchingStreamKey,
@@ -175,6 +178,8 @@ import {
 } from '@app/features/voice/utils/VoicePermissionUtils';
 import {getActiveVoiceProcessingMode} from '@app/features/voice/utils/VoiceProcessingProfile';
 import type {NativeAudioStartOptions} from '@app/types/electron.d';
+import {AccountTiers, type TierGatedAction, TierGatedActions} from '@fluxer/constants/src/AccountTierConstants';
+import {resolveVerificationNeed} from '@fluxer/constants/src/AccountTierRules';
 import {ME} from '@fluxer/constants/src/AppConstants';
 import {ChannelTypes} from '@fluxer/constants/src/ChannelConstants';
 import {shouldApplyGatewayVoiceStateEcho} from '@fluxer/voice_engine_v2/src/core/reducers/gateway';
@@ -207,6 +212,12 @@ import React from 'react';
 
 const logger = new Logger('MediaEngineFacade');
 const VOICE_P2P_PEER_FAILED_MODAL_KEY = 'voice-p2p-peer-failed';
+
+function voiceGateAction(channelType: number | undefined): TierGatedAction {
+	if (channelType === ChannelTypes.DM) return TierGatedActions.CALL;
+	if (channelType === ChannelTypes.GROUP_DM) return TierGatedActions.GROUP_CALL;
+	return TierGatedActions.VOICE;
+}
 
 function isCameraPermissionDeniedCommandFailure(error: unknown): boolean {
 	if (!(error instanceof Error)) return false;
@@ -318,9 +329,7 @@ interface ConnectDirectlyOptions {
 
 type TerminalUnloadVoiceDisconnectReason = 'pagehide' | 'beforeunload' | 'unload';
 
-type VoiceMuteReason = 'guild' | 'permission' | 'voice_push_to_talk' | 'self' | null;
-
-export interface VoiceEngineConnectionContext {
+interface VoiceEngineConnectionContext {
 	guildId: string | null;
 	channelId: string | null;
 	connectionId: string | null;
@@ -434,9 +443,6 @@ class MediaEngineFacade extends Store {
 		this.initializeE2EEStatusSync();
 		this.initializeP2pPeerFailedModalSync();
 		this.initializeTerminalUnloadVoiceDisconnect();
-		Sound.setSelfDeafenedResolver(() => getEffectiveAudioState().effectiveDeaf);
-		setSoundOutputDeviceIdResolver(() => VoiceSettings.getOutputDeviceId());
-		this.prewarmVoiceEngineV2InBackground('startup');
 		(
 			window as typeof window & {
 				_mediaEngine?: MediaEngineFacade;
@@ -481,7 +487,7 @@ class MediaEngineFacade extends Store {
 		});
 	}
 
-	private prewarmVoiceEngineV2InBackground(reason: string): void {
+	prewarmInBackground(reason: string): void {
 		void this.voiceEngineV2Host
 			.runAndWait(
 				() => {
@@ -1070,6 +1076,21 @@ class MediaEngineFacade extends Store {
 		});
 	}
 
+	private promptAccountForVoice(action: TierGatedAction): void {
+		const i18n = this.i18n;
+		if (!i18n) return;
+		const user = Users.getCurrentUser();
+		const need =
+			user?.verificationNeed ??
+			resolveVerificationNeed({
+				tier: AccountTiers.UNCLAIMED,
+				identityMode: RuntimeConfig.accountIdentity,
+				hasEmail: user?.email != null,
+			});
+		if (need === null) return;
+		openAccountGateFlow(i18n, {action, need});
+	}
+
 	private showVoiceChannelUnavailableErrorModal(): void {
 		if (!this.i18n) return;
 		this.showVoiceErrorModal(
@@ -1130,11 +1151,11 @@ class MediaEngineFacade extends Store {
 			voiceChannel && resolvedGuildId && currentUserId
 				? (GuildMembers.getMember(resolvedGuildId, currentUserId)?.isTimedOut() ?? false)
 				: false;
-		const currentUser = Users.getCurrentUser();
-		const isUnclaimed = !(currentUser?.isClaimed() ?? false);
 		const guild = resolvedGuildId ? Guilds.getGuild(resolvedGuildId) : null;
-		const isOwner = guild?.isOwner(currentUserId) ?? false;
 		const channel = voiceChannel ?? Channels.getChannel(channelId);
+		const voiceGate = canPerform(Users.getCurrentUser(), voiceGateAction(channel?.type), {
+			isGuildOwner: guild?.isOwner(currentUserId) ?? false,
+		});
 		const blockedByMatureGate =
 			Boolean(voiceChannel) &&
 			!options.skipChannelGate &&
@@ -1145,9 +1166,7 @@ class MediaEngineFacade extends Store {
 		const preflightDecision = selectMediaEngineConnectPreflightDecision({
 			targetAvailable: Boolean(voiceChannel),
 			isTimedOut: Boolean(isTimedOut),
-			isUnclaimed,
-			isGuildOwner: resolvedGuildId ? isOwner : true,
-			isDirectMessage: channel?.type === ChannelTypes.DM,
+			accountGateDenied: !voiceGate.allowed,
 			hasGatewaySocket: Boolean(GatewaySessions.foregroundConnection.socket),
 			blockedByMatureGate,
 			channelLimitAllowed: true,
@@ -1160,12 +1179,11 @@ class MediaEngineFacade extends Store {
 			if (!this.i18n) {
 				throw new Error('MediaEngineFacade: i18n not initialized');
 			}
-			const descriptor =
-				preflightDecision.reason === 'timed-out'
-					? YOU_CAN_T_JOIN_WHILE_YOU_RE_ON_DESCRIPTOR
-					: preflightDecision.reason === 'claim-account-direct'
-						? CLAIM_YOUR_ACCOUNT_TO_START_OR_JOIN_1_DESCRIPTOR
-						: CLAIM_YOUR_ACCOUNT_TO_JOIN_VOICE_CHANNELS_YOU_DESCRIPTOR;
+			if (preflightDecision.reason === 'account-gate') {
+				if (!voiceGate.allowed) openAccountGateFlow(this.i18n, {action: voiceGate.action, need: voiceGate.need});
+				return;
+			}
+			const descriptor = YOU_CAN_T_JOIN_WHILE_YOU_RE_ON_DESCRIPTOR;
 			this.showVoiceErrorModal(
 				descriptor,
 				`voice.media-engine-facade.preflight-${preflightDecision.reason}-error-modal`,
@@ -1186,9 +1204,7 @@ class MediaEngineFacade extends Store {
 		const channelLimitDecision = selectMediaEngineConnectPreflightDecision({
 			targetAvailable: true,
 			isTimedOut: false,
-			isUnclaimed: false,
-			isGuildOwner: true,
-			isDirectMessage: false,
+			accountGateDenied: false,
 			hasGatewaySocket: true,
 			blockedByMatureGate: false,
 			channelLimitAllowed,
@@ -2246,13 +2262,8 @@ class MediaEngineFacade extends Store {
 
 	async ensureLinuxScreenShareAudioPublication(
 		linuxRule?: NonNullable<NativeAudioStartOptions['linuxRule']>,
-		options?: {includeSelfWindowAudio?: boolean; replaceExisting?: boolean},
 	): Promise<boolean> {
-		return voiceEngineV2AppScreenShareExecutionAdapter.ensureLinuxScreenShareAudioPublication(
-			this.room,
-			linuxRule,
-			options,
-		);
+		return voiceEngineV2AppScreenShareExecutionAdapter.ensureLinuxScreenShareAudioPublication(this.room, linuxRule);
 	}
 
 	async ensureWindowScreenShareAudioPublication(sourceId: string): Promise<boolean> {
@@ -2311,10 +2322,6 @@ class MediaEngineFacade extends Store {
 	handlePushToTalkModeChange(): void {
 		voiceEngineV2AppMediaExecutionAdapter.handlePushToTalkModeChange(this.room, () => this.getCurrentUserVoiceState());
 		this.syncVoiceEngineV2AudioControlsFromAppState();
-	}
-
-	getMuteReason(voiceState: VoiceState | null): VoiceMuteReason {
-		return voiceEngineV2AppMediaExecutionAdapter.getMuteReason(voiceState, this.guildId, this.channelId);
 	}
 
 	isMicrophoneFailureLatched(): boolean {
@@ -2641,12 +2648,18 @@ class MediaEngineFacade extends Store {
 			if (!this.i18n) {
 				throw new Error('MediaEngineFacade: i18n not initialized');
 			}
-			const descriptor =
-				decision.toast === 'timed-out'
-					? YOU_CAN_T_JOIN_WHILE_YOU_RE_ON_DESCRIPTOR
-					: decision.toast === 'connection-limit'
-						? VOICE_CONNECTION_LIMIT_REACHED_DESCRIPTOR
-						: CLAIM_YOUR_ACCOUNT_TO_JOIN_THIS_VOICE_CHANNEL_DESCRIPTOR;
+			if (decision.toast === 'unclaimed-account') {
+				this.promptAccountForVoice(TierGatedActions.VOICE);
+				return;
+			}
+			const descriptors = {
+				'timed-out': YOU_CAN_T_JOIN_WHILE_YOU_RE_ON_DESCRIPTOR,
+				'connection-limit': VOICE_CONNECTION_LIMIT_REACHED_DESCRIPTOR,
+				'e2ee-required': isInsecureBrowserContext()
+					? VOICE_E2EE_NEEDS_HTTPS_DESCRIPTOR
+					: VOICE_E2EE_REQUIRED_DESCRIPTOR,
+			};
+			const descriptor = descriptors[decision.toast];
 			this.showVoiceErrorModal(descriptor, `voice.media-engine-facade.gateway-${decision.toast}-error-modal`);
 		}
 		if (decision.p2pRefusal) {
@@ -2780,6 +2793,7 @@ class MediaEngineFacade extends Store {
 }
 
 const instance = new MediaEngineFacade();
+VoiceRuntime.registerEngine(instance);
 
 export function useMediaEngineVersion(): number {
 	return useStoreVersion(instance);

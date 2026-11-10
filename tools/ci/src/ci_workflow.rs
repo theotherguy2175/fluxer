@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use crate::common::{CommandSpec, run_command};
-use crate::desktop::write_build_channel_file;
 use crate::gateway::{GatewayStep, run_gateway_step};
 use anyhow::{Context, Result};
 use clap::{Args, ValueEnum};
@@ -25,7 +24,6 @@ enum CiStep {
     GatewayFmt,
     GatewayCompile,
     GatewayDialyzer,
-    GatewayEunit,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -53,13 +51,7 @@ pub async fn run_ci(args: CiArgs) -> Result<()> {
         }
         CiStep::Test => {
             run_generators(&root, false)?;
-            run_app_test_artifact_generators(&root, AppWasm::ReuseIfPresent)?;
             run_workspace_tests(&root)?;
-            run_command(
-                CommandSpec::new("pnpm")
-                    .args(["--filter", "fluxer_desktop", "test:main"])
-                    .current_dir(&root),
-            )?;
             run_command(with_test_env(
                 CommandSpec::new("pnpm")
                     .args(["--filter", "fluxer_api", "test"])
@@ -68,7 +60,6 @@ pub async fn run_ci(args: CiArgs) -> Result<()> {
         }
         CiStep::Knip => {
             run_app_test_artifact_generators(&root, AppWasm::ReuseIfPresent)?;
-            ensure_desktop_build_channel_file(&root)?;
             run_fluxer_app_script(&root, "i18n:compile")?;
             run_command(
                 CommandSpec::new("pnpm")
@@ -76,24 +67,14 @@ pub async fn run_ci(args: CiArgs) -> Result<()> {
                     .current_dir(root),
             )
         }
-        CiStep::GatewayFmt => {
-            run_gateway_step(&root.join("fluxer_gateway"), GatewayStep::FmtCheck, "test")
-        }
+        CiStep::GatewayFmt => run_gateway_step(&root.join("fluxer_gateway"), GatewayStep::FmtCheck),
         CiStep::GatewayCompile => {
-            run_gateway_step(&root.join("fluxer_gateway"), GatewayStep::Compile, "test")
+            run_gateway_step(&root.join("fluxer_gateway"), GatewayStep::Compile)
         }
         CiStep::GatewayDialyzer => {
-            run_gateway_step(&root.join("fluxer_gateway"), GatewayStep::Dialyzer, "test")
-        }
-        CiStep::GatewayEunit => {
-            run_gateway_step(&root.join("fluxer_gateway"), GatewayStep::Eunit, "test")
+            run_gateway_step(&root.join("fluxer_gateway"), GatewayStep::Dialyzer)
         }
     }
-}
-
-fn ensure_desktop_build_channel_file(root: &Path) -> Result<()> {
-    let channel = env::var("BUILD_CHANNEL").unwrap_or_else(|_| "stable".to_string());
-    write_build_channel_file(&root.join("fluxer_desktop"), &channel)
 }
 
 fn run_app_test_artifact_generators(root: &Path, wasm: AppWasm) -> Result<()> {
@@ -129,7 +110,7 @@ fn app_wasm_artifacts(root: &Path) -> Vec<PathBuf> {
         app_dir.join("pkgs/libfluxwebp/libfluxwebp_bg.wasm.d.ts"),
         app_dir.join("pkgs/libfluxwebp/libfluxwebp_simd_bg.wasm"),
         app_dir.join("pkgs/libfluxwebp/libfluxwebp_simd_bg.wasm.d.ts"),
-        app_dir.join("src/features/messaging/utils/markdown/parser/MarkdownParserWasmBytes.ts"),
+        app_dir.join("pkgs/markdown_parser/markdown_parser.wasm"),
     ]
 }
 
@@ -182,8 +163,6 @@ fn workspace_test_args(concurrency: Option<&str>) -> Vec<OsString> {
             "!fluxer_api",
             "--filter",
             "!fluxer",
-            "--filter",
-            "!fluxer_desktop",
             "--if-present",
             "test",
         ]

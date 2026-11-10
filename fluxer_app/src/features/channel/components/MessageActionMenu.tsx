@@ -30,6 +30,7 @@ import {
 	TRY_AGAIN_DESCRIPTOR,
 	UNPIN_MESSAGE_DESCRIPTOR,
 } from '@app/features/i18n/utils/CommonMessageDescriptors';
+import * as SavedMessageCommands from '@app/features/messaging/commands/SavedMessageCommands';
 import {useMessageReactions as useMessageReactionsSnapshot} from '@app/features/messaging/hooks/useMessageReactionStore';
 import type {Message} from '@app/features/messaging/models/MessagingMessage';
 import SavedMessages from '@app/features/messaging/state/SavedMessages';
@@ -175,7 +176,10 @@ export const useMessageActionMenuData = (
 		() => createMessageActionHandlers(message, {i18n, onClose, channel: permissions?.channel ?? sourceChannel}),
 		[message, permissions?.channel, sourceChannel, onClose, i18n.locale],
 	);
-	const isSaved = useMemo(() => SavedMessages.isSaved(message.id), [message.id]);
+	const isSaved = SavedMessages.isSaved(message.id);
+	useEffect(() => {
+		void SavedMessageCommands.ensureAllLoaded();
+	}, []);
 	const channel = permissions?.channel ?? sourceChannel ?? null;
 	const shouldBuildQuickReactions = permissions?.canAddReactions === true && message.state === MessageStates.SENT;
 	const reactionEmojiLimit = Math.max(quickReactionCount, submenuReactionCount);
@@ -253,7 +257,7 @@ export const useMessageActionMenuData = (
 					shortcut: <KeybindHint action="message_react" data-flx="channel.message-action-menu.groups.keybind-hint" />,
 				});
 			}
-			if (reactions.length > 0 && onOpenReactionsSheet) {
+			if (reactions.length > 0 && onOpenReactionsSheet && !permissions?.isPreviewing) {
 				reactionActions.push({
 					id: messageActionMenuItemIds.viewReactions,
 					icon: <ViewReactionsIcon size={20} data-flx="channel.message-action-menu.groups.view-reactions-icon" />,
@@ -272,15 +276,17 @@ export const useMessageActionMenuData = (
 					danger: true,
 				});
 			}
-			interactionActions.push({
-				id: messageActionMenuItemIds.markUnread,
-				icon: <MarkAsUnreadIcon size={20} data-flx="channel.message-action-menu.groups.mark-as-unread-icon" />,
-				label: i18n._(MARK_AS_UNREAD_DESCRIPTOR),
-				onClick: handlers.handleMarkAsUnread,
-				shortcut: (
-					<KeybindHint action="message_mark_unread" data-flx="channel.message-action-menu.groups.keybind-hint--2" />
-				),
-			});
+			if (!permissions?.isPreviewing) {
+				interactionActions.push({
+					id: messageActionMenuItemIds.markUnread,
+					icon: <MarkAsUnreadIcon size={20} data-flx="channel.message-action-menu.groups.mark-as-unread-icon" />,
+					label: i18n._(MARK_AS_UNREAD_DESCRIPTOR),
+					onClick: handlers.handleMarkAsUnread,
+					shortcut: (
+						<KeybindHint action="message_mark_unread" data-flx="channel.message-action-menu.groups.keybind-hint--2" />
+					),
+				});
+			}
 			if (message.isUserMessage() && supportsInteractiveActions && permissions?.canSendMessages) {
 				interactionActions.push({
 					id: messageActionMenuItemIds.reply,

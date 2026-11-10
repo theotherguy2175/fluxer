@@ -38,10 +38,6 @@ const MACOS_DEV_ELECTRON_USAGE_DESCRIPTIONS: &[(&str, &str)] = &[
         "Fluxer needs access to Apple Events for automation features.",
     ),
     (
-        "NSAudioCaptureUsageDescription",
-        "Fluxer captures audio from the screen or window you choose to share.",
-    ),
-    (
         "NSScreenCaptureUsageDescription",
         "Fluxer captures the screen or window you choose to share.",
     ),
@@ -272,11 +268,11 @@ fn ensure_renderer(rebuild: bool) -> Result<(PathBuf, String)> {
             env: vec![
                 ("NODE_ENV".to_owned(), Some("production".to_owned())),
                 (
-                    "PUBLIC_BUILD_VERSION".to_owned(),
+                    "BUILD_VERSION".to_owned(),
                     Some(RENDERER_BUILD_VERSION.to_owned()),
                 ),
                 (
-                    "PUBLIC_RELEASE_CHANNEL".to_owned(),
+                    "BUILD_CHANNEL".to_owned(),
                     Some(DEVELOPMENT_CHANNEL.to_owned()),
                 ),
             ],
@@ -293,29 +289,6 @@ fn ensure_renderer(rebuild: bool) -> Result<(PathBuf, String)> {
     fs::write(&stamp_path, format!("{fingerprint}\n"))
         .with_context(|| format!("failed to write {}", stamp_path.display()))?;
     Ok((cache, fingerprint))
-}
-
-struct BuildChannelFileGuard {
-    path: PathBuf,
-    original: Option<String>,
-}
-
-impl BuildChannelFileGuard {
-    fn capture() -> Self {
-        let path = DESKTOP_DIR.join("src/common/BuildChannel.ts");
-        let original = fs::read_to_string(&path).ok();
-        Self { path, original }
-    }
-}
-
-impl Drop for BuildChannelFileGuard {
-    fn drop(&mut self) {
-        if let Some(original) = &self.original
-            && fs::read_to_string(&self.path).ok().as_deref() != Some(original.as_str())
-        {
-            let _ = fs::write(&self.path, original);
-        }
-    }
 }
 
 #[derive(Debug, serde::Deserialize)]
@@ -374,12 +347,8 @@ pub fn build_desktop_shell() -> Result<()> {
             Some(env::var("BUILD_CHANNEL").unwrap_or_else(|_| "canary".to_owned())),
         ),
         (
-            "PUBLIC_BUILD_VERSION".to_owned(),
-            Some(env::var("PUBLIC_BUILD_VERSION").unwrap_or_else(|_| "dev".to_owned())),
-        ),
-        (
-            "PUBLIC_RELEASE_CHANNEL".to_owned(),
-            Some(env::var("PUBLIC_RELEASE_CHANNEL").unwrap_or_else(|_| "canary".to_owned())),
+            "BUILD_VERSION".to_owned(),
+            Some(env::var("BUILD_VERSION").unwrap_or_else(|_| "dev".to_owned())),
         ),
     ];
     run_command(
@@ -425,58 +394,46 @@ pub fn build_desktop(
         )
         .with_context(|| format!("failed to write {}", version_file.display()))?;
     }
-    {
-        let _guard = BuildChannelFileGuard::capture();
-        run_command(
-            &[
-                "pnpm",
-                "exec",
-                "node",
-                "scripts/build.mjs",
-                "--use-shared-renderer",
+    run_command(
+        &[
+            "pnpm",
+            "exec",
+            "node",
+            "scripts/build.mjs",
+            "--use-shared-renderer",
+        ],
+        RunOptions {
+            cwd: DESKTOP_DIR.as_path(),
+            env: vec![
+                (
+                    "BUILD_CHANNEL".to_owned(),
+                    Some(DEVELOPMENT_CHANNEL.to_owned()),
+                ),
+                (
+                    "FLUXER_OFFLINE".to_owned(),
+                    (delivery == RendererDelivery::Offline).then(|| "1".to_owned()),
+                ),
+                (
+                    "FLUXER_MODULES".to_owned(),
+                    (delivery == RendererDelivery::Modules).then(|| "1".to_owned()),
+                ),
+                (
+                    "FLUXER_SKIP_NATIVE".to_owned(),
+                    skip_native.then(|| "true".to_owned()),
+                ),
+                ("NODE_ENV".to_owned(), Some("production".to_owned())),
+                (
+                    "FLUXER_DESKTOP_PRODUCTION".to_owned(),
+                    Some("true".to_owned()),
+                ),
+                ("BUILD_VERSION".to_owned(), Some(version.clone())),
+                ("ELECTRON_ARCH".to_owned(), Some(arch)),
+                ("WORKDIR".to_owned(), Some(ROOT.display().to_string())),
             ],
-            RunOptions {
-                cwd: DESKTOP_DIR.as_path(),
-                env: vec![
-                    (
-                        "BUILD_CHANNEL".to_owned(),
-                        Some(DEVELOPMENT_CHANNEL.to_owned()),
-                    ),
-                    (
-                        "FLUXER_OFFLINE".to_owned(),
-                        (delivery == RendererDelivery::Offline).then(|| "1".to_owned()),
-                    ),
-                    (
-                        "FLUXER_MODULES".to_owned(),
-                        (delivery == RendererDelivery::Modules).then(|| "1".to_owned()),
-                    ),
-                    (
-                        "FLUXER_SKIP_NATIVE".to_owned(),
-                        skip_native.then(|| "true".to_owned()),
-                    ),
-                    ("NODE_ENV".to_owned(), Some("production".to_owned())),
-                    (
-                        "FLUXER_DESKTOP_PRODUCTION".to_owned(),
-                        Some("true".to_owned()),
-                    ),
-                    ("PUBLIC_BUILD_VERSION".to_owned(), Some(version.clone())),
-                    ("BUILD_VERSION".to_owned(), Some(version.clone())),
-                    (
-                        "PUBLIC_RELEASE_CHANNEL".to_owned(),
-                        Some(DEVELOPMENT_CHANNEL.to_owned()),
-                    ),
-                    (
-                        "RELEASE_CHANNEL".to_owned(),
-                        Some(DEVELOPMENT_CHANNEL.to_owned()),
-                    ),
-                    ("ELECTRON_ARCH".to_owned(), Some(arch)),
-                    ("WORKDIR".to_owned(), Some(ROOT.display().to_string())),
-                ],
-                load_default_env: false,
-                ..RunOptions::default()
-            },
-        )?;
-    }
+            load_default_env: false,
+            ..RunOptions::default()
+        },
+    )?;
     let build_info_path = DESKTOP_DIR.join("dist/build-info.json");
     let build_info = fs::read_to_string(&build_info_path)
         .with_context(|| format!("failed to read {}", build_info_path.display()))?;
@@ -585,7 +542,7 @@ pub fn package_desktop(
             "BUILD_CHANNEL".to_owned(),
             Some(DEVELOPMENT_CHANNEL.to_owned()),
         ),
-        ("VERSION".to_owned(), Some(version.clone())),
+        ("BUILD_VERSION".to_owned(), Some(version.clone())),
         ("ELECTRON_ARCH".to_owned(), Some(arch.clone())),
         ("NODE_ENV".to_owned(), Some("production".to_owned())),
     ];

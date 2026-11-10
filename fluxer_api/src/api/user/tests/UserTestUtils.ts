@@ -122,25 +122,7 @@ export async function fetchUserSettings(
 }
 
 export async function deleteAccount(harness: ApiTestHarness, token: string, password: string): Promise<void> {
-	await createBuilder<void>(harness, token).post('/users/@me/delete').body({password}).expect(204).execute();
-}
-
-export async function updateGuildSettings(
-	harness: ApiTestHarness,
-	token: string,
-	data: Record<string, unknown>,
-): Promise<{
-	response: Response;
-	json: unknown;
-}> {
-	const {response, json} = await createBuilder<unknown>(harness, token)
-		.patch('/users/@me/guilds/@me/settings')
-		.body(data)
-		.executeWithResponse();
-	if (response.status !== 200) {
-		throw new Error(`Expected 200, got ${response.status}`);
-	}
-	return {response, json};
+	await createBuilder<void>(harness, token).post('/users/@me/delete').body({password}).expect(200).execute();
 }
 
 export async function expectDataExists(

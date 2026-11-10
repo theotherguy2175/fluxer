@@ -29,6 +29,7 @@ import {
 	getGuildInvitePrimaryAction,
 	isGuildInviteActionDisabled,
 } from '@app/features/invite/utils/GuildInviteActionState';
+import {PREVIEW_COMMUNITY_DESCRIPTOR} from '@app/features/invite/utils/InviteMessageDescriptors';
 import {
 	EmbedCard,
 	EmbedSkeletonButton,
@@ -52,7 +53,7 @@ import {Avatar} from '@app/features/ui/components/Avatar';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
 import Users from '@app/features/user/state/Users';
 import * as AvatarUtils from '@app/features/user/utils/AvatarUtils';
-import {getCurrentLocale} from '@app/features/user/utils/LocaleUtils';
+import {getFormattingLocale} from '@app/features/user/utils/LocaleUtils';
 import {msg} from '@lingui/core/macro';
 import {Plural, Trans, useLingui} from '@lingui/react/macro';
 import {QuestionIcon} from '@phosphor-icons/react';
@@ -121,7 +122,7 @@ const createTitleKeyDownHandler = (callback: () => void) => (event: React.Keyboa
 };
 
 function formatInviteCount(value: number): string {
-	return formatNumber(value, getCurrentLocale());
+	return formatNumber(value, getFormattingLocale());
 }
 
 interface InviteEmbedProps {
@@ -159,7 +160,14 @@ const InviteEmbedInner = observer(function InviteEmbedInner({
 	const isGuildInviteType = invite != null && isGuildInvite(invite);
 	const guildFromInvite = isGuildInviteType ? invite!.guild : null;
 	const guild = Guilds.getGuild(guildFromInvite?.id ?? '') || guildFromInvite;
-	const embedSplash = guild != null ? ('embedSplash' in guild ? guild.embedSplash : guild.embed_splash) : undefined;
+	let embedSplash: string | null | undefined;
+	if (guild == null) {
+		embedSplash = undefined;
+	} else if ('embedSplash' in guild) {
+		embedSplash = guild.embedSplash;
+	} else {
+		embedSplash = guild.embed_splash;
+	}
 	const splashURL =
 		guild != null ? AvatarUtils.getGuildEmbedSplashURL({id: guild.id, embedSplash: embedSplash || null}) : null;
 	const messageViewContext = useMaybeMessageViewContext();
@@ -290,6 +298,8 @@ const InviteEmbedInner = observer(function InviteEmbedInner({
 					return i18n._(INVITES_DISABLED_DESCRIPTOR);
 				case GuildInvitePrimaryAction.GoToCommunity:
 					return i18n._(GO_TO_COMMUNITY_DESCRIPTOR);
+				case GuildInvitePrimaryAction.OpenVisit:
+					return i18n._(PREVIEW_COMMUNITY_DESCRIPTOR);
 				default:
 					return i18n._(JOIN_COMMUNITY_DESCRIPTOR);
 			}
@@ -329,6 +339,8 @@ const InviteEmbedInner = observer(function InviteEmbedInner({
 							</h3>
 							<GuildBadge
 								features={features}
+								badgeIds={invite.guild.badge_ids}
+								linkable
 								variant="large"
 								onLightSurface
 								data-flx="channel.invite-embed.guild-badge"
@@ -388,7 +400,7 @@ const InviteEmbedInner = observer(function InviteEmbedInner({
 	}
 	const handleContextMenu = (event: React.MouseEvent) => {
 		const channelId = invite && (isGuildInvite(invite) || isGroupDmInvite(invite)) ? invite.channel.id : null;
-		const guildForMenu = guild ? {id: guild.id, name: guild.name} : null;
+		const guildForMenu = guild ? {id: guild.id, name: guild.name, icon: guild.icon} : null;
 		if (!message && !guildForMenu && !channelId) return;
 		event.preventDefault();
 		event.stopPropagation();
@@ -398,6 +410,7 @@ const InviteEmbedInner = observer(function InviteEmbedInner({
 				sourceChannel={sourceChannel}
 				linkUrl={`${RuntimeConfig.inviteEndpoint}/${code}`}
 				guild={guildForMenu}
+				inviteCode={code}
 				channelId={channelId}
 				onDelete={onDelete}
 				onClose={props.onClose}
@@ -598,6 +611,7 @@ export const GuildInviteEmbedPreview = observer(function GuildInviteEmbedPreview
 						</h3>
 						<GuildBadge
 							features={guild.features}
+							badgeIds={guild.badgeIds}
 							variant="large"
 							onLightSurface
 							data-flx="channel.invite-embed.guild-invite-embed-preview.guild-badge"

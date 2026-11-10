@@ -5,6 +5,7 @@ import styles from '@app/features/ui/components/form/FormCombobox.module.css';
 import {Scroller} from '@app/features/ui/components/Scroller';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
 import {usePortalHost} from '@app/features/ui/overlay/PortalHostContext';
+import LayerManager from '@app/features/ui/state/LayerManager';
 import {Combobox as BaseCombobox} from '@base-ui/react/combobox';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
@@ -12,7 +13,7 @@ import {CaretDownIcon, CheckIcon, CircleNotchIcon, XIcon} from '@phosphor-icons/
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
-import {useCallback, useId, useMemo, useRef, useState} from 'react';
+import {useCallback, useEffect, useId, useMemo, useRef, useState} from 'react';
 
 type Primitive = string | number | null;
 export interface ComboboxOption<V extends Primitive = string> {
@@ -21,17 +22,12 @@ export interface ComboboxOption<V extends Primitive = string> {
 	isDisabled?: boolean;
 }
 
-export function resolveNearestNumericOption(
+function findOptionByLabel<V extends Primitive, O extends ComboboxOption<V>>(
 	inputValue: string,
-	options: ReadonlyArray<ComboboxOption<number>>,
-): number | undefined {
-	const numericMatch = inputValue.trim().match(/([0-9]+(?:\.[0-9]+)?)/);
-	if (!numericMatch) return undefined;
-	const parsedValue = Number(numericMatch[1]);
-	if (!Number.isFinite(parsedValue)) return undefined;
-	return options.reduce((nearest, option) =>
-		Math.abs(option.value - parsedValue) < Math.abs(nearest.value - parsedValue) ? option : nearest,
-	).value;
+	options: ReadonlyArray<O>,
+): O | undefined {
+	const lowered = inputValue.trim().toLowerCase();
+	return options.find((option) => option.label.trim().toLowerCase() === lowered);
 }
 
 export interface ComboboxFilterOption<O> {
@@ -178,6 +174,20 @@ export const Combobox = observer(function Combobox<
 	const controlRef = useRef<HTMLDivElement | null>(null);
 	const [open, setOpen] = useState(false);
 	const [isTyping, setIsTyping] = useState(false);
+	useEffect(() => {
+		if (!open) return;
+		const layerKey = `form-combobox-${inputId}`;
+		LayerManager.addLayer(
+			'popout',
+			layerKey,
+			() => {
+				setIsTyping(false);
+				setOpen(false);
+			},
+			inputRef.current?.ownerDocument ?? document,
+		);
+		return () => LayerManager.removeLayer('popout', layerKey);
+	}, [open, inputId]);
 	const selectedOptions = useMemo(() => {
 		return options.find((option) => Object.is(option.value, value as V)) ?? null;
 	}, [options, value]);
@@ -197,6 +207,8 @@ export const Combobox = observer(function Combobox<
 	);
 	const resolveInputValue = useCallback(
 		(inputValue: string): V | undefined => {
+			const labelMatch = findOptionByLabel<V, O>(inputValue, options);
+			if (labelMatch) return labelMatch.value;
 			const customValue = autoSelectValueFromInput?.(inputValue, options);
 			if (customValue !== undefined) return customValue;
 			if (!autoSelectExactMatch) return undefined;

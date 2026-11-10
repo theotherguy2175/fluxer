@@ -40,7 +40,7 @@ function rememberChannelMeta(channelId: ChannelID, meta: ReadStateChannelHint): 
 	}
 }
 
-async function loadChannelMeta(channelId: ChannelID): Promise<ReadStateChannelHint | null> {
+export async function loadChannelMeta(channelId: ChannelID): Promise<ReadStateChannelHint | null> {
 	const cached = channelMetaCache.get(channelId.toString());
 	if (cached !== undefined) return cached;
 	const row = await fetchOne<Pick<ChannelRow, 'channel_id' | 'guild_id' | 'type'>>(FETCH_CHANNEL_META_CQL, {
@@ -58,7 +58,7 @@ export function readStateCapable(ctx: Context<HonoEnv>): boolean {
 	return viewer.kind === 'user' && viewer.capable;
 }
 
-export function readStateMarkerFor(channel: ReadStateChannelHint): ReadStateMarker | null {
+function readStateMarkerFor(channel: ReadStateChannelHint): ReadStateMarker | null {
 	if (channel.guildId === null || !THREAD_FEATURE_CHANNEL_TYPES.has(channel.type)) return null;
 	const flags =
 		ReadStateFlags.IS_GUILD_CHANNEL | (THREAD_CHANNEL_TYPES.has(channel.type) ? ReadStateFlags.IS_THREAD : 0);

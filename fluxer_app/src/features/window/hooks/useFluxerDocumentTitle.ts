@@ -2,15 +2,11 @@
 
 import {PRODUCT_NAME} from '@app/features/app/config/I18nDisplayConstants';
 import {formatNumber} from '@app/features/i18n/utils/IntlCache';
-import {getCurrentLocale} from '@app/features/user/utils/LocaleUtils';
+import {getFormattingLocale} from '@app/features/user/utils/LocaleUtils';
 import {useEffect} from 'react';
 
 type TitlePart = string | null | undefined;
 type TitleInput = TitlePart | Array<TitlePart>;
-
-interface UseDocumentTitleOptions {
-	preserveTitleOnUnmount?: boolean;
-}
 
 interface BadgeState {
 	mentionCount: number;
@@ -36,7 +32,7 @@ const buildDocumentTitle = (parts: ReadonlyArray<string>): string => {
 };
 const applyBadgePrefix = (baseTitle: string, badge: BadgeState): string => {
 	if (badge.mentionCount > 0) {
-		return `(${formatNumber(badge.mentionCount, getCurrentLocale())}) ${baseTitle}`;
+		return `(${formatNumber(badge.mentionCount, getFormattingLocale())}) ${baseTitle}`;
 	}
 	if (badge.hasUnread) {
 		return `• ${baseTitle}`;
@@ -55,18 +51,15 @@ export const updateDocumentTitleBadge = (mentionCount: number, hasUnread: boolea
 	currentBadgeState = {mentionCount, hasUnread};
 	updateDocumentTitle();
 };
-export const useFluxerDocumentTitle = (title?: TitleInput, options?: UseDocumentTitleOptions) => {
+export const useFluxerDocumentTitle = (title?: TitleInput) => {
 	const partsKey = JSON.stringify(normalizeTitleParts(title));
-	const preserveTitleOnUnmount = options?.preserveTitleOnUnmount;
 	useEffect(() => {
 		const previousParts = currentTitleParts;
 		currentTitleParts = JSON.parse(partsKey) as Array<string>;
 		updateDocumentTitle();
 		return () => {
-			if (!preserveTitleOnUnmount) {
-				currentTitleParts = previousParts;
-				updateDocumentTitle();
-			}
+			currentTitleParts = previousParts;
+			updateDocumentTitle();
 		};
-	}, [partsKey, preserveTitleOnUnmount]);
+	}, [partsKey]);
 };

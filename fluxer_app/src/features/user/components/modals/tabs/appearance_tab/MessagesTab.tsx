@@ -12,7 +12,8 @@ import Channels from '@app/features/channel/state/Channels';
 import {getCachedNumberFormat} from '@app/features/i18n/utils/IntlCache';
 import {Message as MessageModel} from '@app/features/messaging/models/MessagingMessage';
 import {isNewMessageGroup} from '@app/features/messaging/utils/MessageGroupingUtils';
-import {type ComboboxOption, resolveNearestNumericOption} from '@app/features/ui/components/form/FormCombobox';
+import {resolveNearestNumericOption} from '@app/features/ui/components/form/ComboboxNumericInput';
+import type {ComboboxOption} from '@app/features/ui/components/form/FormCombobox';
 import {Switch} from '@app/features/ui/components/form/FormSwitch';
 import {canResetSliderValue, SliderResetIconButton} from '@app/features/ui/components/slider/SliderResetIconButton';
 import type {RadioOption} from '@app/features/ui/radio_group/RadioGroup';
@@ -25,6 +26,7 @@ import {FontSizeTabContent} from '@app/features/user/components/modals/tabs/appe
 import {CompactComboboxRow} from '@app/features/user/components/modals/tabs/components/CompactComboboxRow';
 import UserSettings from '@app/features/user/state/UserSettings';
 import Users from '@app/features/user/state/Users';
+import {getFormattingLocale} from '@app/features/user/utils/LocaleUtils';
 import {
 	COMFY_DESCRIPTOR,
 	DENSE_DESCRIPTOR,
@@ -224,7 +226,9 @@ export const MessagesTabContent: React.FC = observer(() => {
 		() =>
 			MESSAGE_GROUP_SPACING_OPTIONS.map((value) => ({
 				value,
-				label: i18n._(PIXELS_DESCRIPTOR, {messageGroupSpacing: getCachedNumberFormat(i18n.locale).format(value)}),
+				label: i18n._(PIXELS_DESCRIPTOR, {
+					messageGroupSpacing: getCachedNumberFormat(getFormattingLocale()).format(value),
+				}),
 			})),
 		[i18n.locale],
 	);

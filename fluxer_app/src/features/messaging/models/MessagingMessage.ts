@@ -314,7 +314,7 @@ export class Message {
 	 */
 	withUpdates(updates: Partial<WireMessage>, options: {mergePoll?: boolean} = {}): Message {
 		if ('reactions' in updates) {
-			MessageReactions.replaceMessageReactions(this.id, updates.reactions ?? []);
+			MessageReactions.hydrateMessageReactions(this.id, updates.reactions ?? []);
 		}
 		return new Message(
 			{
@@ -362,6 +362,13 @@ export class Message {
 		if (!this.poll) return this;
 		const next = applyPollVote(this.poll, answerId, add, me);
 		return next === this.poll ? this : this.withUpdates({poll: next}, {mergePoll: false});
+	}
+
+	withoutReferencedMessage(): Message {
+		return new Message(
+			{...this.toJSON(), referenced_message: null},
+			{skipUserCache: true, instanceId: this.instanceId, skipReactionHydration: true},
+		);
 	}
 
 	withoutReactionEmoji(emoji: ReactionEmoji): Message {

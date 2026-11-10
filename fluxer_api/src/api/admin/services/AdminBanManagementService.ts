@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import type {ApiContext} from '@app/api/ApiContext';
-import type {AdminRepository} from '@app/api/admin/AdminRepository';
+import type {AdminRepository, BannedIpEntry} from '@app/api/admin/AdminRepository';
 import type {AdminAuditService} from '@app/api/admin/services/AdminAuditService';
 import {createUserID, type UserID} from '@app/api/BrandedTypes';
 import {isIpBanExempt} from '@app/api/ban/IpBanExemptions';
@@ -25,14 +25,16 @@ import {phraseBlocklistCache} from '@app/api/middleware/PhraseBlocklistCache';
 import {profileSubstringBlocklistCache} from '@app/api/middleware/ProfileSubstringBlocklistCache';
 import {urlBlocklistCache} from '@app/api/middleware/UrlBlocklistCache';
 import {canonicalizeStoredPhrase} from '@app/api/utils/PhraseBlocklistNormalization';
+import {compareText} from '@app/api/utils/StringComparison';
 import {parseUrlDomainEntry} from '@app/api/utils/UrlHostRules';
 import {canonicalizeUrl} from '@app/api/utils/UrlNormalizer';
 import {APIErrorCodes} from '@fluxer/constants/src/ApiErrorCodes';
 import {ValidationErrorCodes} from '@fluxer/constants/src/ValidationErrorCodes';
+import {toIsoOrNull} from '@fluxer/date_utils/src/DateSerialization';
 import {BadRequestError} from '@fluxer/errors/src/domains/core/BadRequestError';
 import {InputValidationError} from '@fluxer/errors/src/domains/core/InputValidationError';
 import {NotFoundError} from '@fluxer/errors/src/domains/core/NotFoundError';
-import {UnknownUserError} from '@fluxer/errors/src/domains/user/UnknownUserError';
+import {IpBanLinkedToDecisionError} from '@fluxer/errors/src/domains/moderation/IpBanLinkedToDecisionError';
 import type {AdminBlocklistListType} from '@fluxer/schema/src/domains/admin/AdminBlocklistSchemas';
 
 interface AdminBanManagementServiceDeps {
@@ -86,10 +88,6 @@ function createBlocklistEntry(
 	};
 }
 
-function toIsoString(value: Date | null | undefined): string | null {
-	return value ? value.toISOString() : null;
-}
-
 function toSnowflakeString(value: bigint | null | undefined): string | null {
 	return value == null ? null : value.toString();
 }
@@ -128,7 +126,6 @@ export class AdminBanManagementService {
 		auditLogReason: string | null,
 	) {
 		const {adminRepository, auditService} = this.deps;
-		const {cache: cacheService} = this.deps.apiContext.services;
 		if (isIpBanExempt(data.ip)) {
 			await auditService.createAuditLog({
 				adminUserId,
@@ -143,6 +140,7 @@ export class AdminBanManagementService {
 				message: 'This IP address is on the instance exemption list',
 			});
 		}
+		await this.assertIpBanNotLinked(data.ip);
 		const durationHours = data.duration_hours ?? 0;
 		const metadata = new Map([['ip', data.ip]]);
 		if (durationHours > 0) {
@@ -153,8 +151,7 @@ export class AdminBanManagementService {
 		} else {
 			await adminRepository.banIp(data.ip);
 		}
-		await ipBanCache.refresh();
-		await cacheService.publish(IP_BAN_REFRESH_CHANNEL, 'refresh');
+		await this.refreshIpBans();
 		await this.deps.auditService.createAuditLog({
 			targetId: 0n,
 			adminUserId,
@@ -174,6 +171,7 @@ export class AdminBanManagementService {
 	) {
 		const {adminRepository} = this.deps;
 		const {cache: cacheService} = this.deps.apiContext.services;
+		await this.assertIpBanNotLinked(data.ip);
 		await adminRepository.unbanIp(data.ip);
 		ipBanCache.unban(data.ip);
 		await cacheService.publish(IP_BAN_REFRESH_CHANNEL, 'refresh');
@@ -190,9 +188,67 @@ export class AdminBanManagementService {
 	async checkIpBan(data: {ip: string}): Promise<{
 		banned: boolean;
 		expires_at: string | null;
+		decision_id: string | null;
 	}> {
 		const match = ipBanCache.getMatch(data.ip);
-		return {banned: match !== null, expires_at: toIsoString(match?.expiresAt)};
+		return {
+			banned: match !== null,
+			expires_at: toIsoOrNull(match?.expiresAt),
+			decision_id: toSnowflakeString(match?.decision?.decisionId),
+		};
+	}
+
+	async blockNetworksForDecision(
+		ips: ReadonlyArray<string>,
+		decisionId: bigint,
+		expiresAt: Date,
+	): Promise<{blocked: Array<BannedIpEntry>; alreadyBlocked: Array<string>}> {
+		const blocked: Array<BannedIpEntry> = [];
+		const alreadyBlocked: Array<string> = [];
+		for (const ip of ips) {
+			const entry = await this.deps.adminRepository.banIpForDecision(ip, decisionId, expiresAt);
+			if (entry) {
+				blocked.push(entry);
+			} else {
+				alreadyBlocked.push(ip);
+			}
+		}
+		if (blocked.length > 0) {
+			await this.refreshIpBans();
+		}
+		return {blocked, alreadyBlocked};
+	}
+
+	async listDecisionNetworkBlocks(decisionId: bigint): Promise<Array<BannedIpEntry>> {
+		return this.deps.adminRepository.listDecisionIpBans(decisionId);
+	}
+
+	async removeDecisionNetworkBlocks(decisionIds: ReadonlyArray<bigint>): Promise<Array<BannedIpEntry>> {
+		const removed = await this.deps.adminRepository.removeDecisionIpBans(decisionIds);
+		if (removed.length > 0) {
+			await this.refreshIpBans();
+		}
+		return removed;
+	}
+
+	async relinkDecisionNetworkBlocks(fromDecisionId: bigint, toDecisionId: bigint): Promise<Array<BannedIpEntry>> {
+		const relinked = await this.deps.adminRepository.relinkDecisionIpBans(fromDecisionId, toDecisionId);
+		if (relinked.length > 0) {
+			await this.refreshIpBans();
+		}
+		return relinked;
+	}
+
+	private async refreshIpBans(): Promise<void> {
+		await ipBanCache.refresh();
+		await this.deps.apiContext.services.cache.publish(IP_BAN_REFRESH_CHANNEL, 'refresh');
+	}
+
+	private async assertIpBanNotLinked(ip: string): Promise<void> {
+		const decisionId = await this.deps.adminRepository.findIpBanDecision(ip);
+		if (decisionId !== null) {
+			throw new IpBanLinkedToDecisionError(decisionId);
+		}
 	}
 
 	async banEmail(
@@ -595,8 +651,7 @@ export class AdminBanManagementService {
 	}> {
 		const {users: userRepository} = this.deps.apiContext.services;
 		const userId = createUserID(BigInt(data.user_id));
-		const user = await userRepository.findUnique(userId);
-		if (!user) throw new UnknownUserError();
+		const user = await userRepository.findUniqueAssert(userId);
 		const avatar = user.avatarHash;
 		if (!avatar) {
 			throw new NotFoundError({code: APIErrorCodes.NOT_FOUND});
@@ -703,7 +758,7 @@ export class AdminBanManagementService {
 		scope: BannedProfileSubstringScope | null;
 	}): Promise<AdminBlocklistEntryPage> {
 		const entries = await this.loadBlocklistEntries(params.listType, params.scope);
-		entries.sort((left, right) => (left.value < right.value ? -1 : left.value > right.value ? 1 : 0));
+		entries.sort((left, right) => compareText(left.value, right.value));
 		const after = params.after;
 		const remaining = after == null ? entries : entries.filter((entry) => entry.value > after);
 		const page = remaining.slice(0, params.limit);
@@ -727,8 +782,8 @@ export class AdminBanManagementService {
 				return rows.map((row) =>
 					createBlocklistEntry(listType, row.ip, {
 						reason: row.reason,
-						expires_at: toIsoString(row.expiresAt),
-						created_at: toIsoString(row.createdAt),
+						expires_at: toIsoOrNull(row.expiresAt),
+						created_at: toIsoOrNull(row.createdAt),
 					}),
 				);
 			}
@@ -748,7 +803,7 @@ export class AdminBanManagementService {
 						severity: row.severity,
 						source_url: row.source_url,
 						notes: row.notes,
-						created_at: toIsoString(row.added_at),
+						created_at: toIsoOrNull(row.added_at),
 						created_by_user_id: toSnowflakeString(row.added_by),
 					}),
 				);
@@ -762,7 +817,7 @@ export class AdminBanManagementService {
 						source_url: row.source_url,
 						notes: row.notes,
 						match_subdomains: row.match_subdomains,
-						created_at: toIsoString(row.added_at),
+						created_at: toIsoOrNull(row.added_at),
 						created_by_user_id: toSnowflakeString(row.added_by),
 					}),
 				);
@@ -776,7 +831,7 @@ export class AdminBanManagementService {
 						source_url: row.source_url,
 						notes: row.notes,
 						content_type: row.content_type,
-						created_at: toIsoString(row.added_at),
+						created_at: toIsoOrNull(row.added_at),
 						created_by_user_id: toSnowflakeString(row.added_by),
 					}),
 				);
@@ -789,7 +844,7 @@ export class AdminBanManagementService {
 						severity: row.severity,
 						source_url: row.source_url,
 						notes: row.notes,
-						created_at: toIsoString(row.added_at),
+						created_at: toIsoOrNull(row.added_at),
 						created_by_user_id: toSnowflakeString(row.added_by),
 					}),
 				);
@@ -802,7 +857,7 @@ export class AdminBanManagementService {
 						createBlocklistEntry(listType, row.substring, {
 							scope: row.scope,
 							notes: row.notes,
-							created_at: toIsoString(row.added_at),
+							created_at: toIsoOrNull(row.added_at),
 							created_by_user_id: toSnowflakeString(row.added_by),
 						}),
 					);

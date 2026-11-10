@@ -17,8 +17,6 @@
     cleanup_voice_state_counts/1
 ]).
 
--define(PENDING_CONNECTION_TIMEOUT_MS, 30000).
-
 -spec build_call_event(map()) -> map().
 build_call_event(State) ->
     #{
@@ -26,7 +24,10 @@ build_call_event(State) ->
         message_id => integer_to_binary(maps:get(message_id, State)),
         region => maps:get(region, State),
         ringing => integer_list_to_binaries(maps:get(ringing, State)),
-        voice_states => format_voice_states(maps:get(voice_states, State))
+        voice_states => [
+            voice_state_utils:sanitize_voice_state_for_broadcast(VS)
+         || VS <- format_voice_states(maps:get(voice_states, State))
+        ]
     }.
 
 -spec caller_from_state(map()) -> map().

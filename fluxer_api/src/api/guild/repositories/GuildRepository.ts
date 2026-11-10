@@ -31,6 +31,11 @@ import {
 	type GuildStickerRow,
 } from '@app/api/database/types/GuildTypes';
 import {isTainted} from '@app/api/experiment/ChannelThreadsGate';
+import {bumpGuildBanGeneration} from '@app/api/guild/services/GuildBanChecks';
+import {
+	bumpGuildVisitorViewGeneration,
+	touchesGuildVisitorView,
+} from '@app/api/guild/visits/GuildVisitorViewGeneration';
 import type {RequestCache} from '@app/api/middleware/RequestCacheMiddleware';
 import {Guild} from '@app/api/models/Guild';
 import {GuildAuditLog} from '@app/api/models/GuildAuditLog';
@@ -257,6 +262,7 @@ export class GuildRepository {
 		if (!latest) {
 			throw new Error('Guild row vanished after partial upsert');
 		}
+		if (touchesGuildVisitorView(patch, oldData)) await bumpGuildVisitorViewGeneration(guildId);
 		return new Guild({...latest, version: result.finalVersion ?? latest.version});
 	}
 
@@ -293,6 +299,17 @@ export class GuildRepository {
 			guild_id: guildId,
 		});
 		return result ? Number(result.count) : 0;
+	}
+
+	async syncMemberCount(guildId: GuildID): Promise<Guild | null> {
+		this.requestCache?.guilds.delete(guildId);
+		const [row, memberCount] = await Promise.all([
+			fetchOne<GuildRow>(FETCH_GUILD_BY_ID_QUERY, {guild_id: guildId}),
+			this.countMembers(guildId),
+		]);
+		if (!row) return null;
+		if ((row.member_count ?? 0) === memberCount) return new Guild(row);
+		return await this.upsertPartial(guildId, {member_count: memberCount}, row);
 	}
 
 	async upsertMember(data: GuildMemberRow, oldData?: GuildMemberRow | null): Promise<GuildMember> {
@@ -414,6 +431,7 @@ export class GuildRepository {
 			GuildRoles,
 			{initialData: oldData},
 		);
+		if (BigInt(data.role_id) === BigInt(data.guild_id)) await bumpGuildVisitorViewGeneration(data.guild_id);
 		return new GuildRole({...data, version: result.finalVersion ?? 1});
 	}
 
@@ -424,6 +442,7 @@ export class GuildRepository {
 				role_id: roleId,
 			}),
 		);
+		if (BigInt(roleId) === BigInt(guildId)) await bumpGuildVisitorViewGeneration(guildId);
 	}
 
 	async getBan(guildId: GuildID, userId: UserID): Promise<GuildBan | null> {
@@ -464,6 +483,7 @@ export class GuildRepository {
 				batch.addPrepared(GuildBansByEmail.insert({guild_id: data.guild_id, email: data.email, user_id: data.user_id}));
 		}
 		await batch.execute();
+		await bumpGuildBanGeneration(data.guild_id);
 		return new GuildBan(data);
 	}
 
@@ -474,6 +494,7 @@ export class GuildRepository {
 		batch.addPrepared(GuildBansByUserId.deleteByPk({user_id: userId, guild_id: guildId}));
 		if (ban?.email) batch.addPrepared(GuildBansByEmail.deleteByPk({guild_id: guildId, email: ban.email}));
 		await batch.execute();
+		await bumpGuildBanGeneration(guildId);
 	}
 
 	async deleteAllBansForUser(userId: UserID): Promise<void> {
@@ -485,6 +506,22 @@ export class GuildRepository {
 				...(ban.email ? [GuildBansByEmail.deleteByPk({guild_id: ban.guild_id, email: ban.email})] : []),
 			]),
 		);
+		for (const ban of bans) {
+			await bumpGuildBanGeneration(ban.guild_id);
+		}
+	}
+
+	private async deleteAllBansForGuild(guildId: GuildID): Promise<void> {
+		const bans = await fetchMany<GuildBanRow>(FETCH_GUILD_BANS_BY_GUILD_ID_QUERY, {guild_id: guildId});
+		if (bans.length === 0) return;
+		await executeGroupedBatches(
+			bans.map((ban) => [
+				GuildBans.deleteByPk({guild_id: guildId, user_id: ban.user_id}),
+				GuildBansByUserId.deleteByPk({user_id: ban.user_id, guild_id: guildId}),
+				...(ban.email ? [GuildBansByEmail.deleteByPk({guild_id: guildId, email: ban.email})] : []),
+			]),
+		);
+		await bumpGuildBanGeneration(guildId);
 	}
 
 	async getBanByEmail(guildId: GuildID, email: string): Promise<GuildBan | null> {
@@ -667,7 +704,7 @@ export class GuildRepository {
 		return emojis.map((emoji) => new GuildEmoji(emoji));
 	}
 
-	async upsertEmoji(data: GuildEmojiRow, oldData?: GuildEmojiRow | null): Promise<GuildEmoji> {
+	async upsertEmoji(data: GuildEmojiRow): Promise<GuildEmoji> {
 		const guildId = data.guild_id;
 		const emojiId = data.emoji_id;
 		const result = await executeVersionedUpdate<GuildEmojiRow, 'guild_id' | 'emoji_id'>(
@@ -681,7 +718,6 @@ export class GuildRepository {
 				patch: buildPatchFromData(data, current, GUILD_EMOJI_COLUMNS, ['guild_id', 'emoji_id']),
 			}),
 			GuildEmojis,
-			{initialData: oldData},
 		);
 		await upsertOne(GuildEmojisByEmojiId.insert(data));
 		return new GuildEmoji({...data, version: result.finalVersion ?? 1});
@@ -721,7 +757,7 @@ export class GuildRepository {
 		return stickers.map((sticker) => new GuildSticker(sticker));
 	}
 
-	async upsertSticker(data: GuildStickerRow, oldData?: GuildStickerRow | null): Promise<GuildSticker> {
+	async upsertSticker(data: GuildStickerRow): Promise<GuildSticker> {
 		const guildId = data.guild_id;
 		const stickerId = data.sticker_id;
 		const result = await executeVersionedUpdate<GuildStickerRow, 'guild_id' | 'sticker_id'>(
@@ -735,7 +771,6 @@ export class GuildRepository {
 				patch: buildPatchFromData(data, current, GUILD_STICKER_COLUMNS, ['guild_id', 'sticker_id']),
 			}),
 			GuildStickers,
-			{initialData: oldData},
 		);
 		await upsertOne(GuildStickersByStickerId.insert(data));
 		return new GuildSticker({...data, version: result.finalVersion ?? 1});
@@ -777,6 +812,7 @@ export class GuildRepository {
 			const emojiBatch = emojis.slice(i, i + BATCH_SIZE);
 			await Promise.all(emojiBatch.map((emoji) => this.deleteEmoji(guildId, emoji.id)));
 		}
+		await this.deleteAllBansForGuild(guildId);
 		await this.deleteGuildRow(guildId, actualOwnerId);
 	}
 

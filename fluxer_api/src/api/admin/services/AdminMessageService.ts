@@ -34,7 +34,7 @@ import type {
 	SearchChannelMessagesRequest,
 } from '@fluxer/schema/src/domains/admin/AdminMessageBrowseSchemas';
 import type {
-	DeleteMessageRequest,
+	AdminMessageDeleteRequest,
 	LookupMessageByAttachmentRequest,
 	LookupMessageRequest,
 } from '@fluxer/schema/src/domains/admin/AdminMessageSchemas';
@@ -106,11 +106,15 @@ export class AdminMessageService {
 		};
 	}
 
-	async deleteMessage(data: DeleteMessageRequest, adminUserId: UserID, auditLogReason: string | null) {
+	async deleteMessage(
+		channelId: ChannelID,
+		messageId: MessageID,
+		{basis}: AdminMessageDeleteRequest,
+		adminUserId: UserID,
+		auditLogReason: string | null,
+	) {
 		const {channelRepository, auditService} = this.deps;
 		const {gateway: gatewayService, worker: workerService} = this.deps.apiContext.services;
-		const channelId = createChannelID(data.channel_id);
-		const messageId = createMessageID(data.message_id);
 		const channel = await channelRepository.channelData.findUnique(channelId);
 		const message = await channelRepository.messages.getMessage(channelId, messageId);
 		if (message) {
@@ -146,7 +150,7 @@ export class AdminMessageService {
 				}
 			}
 			await deleteMessageSearchDocuments([messageId], {context: {source: 'admin_message_delete'}});
-			await enqueueCrosspostSourceRemoval(workerService, {messages: [message], mode: 'purge'});
+			await enqueueCrosspostSourceRemoval(workerService, {messages: [message], mode: 'purge', channel});
 			await enqueueCrosspostFamilyPurgeFromCopies(workerService, {messages: [message]});
 		}
 		await auditService.createAuditLog({
@@ -158,6 +162,7 @@ export class AdminMessageService {
 			metadata: new Map([
 				['channel_id', channelId.toString()],
 				['message_id', messageId.toString()],
+				['basis', basis.type],
 			]),
 		});
 		return {
@@ -257,6 +262,8 @@ export class AdminMessageService {
 			author_global_name: message.author.global_name ?? null,
 			author_discriminator: message.author.discriminator,
 			author_avatar: message.author.avatar,
+			author_bot: message.author.bot ?? false,
+			webhook_id: message.webhook_id ?? null,
 			content: message.content ?? '',
 			timestamp: message.timestamp,
 			attachments:
@@ -270,6 +277,7 @@ export class AdminMessageService {
 					height: attachment.height ?? null,
 					size: attachment.size == null ? null : assertSafeByteSize(attachment.size, 'admin message attachment size'),
 				})) ?? [],
+			embeds: message.embeds ?? [],
 		};
 	}
 

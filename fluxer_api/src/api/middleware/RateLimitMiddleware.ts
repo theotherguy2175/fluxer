@@ -32,7 +32,7 @@ const INTERNAL_KEY_HEADER = 'x-fluxer-internal-key';
 const FORWARDED_CLIENT_IP_HEADER = 'x-fluxer-client-ip';
 const LEGACY_FORWARDED_CLIENT_IP_HEADER = 'x-fluxer-donor-ip';
 
-function shouldEnforceRateLimits(ctx: Context<HonoEnv>): boolean {
+export function shouldEnforceRateLimits(ctx: Context<HonoEnv>): boolean {
 	if (!Config.dev.testModeEnabled) {
 		return !Config.dev.disableRateLimits;
 	}
@@ -69,14 +69,18 @@ function isTrustedCallerForBucket(ctx: Context<HonoEnv>, bucket: string): boolea
 	return trusted;
 }
 
-function getForwardedClientIdentifier(ctx: Context<HonoEnv>, bucket: string): string | null {
+export function getTrustedForwardedClientIp(ctx: Context<HonoEnv>, bucket: string): string | null {
 	if (!isTrustedCallerForBucket(ctx, bucket)) return null;
 	const rawHeader = ctx.req.header(FORWARDED_CLIENT_IP_HEADER) ?? ctx.req.header(LEGACY_FORWARDED_CLIENT_IP_HEADER);
 	const headerValue = rawHeader?.split(',', 1)[0].trim();
 	if (!headerValue) return null;
-	const clientIp = parseIpAddress(headerValue);
+	return parseIpAddress(headerValue)?.normalized ?? null;
+}
+
+function getForwardedClientIdentifier(ctx: Context<HonoEnv>, bucket: string): string | null {
+	const clientIp = getTrustedForwardedClientIp(ctx, bucket);
 	if (!clientIp) return null;
-	return `ip:${getSameIpDecisionKey(clientIp.normalized) ?? clientIp.normalized}`;
+	return `ip:${getSameIpDecisionKey(clientIp) ?? clientIp}`;
 }
 
 function getClientIdentifier(ctx: Context<HonoEnv>, routeConfig: RouteRateLimitConfig): string {
@@ -164,7 +168,14 @@ async function revokeAuthenticatedSessionOnGlobalRateLimit(ctx: Context<HonoEnv>
 	} catch (_error) {}
 }
 
-export function RateLimitMiddleware(routeConfig: RouteRateLimitConfig): MiddlewareHandler<HonoEnv> {
+interface RateLimitMiddlewareOptions {
+	skipRouteLimit?: (ctx: Context<HonoEnv>) => Promise<boolean>;
+}
+
+export function RateLimitMiddleware(
+	routeConfig: RouteRateLimitConfig,
+	options: RateLimitMiddlewareOptions = {},
+): MiddlewareHandler<HonoEnv> {
 	const routeBucketHash = getBucketHash(routeConfig.bucket);
 	const emailBucketHash = routeConfig.emailBucket ? getBucketHash(routeConfig.emailBucket.bucket) : undefined;
 	return createMiddleware<HonoEnv>(async (ctx, next) => {
@@ -200,6 +211,10 @@ export function RateLimitMiddleware(routeConfig: RouteRateLimitConfig): Middlewa
 					scope: 'global',
 				});
 			}
+		}
+		if (options.skipRouteLimit && (await options.skipRouteLimit(ctx))) {
+			await next();
+			return;
 		}
 		const bucket = resolveBucket(routeConfig.bucket, clientId, ctx);
 		const bucketResult = await rateLimitService.checkBucketLimit(bucket, routeConfig.config);

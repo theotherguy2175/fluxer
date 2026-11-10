@@ -194,6 +194,10 @@ const navigateForTarget = (target: DeepLinkTarget) => {
 	RouterUtils.transitionTo(dest);
 };
 
+export function isAppDeepLink(rawUrl: string): boolean {
+	return isAppProtocolUrl(rawUrl) && parseDeepLink(rawUrl) !== null;
+}
+
 export function handleDeepLinkUrl(rawUrl: string): boolean {
 	const target = parseDeepLink(rawUrl);
 	if (!target) return false;
@@ -253,7 +257,7 @@ export function isInternalChannelHost(host: string): boolean {
 	if (webAppHost && normalizedHost === webAppHost) {
 		return true;
 	}
-	return OFFICIAL_INTERNAL_APP_HOSTS.includes(normalizedHost);
+	return !RuntimeConfig.isSelfHosted() && OFFICIAL_INTERNAL_APP_HOSTS.includes(normalizedHost);
 }
 
 export function parseChannelUrl(url: string): string | null {
@@ -293,21 +297,23 @@ export function parseChannelUrl(url: string): string | null {
 	return null;
 }
 
-export function parseUserProfileUrl(url: string): string | null {
+function userProfilePath(url: string): string | null {
+	if (isAppProtocolUrl(url)) return normalizeAppRoutePath(url)?.split(/[?#]/, 1)[0] ?? null;
 	try {
 		const parsed = new URL(url);
-		if (!isInternalChannelHost(parsed.host) || !parsed.pathname.startsWith('/users/')) {
-			return null;
-		}
-		const segments = parsed.pathname.split('/').filter(Boolean);
-		if (segments.length !== 2 || segments[0] !== 'users') {
-			return null;
-		}
-		const userId = segments[1];
-		return isProbablyAValidSnowflake(userId) ? userId : null;
+		return isInternalChannelHost(parsed.host) ? parsed.pathname : null;
 	} catch {
 		return null;
 	}
+}
+
+export function parseUserProfileUrl(url: string): string | null {
+	const path = userProfilePath(url);
+	if (!path?.startsWith('/users/')) return null;
+	const segments = path.split('/').filter(Boolean);
+	if (segments.length !== 2) return null;
+	const userId = segments[1];
+	return isProbablyAValidSnowflake(userId) ? userId : null;
 }
 
 export function navigateToLinkedUserProfile(

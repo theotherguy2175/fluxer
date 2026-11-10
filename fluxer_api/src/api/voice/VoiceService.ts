@@ -10,6 +10,7 @@ import type {PinnedRoomServer, VoiceRoomStore} from '@app/api/infrastructure/Voi
 import type {InstanceConfigRepository} from '@app/api/instance/InstanceConfigRepository';
 import {Logger} from '@app/api/Logger';
 import type {User} from '@app/api/models/User';
+import {assertTierAllows, canReachOthers, NO_TIER_CONTEXT} from '@app/api/user/AccountTier';
 import type {UserRepository} from '@app/api/user/repositories/UserRepository';
 import type {VoiceAccessContext, VoiceAvailabilityService} from '@app/api/voice/VoiceAvailabilityService';
 import type {VoiceRegionAvailability, VoiceServerRecord} from '@app/api/voice/VoiceModel';
@@ -19,9 +20,8 @@ import {
 	selectVoiceRegionId,
 } from '@app/api/voice/VoiceRegionSelection';
 import {generateConnectionId} from '@app/api/words/Words';
+import {TierGatedActions} from '@fluxer/constants/src/AccountTierConstants';
 import {ChannelTypes} from '@fluxer/constants/src/ChannelConstants';
-import {UnclaimedAccountCannotJoinOneOnOneVoiceCallsError} from '@fluxer/errors/src/domains/channel/UnclaimedAccountCannotJoinOneOnOneVoiceCallsError';
-import {UnclaimedAccountCannotJoinVoiceChannelsError} from '@fluxer/errors/src/domains/channel/UnclaimedAccountCannotJoinVoiceChannelsError';
 import {UnknownChannelError} from '@fluxer/errors/src/domains/channel/UnknownChannelError';
 import {FeatureTemporarilyDisabledError} from '@fluxer/errors/src/domains/core/FeatureTemporarilyDisabledError';
 import {UnknownGuildMemberError} from '@fluxer/errors/src/domains/guild/UnknownGuildMemberError';
@@ -100,18 +100,8 @@ export class VoiceService {
 		if (!channel) {
 			throw new UnknownChannelError();
 		}
-		const isUnclaimed = user.isUnclaimedAccount();
-		if (isUnclaimed) {
-			if (channel.type === ChannelTypes.DM) {
-				throw new UnclaimedAccountCannotJoinOneOnOneVoiceCallsError();
-			}
-			if (channel.type === ChannelTypes.GUILD_VOICE) {
-				const guild = guildId ? await this.guildRepository.findUnique(guildId) : null;
-				const isOwner = guild?.ownerId === userId;
-				if (!isOwner) {
-					throw new UnclaimedAccountCannotJoinVoiceChannelsError();
-				}
-			}
+		if (!canReachOthers(user)) {
+			await this.assertVoiceReach(user, channel.type, guildId);
 		}
 		let mute = false;
 		let deaf = false;
@@ -151,14 +141,14 @@ export class VoiceService {
 			guildId,
 			guildFeatures,
 		};
-		const availableRegions = this.voiceAvailabilityService.getAvailableRegions(context);
-		const accessibleRegions = availableRegions.filter((region) => region.isAccessible);
+		const accessibleRegions = this.voiceAvailabilityService
+			.getAvailableRegions(context)
+			.filter((region) => region.isAccessible);
 		const defaultRegionId = this.liveKitService.getDefaultRegionId();
 		const preferredRegionId = params.region ?? channel.rtcRegion ?? null;
 		const regionPreference = resolveVoiceRegionPreference({
 			preferredRegionId,
 			accessibleRegions,
-			availableRegions,
 			defaultRegionId,
 		});
 		const accessibleServers = this.getAccessibleServersForRegions(accessibleRegions, context);
@@ -169,6 +159,7 @@ export class VoiceService {
 			guildId,
 			channelId,
 			context,
+			accessibleRegions,
 			preferredRegionId: regionPreference.regionId,
 			mode: regionPreference.mode,
 		});
@@ -195,7 +186,6 @@ export class VoiceService {
 					preferredRegionId: regionPreference.regionId,
 					mode: regionPreference.mode,
 					accessibleRegions,
-					availableRegions,
 					latitude: params.latitude,
 					longitude: params.longitude,
 					selectionKey,
@@ -203,11 +193,11 @@ export class VoiceService {
 				if (!regionId) {
 					throw new FeatureTemporarilyDisabledError();
 				}
-				const serverSelection = this.selectServerForRegion({
+				const serverSelection = this.voiceAvailabilityService.selectServerOrFallback(
 					regionId,
 					context,
 					accessibleRegions,
-				});
+				);
 				if (!serverSelection) {
 					throw new FeatureTemporarilyDisabledError();
 				}
@@ -309,6 +299,7 @@ export class VoiceService {
 		guildId,
 		channelId,
 		context,
+		accessibleRegions,
 		preferredRegionId,
 		mode,
 	}: {
@@ -316,6 +307,7 @@ export class VoiceService {
 		guildId?: GuildID;
 		channelId: ChannelID;
 		context: VoiceAccessContext;
+		accessibleRegions: Array<VoiceRegionAvailability>;
 		preferredRegionId: string | null;
 		mode: 'explicit' | 'automatic';
 	}): Promise<{
@@ -331,7 +323,12 @@ export class VoiceService {
 			return null;
 		}
 		const serverRecord = this.liveKitService.getServer(pinnedServer.regionId, pinnedServer.serverId);
-		if (serverRecord && this.voiceAvailabilityService.isServerAccessible(serverRecord, context)) {
+		if (
+			serverRecord &&
+			accessibleRegions.some((region) => region.id === pinnedServer.regionId) &&
+			this.voiceAvailabilityService.isServerAccessible(serverRecord, context) &&
+			!this.voiceAvailabilityService.isServerDown(serverRecord)
+		) {
 			return {
 				regionId: pinnedServer.regionId,
 				serverId: pinnedServer.serverId,
@@ -339,35 +336,6 @@ export class VoiceService {
 			};
 		}
 		await this.voiceRoomStore.deleteRoomServer(guildId, channelId);
-		return null;
-	}
-
-	private selectServerForRegion({
-		regionId,
-		context,
-		accessibleRegions,
-	}: {
-		regionId: string;
-		context: VoiceAccessContext;
-		accessibleRegions: Array<VoiceRegionAvailability>;
-	}): {
-		regionId: string;
-		server: VoiceServerRecord;
-	} | null {
-		const initialServer = this.voiceAvailabilityService.selectServer(regionId, context);
-		if (initialServer) {
-			return {regionId, server: initialServer};
-		}
-		const fallbackRegion = accessibleRegions.find((region) => region.id !== regionId);
-		if (fallbackRegion) {
-			const fallbackServer = this.voiceAvailabilityService.selectServer(fallbackRegion.id, context);
-			if (fallbackServer) {
-				return {
-					regionId: fallbackRegion.id,
-					server: fallbackServer,
-				};
-			}
-		}
 		return null;
 	}
 
@@ -379,7 +347,7 @@ export class VoiceService {
 		for (const region of accessibleRegions) {
 			servers.push(...this.voiceAvailabilityService.getAccessibleServersForRegion(region.id, context));
 		}
-		return servers;
+		return this.voiceAvailabilityService.preferPlaceableServers(servers);
 	}
 
 	async updateParticipant(params: {
@@ -408,8 +376,10 @@ export class VoiceService {
 				{errorCode: result.errorCode, guildId, channelId},
 				'Failed to list participants for self mute/deaf update',
 			);
-			return;
+			if (result.serverMissing) return;
+			throw new Error(`Failed to list voice participants: ${result.errorCode}`);
 		}
+		let failures = 0;
 		for (const participant of result.participants) {
 			const parts = participant.identity.split('_');
 			if (parts.length >= 2 && parts[0] === 'user') {
@@ -446,10 +416,36 @@ export class VoiceService {
 							},
 							'Failed to update participant',
 						);
+						failures += 1;
 					}
 				}
 			}
 		}
+		if (failures > 0) {
+			throw new Error(`Failed to update ${failures} voice participant connection(s)`);
+		}
+	}
+
+	async updateConnectionPermissions(params: {
+		guildId?: GuildID;
+		channelId: ChannelID;
+		userId: UserID;
+		connectionId: string;
+		deaf: boolean;
+		canSpeak: boolean;
+		canStream: boolean;
+		canVideo: boolean;
+	}): Promise<void> {
+		const {guildId, channelId} = params;
+		const pinnedServer = await this.voiceRoomStore.getPinnedRoomServer(guildId, channelId);
+		if (!pinnedServer) {
+			return;
+		}
+		await this.liveKitService.updateParticipant({
+			...params,
+			regionId: pinnedServer.regionId,
+			serverId: pinnedServer.serverId,
+		});
 	}
 
 	async disconnectParticipant(params: {
@@ -461,6 +457,18 @@ export class VoiceService {
 		const {guildId, channelId, userId, connectionId} = params;
 		const pinnedServer = await this.voiceRoomStore.getPinnedRoomServer(guildId, channelId);
 		if (!pinnedServer) {
+			await Promise.allSettled(
+				this.liveKitService.listServers().map((server) =>
+					this.liveKitService.disconnectParticipant({
+						userId,
+						guildId,
+						channelId,
+						connectionId,
+						regionId: server.regionId,
+						serverId: server.serverId,
+					}),
+				),
+			);
 			return;
 		}
 		await this.liveKitService.disconnectParticipant({
@@ -473,32 +481,16 @@ export class VoiceService {
 		});
 	}
 
-	async updateParticipantPermissions(params: {
-		guildId?: GuildID;
-		channelId: ChannelID;
-		userId: UserID;
-		connectionId: string;
-		canSpeak: boolean;
-		canStream: boolean;
-		canVideo: boolean;
-		deaf?: boolean;
-	}): Promise<void> {
-		const {guildId, channelId, userId, connectionId, canSpeak, canStream, canVideo, deaf} = params;
-		const pinnedServer = await this.voiceRoomStore.getPinnedRoomServer(guildId, channelId);
-		if (!pinnedServer) {
+	private async assertVoiceReach(user: User, channelType: number, guildId: GuildID | null | undefined): Promise<void> {
+		if (channelType === ChannelTypes.GUILD_VOICE) {
+			const guild = guildId ? await this.guildRepository.findUnique(guildId) : null;
+			assertTierAllows(user, TierGatedActions.VOICE, {...NO_TIER_CONTEXT, isGuildOwner: guild?.ownerId === user.id});
 			return;
 		}
-		await this.liveKitService.updateParticipantPermissions({
-			userId,
-			guildId,
-			channelId,
-			connectionId,
-			regionId: pinnedServer.regionId,
-			serverId: pinnedServer.serverId,
-			canSpeak,
-			canStream,
-			canVideo,
-			deaf,
-		});
+		if (channelType === ChannelTypes.DM) {
+			assertTierAllows(user, TierGatedActions.CALL, NO_TIER_CONTEXT);
+		} else if (channelType === ChannelTypes.GROUP_DM) {
+			assertTierAllows(user, TierGatedActions.GROUP_CALL, NO_TIER_CONTEXT);
+		}
 	}
 }

@@ -3,6 +3,7 @@
 import {createTestAccount, setUserACLs} from '@app/api/auth/tests/AuthTestUtils';
 import {createGuildID, createUserID, type GuildID} from '@app/api/BrandedTypes';
 import {createTestBotAccount} from '@app/api/bot/tests/BotTestUtils';
+import {Config} from '@app/api/Config';
 import {createPermissionOverwrite} from '@app/api/channel/tests/ChannelTestUtils';
 import {threadsRequest} from '@app/api/channel/tests/ThreadTestUtils';
 import {clearChannelThreadsTaintCacheForTesting} from '@app/api/experiment/ChannelThreadsGate';
@@ -18,8 +19,8 @@ import {setInjectedGatewayService} from '@app/api/middleware/ServiceRegistry';
 import {getGuildRepository} from '@app/api/middleware/ServiceSingletons';
 import {banUser} from '@app/api/moderation/tests/ModerationTestUtils';
 import {type ApiTestHarness, createApiTestHarness} from '@app/api/test/ApiTestHarness';
-import {NoopLogger} from '@app/api/test/mocks/NoopLogger';
 import {NoopGatewayService} from '@app/api/test/NoopGatewayService';
+import {createTestWorkerHelpers} from '@app/api/test/SyncTaskWorkerService';
 import {HTTP_STATUS} from '@app/api/test/TestConstants';
 import {createBuilder} from '@app/api/test/TestRequestBuilder';
 import syncDiscoveryIndex from '@app/api/worker/tasks/SyncDiscoveryIndex';
@@ -34,7 +35,6 @@ import type {
 	DiscoveryGuildListResponse,
 } from '@fluxer/schema/src/domains/guild/GuildDiscoverySchemas';
 import {MockKVProvider} from '@pkgs/kv_client/src/testing/MockKVProvider';
-import type {WorkerTaskHelpers} from '@pkgs/worker/src/contracts/WorkerTask';
 import {afterEach, beforeEach, describe, expect, test} from 'vitest';
 
 async function setGuildMemberCount(harness: ApiTestHarness, guildId: string, memberCount: number): Promise<void> {
@@ -48,8 +48,6 @@ interface LiveGuildCounts {
 	memberCount: number;
 	onlineCount: number;
 }
-
-const WORKER_HELPERS = {logger: new NoopLogger()} as unknown as WorkerTaskHelpers;
 
 class CapturingPublisher implements ActivityPublisher {
 	readonly events: Array<Event> = [];
@@ -162,7 +160,7 @@ describe('Discovery Search and Join', () => {
 			expect(firstPage.guilds.map((guild) => guild.id)).toEqual([guildIds[0], guildIds[1]]);
 			liveCounts.set(guildIds[0], {memberCount: 5, onlineCount: 0});
 			setWorkerDependenciesForTest({guildRepository: getGuildRepository(), gatewayService});
-			await syncDiscoveryIndex({}, WORKER_HELPERS);
+			await syncDiscoveryIndex({}, createTestWorkerHelpers());
 			const secondPage = await createBuilder<DiscoveryGuildListResponse>(harness, searcher.token)
 				.get('/discovery/guilds?sort_by=member_count&limit=2&offset=2')
 				.expect(HTTP_STATUS.OK)
@@ -174,6 +172,61 @@ describe('Discovery Search and Join', () => {
 			const paged = [...firstPage.guilds, ...secondPage.guilds, ...thirdPage.guilds].map((guild) => guild.id);
 			expect(new Set(paged).size).toBe(paged.length);
 			expect([...paged].sort()).toEqual([...guildIds].sort());
+		});
+		test('an approved guild disappears from search after it is marked 18+', async () => {
+			const admin = await createTestAccount(harness);
+			await setUserACLs(harness, admin, ['admin:authenticate', 'discovery:review']);
+			const owner = await createTestAccount(harness);
+			const guild = await createGuild(harness, owner.token, 'Soon Adult Guild');
+			await setGuildMemberCount(harness, guild.id, 10);
+			await applyAndApprove(
+				harness,
+				owner.token,
+				admin.token,
+				guild.id,
+				'Soon Adult Guild welcomes everyone',
+				DiscoveryCategories.GAMING,
+			);
+			const searcher = await createTestAccount(harness);
+			const before = await createBuilder<DiscoveryGuildListResponse>(harness, searcher.token)
+				.get('/discovery/guilds')
+				.expect(HTTP_STATUS.OK)
+				.execute();
+			expect(before.guilds.some((g) => g.id === guild.id)).toBe(true);
+			await updateGuild(harness, owner.token, guild.id, {nsfw: true});
+			const after = await createBuilder<DiscoveryGuildListResponse>(harness, searcher.token)
+				.get('/discovery/guilds')
+				.expect(HTTP_STATUS.OK)
+				.execute();
+			expect(after.guilds.some((g) => g.id === guild.id)).toBe(false);
+		});
+		test('an approved 18+ guild stays in search on a self-hosted instance', async () => {
+			const admin = await createTestAccount(harness);
+			await setUserACLs(harness, admin, ['admin:authenticate', 'discovery:review']);
+			const owner = await createTestAccount(harness);
+			const searcher = await createTestAccount(harness);
+			const guild = await createGuild(harness, owner.token, 'Self Hosted Adult Guild');
+			await setGuildMemberCount(harness, guild.id, 10);
+			await applyAndApprove(
+				harness,
+				owner.token,
+				admin.token,
+				guild.id,
+				'Self Hosted Adult Guild welcomes adults',
+				DiscoveryCategories.GAMING,
+			);
+			const originalSelfHosted = Config.instance.selfHosted;
+			Config.instance.selfHosted = true;
+			try {
+				await updateGuild(harness, owner.token, guild.id, {nsfw: true});
+				const result = await createBuilder<DiscoveryGuildListResponse>(harness, searcher.token)
+					.get('/discovery/guilds')
+					.expect(HTTP_STATUS.OK)
+					.execute();
+				expect(result.guilds.some((g) => g.id === guild.id)).toBe(true);
+			} finally {
+				Config.instance.selfHosted = originalSelfHosted;
+			}
 		});
 	});
 	describe('join', () => {
@@ -355,6 +408,22 @@ describe('Discovery Search and Join', () => {
 			const viewer = await createTestAccount(harness);
 			await createBuilder(harness, viewer.token)
 				.get(`/discovery/guilds/${guildId}/channels/${hidden.id}`)
+				.expect(HTTP_STATUS.BAD_REQUEST, APIErrorCodes.DISCOVERY_NOT_DISCOVERABLE)
+				.execute();
+		});
+		test('should not preview a channel in an 18+ category', async () => {
+			const {ownerToken, guildId} = await createListedGuild('Restricted Category Guild');
+			const category = await createBuilder<{id: string}>(harness, ownerToken)
+				.post(`/guilds/${guildId}/channels`)
+				.body({name: 'after dark', type: ChannelTypes.GUILD_CATEGORY, nsfw_override: true})
+				.execute();
+			const child = await createBuilder<{id: string}>(harness, ownerToken)
+				.post(`/guilds/${guildId}/channels`)
+				.body({name: 'late-chat', type: ChannelTypes.GUILD_TEXT, parent_id: category.id})
+				.execute();
+			const viewer = await createTestAccount(harness);
+			await createBuilder(harness, viewer.token)
+				.get(`/discovery/guilds/${guildId}/channels/${child.id}`)
 				.expect(HTTP_STATUS.BAD_REQUEST, APIErrorCodes.DISCOVERY_NOT_DISCOVERABLE)
 				.execute();
 		});

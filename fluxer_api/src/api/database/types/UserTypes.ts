@@ -10,6 +10,7 @@ import type {
 	MessageID,
 	UserID,
 } from '@app/api/BrandedTypes';
+import type {LocalDate} from '@app/api/database/LocalDate';
 import type {LocaleCode} from '@fluxer/constants/src/Locales';
 import type {GuildFolderIcon, MentionReplyPreference} from '@fluxer/constants/src/UserConstants';
 import type {types} from 'cassandra-driver';
@@ -44,7 +45,7 @@ export interface UserRow {
 	accent_color: number | null;
 	timezone: string | null;
 	timezone_privacy_flags: number | null;
-	date_of_birth: types.LocalDate | null;
+	date_of_birth: LocalDate | null;
 	locale: string | null;
 	flags: bigint | null;
 	premium_flags?: number | null;
@@ -74,15 +75,20 @@ export interface UserRow {
 	deletion_audit_log_reason: string | null;
 	deletion_scheduled_by?: UserID | null;
 	deletion_scheduled_at?: Date | null;
+	enforcement_decision_id?: bigint | null;
 	content_hidden_since?: Date | null;
 	acls: Set<string> | null;
 	traits: Set<string> | null;
+	badge_ids?: Set<bigint> | null;
+	hidden_profile_badges?: Set<string> | null;
 	first_refund_at: Date | null;
 	gift_inventory_server_seq: number | null;
 	gift_inventory_client_seq: number | null;
 	premium_onboarding_dismissed_at: Date | null;
 	mention_flags?: MentionReplyPreference | null;
 	last_voice_activity_sharing_change_at: Date | null;
+	attested_age_floor?: string | null;
+	age_attested_at?: Date | null;
 	version: number;
 }
 
@@ -139,15 +145,20 @@ export const USER_COLUMNS = [
 	'deletion_audit_log_reason',
 	'deletion_scheduled_by',
 	'deletion_scheduled_at',
+	'enforcement_decision_id',
 	'content_hidden_since',
 	'acls',
 	'traits',
+	'badge_ids',
+	'hidden_profile_badges',
 	'first_refund_at',
 	'gift_inventory_server_seq',
 	'gift_inventory_client_seq',
 	'premium_onboarding_dismissed_at',
 	'mention_flags',
 	'last_voice_activity_sharing_change_at',
+	'attested_age_floor',
+	'age_attested_at',
 	'version',
 ] as const satisfies ReadonlyArray<keyof UserRow>;
 export const EMPTY_USER_ROW: UserRow = {
@@ -203,15 +214,20 @@ export const EMPTY_USER_ROW: UserRow = {
 	deletion_audit_log_reason: null,
 	deletion_scheduled_by: null,
 	deletion_scheduled_at: null,
+	enforcement_decision_id: null,
 	content_hidden_since: null,
 	acls: null,
 	traits: null,
+	badge_ids: null,
+	hidden_profile_badges: null,
 	first_refund_at: null,
 	gift_inventory_server_seq: null,
 	gift_inventory_client_seq: null,
 	premium_onboarding_dismissed_at: null,
 	mention_flags: null,
 	last_voice_activity_sharing_change_at: null,
+	attested_age_floor: null,
+	age_attested_at: null,
 	version: 1,
 };
 
@@ -262,11 +278,14 @@ export interface UserSettingsRow {
 	guild_folders: Array<GuildFolder> | null;
 	afk_timeout: number | null;
 	time_format: number | null;
+	regional_format: string | null;
+	timestamp_format: number | null;
 	trusted_domains: Set<string> | null;
 	default_hide_muted_channels: boolean | null;
 	sensitive_content_friend_dm_filter: number | null;
 	sensitive_content_non_friend_dm_filter: number | null;
 	sensitive_content_guild_filter: number | null;
+	allow_mature_content_on_ios: boolean | null;
 	suppress_unprivileged_self_mentions: boolean | null;
 	suppress_unprivileged_self_mentions_bypass_user_ids: Set<UserID> | null;
 	staff_dm_access_user_ids: Set<UserID> | null;
@@ -357,6 +376,7 @@ export interface FavoriteMemeRow {
 	tenor_id_str: string | null;
 	media_formats: string | null;
 	placeholder: string | null;
+	nsfw: boolean | null;
 	version: number;
 }
 
@@ -379,6 +399,7 @@ export const FAVORITE_MEME_COLUMNS = [
 	'tenor_id_str',
 	'media_formats',
 	'placeholder',
+	'nsfw',
 	'version',
 ] as const satisfies ReadonlyArray<keyof FavoriteMemeRow>;
 
@@ -503,11 +524,14 @@ export const USER_SETTINGS_COLUMNS = [
 	'guild_folders',
 	'afk_timeout',
 	'time_format',
+	'regional_format',
+	'timestamp_format',
 	'trusted_domains',
 	'default_hide_muted_channels',
 	'sensitive_content_friend_dm_filter',
 	'sensitive_content_non_friend_dm_filter',
 	'sensitive_content_guild_filter',
+	'allow_mature_content_on_ios',
 	'suppress_unprivileged_self_mentions',
 	'suppress_unprivileged_self_mentions_bypass_user_ids',
 	'staff_dm_access_user_ids',
@@ -583,6 +607,11 @@ export interface UserByStripeSubscriptionIdRow {
 	user_id: UserID;
 }
 
+export interface UserByAclRow {
+	acl: string;
+	user_id: UserID;
+}
+
 export interface UserByLastActiveIpRow {
 	last_active_ip: string;
 	user_id: UserID;
@@ -612,6 +641,7 @@ export const USER_BY_STRIPE_SUBSCRIPTION_ID_COLUMNS = [
 	'stripe_subscription_id',
 	'user_id',
 ] as const satisfies ReadonlyArray<keyof UserByStripeSubscriptionIdRow>;
+export const USER_BY_ACL_COLUMNS = ['acl', 'user_id'] as const satisfies ReadonlyArray<keyof UserByAclRow>;
 export const USER_BY_LAST_ACTIVE_IP_COLUMNS = [
 	'last_active_ip',
 	'user_id',

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import type {ApiContext} from '@app/api/ApiContext';
+import {buildAdminDownloadUrl} from '@app/api/admin/AdminSignedDownloads';
 import type {AdminAuditService} from '@app/api/admin/services/AdminAuditService';
 import {
 	describeReporterNotice,
@@ -14,7 +15,6 @@ import {
 	type ReportID,
 	type UserID,
 } from '@app/api/BrandedTypes';
-import {Config} from '@app/api/Config';
 import type {ChannelRepository} from '@app/api/channel/ChannelRepository';
 import {makeAttachmentCdnKey} from '@app/api/channel/services/message/MessageHelpers';
 import {
@@ -23,6 +23,7 @@ import {
 } from '@app/api/channel/services/message/MessageResponseDataService';
 import {resolveNsfwScopeChannel} from '@app/api/channel/utils/ThreadNsfwScope';
 import type {MessageAttachment} from '@app/api/database/types/MessageTypes';
+import type {IARReportNoteRow} from '@app/api/database/types/ReportTypes';
 import type {GuildRepository} from '@app/api/guild/repositories/GuildRepository';
 import type {IStorageService} from '@app/api/infrastructure/IStorageService';
 import type {UserCacheService} from '@app/api/infrastructure/UserCacheService';
@@ -32,6 +33,7 @@ import {createRequestCache} from '@app/api/middleware/RequestCacheMiddleware';
 import {describeReportFlowAnswers} from '@app/api/report/flows/ReportFlowRegistry';
 import {findReportReason, listReportReasons} from '@app/api/report/flows/ReportReasonCatalog';
 import type {IARMessageContext, IARSubmission} from '@app/api/report/ReportModels';
+import type {ReportRepository} from '@app/api/report/ReportRepository';
 import type {ReportService} from '@app/api/report/ReportService';
 import {getReportSearchService} from '@app/api/SearchFactory';
 import {isHiddenPartial} from '@app/api/user/ProfileVisibility';
@@ -39,11 +41,16 @@ import {formatUserTag} from '@app/api/user/UserTag';
 import {assertSafeByteSize} from '@app/api/utils/ByteSizeUtils';
 import {AdminACLs} from '@fluxer/constants/src/AdminACLs';
 import {DELETED_USER_DISCRIMINATOR, DELETED_USER_USERNAME} from '@fluxer/constants/src/UserConstants';
+import {ValidationErrorCodes} from '@fluxer/constants/src/ValidationErrorCodes';
 import {FeatureTemporarilyDisabledError} from '@fluxer/errors/src/domains/core/FeatureTemporarilyDisabledError';
+import {InputValidationError} from '@fluxer/errors/src/domains/core/InputValidationError';
 import {UnknownReportError} from '@fluxer/errors/src/domains/moderation/UnknownReportError';
 import type {ReportSearchFilters} from '@fluxer/schema/src/contracts/search/SearchDocumentTypes';
+import type {ReportNoteListResponse, ReportNoteResponse} from '@fluxer/schema/src/domains/admin/AdminReportNoteSchemas';
 import type {
 	AdminReportReasonsResponse,
+	ReportAdminResponseSchema,
+	ReportItemOutcome,
 	SearchReportsRequest,
 	UpdateReportRequest,
 } from '@fluxer/schema/src/domains/admin/AdminSchemas';
@@ -51,10 +58,12 @@ import type {MessageResponse} from '@fluxer/schema/src/domains/message/MessageRe
 import type {ReportProfileAssetSnapshot} from '@fluxer/schema/src/domains/report/ReportProfileSnapshotSchemas';
 import type {UserPartialResponse} from '@fluxer/schema/src/domains/user/UserResponseSchemas';
 import {seconds} from 'itty-time';
+import type {z} from 'zod';
 
 interface AdminReportServiceDeps {
 	apiContext: ApiContext;
 	reportService: ReportService;
+	reportRepository: ReportRepository;
 	guildRepository: GuildRepository;
 	channelRepository: ChannelRepository;
 	storageService: IStorageService;
@@ -63,7 +72,39 @@ interface AdminReportServiceDeps {
 	reporterResolutionNotifier: ReporterResolutionNotifier;
 }
 
-type StaffReportResolution = NonNullable<UpdateReportRequest['resolution']>;
+interface StaffReportResolution {
+	adminUserId: UserID;
+	publicComment: string | null;
+	auditLogReason: string | null;
+	notifyReporter: boolean;
+	resolution: UpdateReportRequest['resolution'];
+	outcome?: ReportItemOutcome;
+	duplicateOf?: ReportID;
+}
+
+function refuse(path: 'outcome' | 'duplicate_of'): never {
+	throw InputValidationError.fromCode(path, ValidationErrorCodes.REPORT_OUTCOME_INVALID);
+}
+
+function staffOutcome(
+	resolution: UpdateReportRequest['resolution'],
+	outcome: ReportItemOutcome | undefined,
+	duplicateOf: ReportID | undefined,
+): ReportItemOutcome | null {
+	if (resolution !== 'duplicate' && duplicateOf !== undefined) refuse('duplicate_of');
+	switch (resolution) {
+		case 'no_violation':
+			if (outcome !== undefined && outcome !== 'no_violation') refuse('outcome');
+			return 'no_violation';
+		case 'actioned':
+			if (outcome === undefined || outcome === 'no_violation') refuse('outcome');
+			return outcome;
+		case 'duplicate':
+			if (outcome !== undefined) refuse('outcome');
+			if (duplicateOf === undefined) refuse('duplicate_of');
+			return null;
+	}
+}
 
 interface ReportLookupCache {
 	channelNsfwByChannelId: Map<string, boolean | null>;
@@ -101,6 +142,15 @@ function mapMissingAttachmentToResponse(attachment: MessageAttachment) {
 	};
 }
 
+function toReportNoteResponse(note: IARReportNoteRow): ReportNoteResponse {
+	return {
+		note_id: note.note_id.toString(),
+		author_id: note.author_id.toString(),
+		body: note.body,
+		created_at: note.created_at.toISOString(),
+	};
+}
+
 function mapReportReasonFields(report: IARSubmission) {
 	const reason = report.reason ? findReportReason(report.reason) : null;
 	const flow =
@@ -124,26 +174,6 @@ function mapReportReasonFields(report: IARSubmission) {
 export class AdminReportService {
 	constructor(private readonly deps: AdminReportServiceDeps) {}
 
-	async listReports(status: number, acls: ReadonlySet<string>, limit?: number, offset?: number) {
-		const {reportService} = this.deps;
-		const requestedLimit = limit || 50;
-		const currentOffset = offset || 0;
-		const {reports, total} = await reportService.listReportsByStatus(status, requestedLimit, currentOffset);
-		const requestCache = createRequestCache();
-		const reportLookupCache = createReportLookupCache();
-		const reportResponses = await Promise.all(
-			reports.map((report: IARSubmission) =>
-				this.mapReportToResponse(report, false, requestCache, acls, reportLookupCache),
-			),
-		);
-		return {
-			reports: reportResponses,
-			total,
-			offset: currentOffset,
-			limit: requestedLimit,
-		};
-	}
-
 	listReportReasons(): AdminReportReasonsResponse {
 		return {
 			reasons: listReportReasons().map((reason) => ({
@@ -162,25 +192,57 @@ export class AdminReportService {
 		const report = await reportService.getReport(reportId);
 		const requestCache = createRequestCache();
 		const reportLookupCache = createReportLookupCache();
-		return this.mapReportToResponse(report, true, requestCache, acls, reportLookupCache);
+		const [response, notes] = await Promise.all([
+			this.mapReportToResponse(report, true, requestCache, acls, reportLookupCache),
+			this.deps.reportRepository.listNotes(reportId),
+		]);
+		return {...response, notes: notes.map(toReportNoteResponse)};
+	}
+
+	async listNotes(reportId: ReportID): Promise<ReportNoteListResponse> {
+		await this.deps.reportService.getReport(reportId);
+		const notes = await this.deps.reportRepository.listNotes(reportId);
+		return {notes: notes.map(toReportNoteResponse)};
+	}
+
+	async addNote(reportId: ReportID, body: string, authorId: UserID): Promise<ReportNoteResponse> {
+		await this.deps.reportService.getReport(reportId);
+		const note: IARReportNoteRow = {
+			report_id: reportId,
+			note_id: await this.deps.apiContext.services.snowflake.generate(),
+			author_id: authorId,
+			body,
+			created_at: new Date(),
+		};
+		await this.deps.reportRepository.addNote(note);
+		return toReportNoteResponse(note);
 	}
 
 	async resolveReport(
 		reportId: ReportID,
-		adminUserId: UserID,
-		publicComment: string | null,
-		auditLogReason: string | null,
-		notifyReporter: boolean,
-		resolution?: StaffReportResolution,
+		{
+			adminUserId,
+			publicComment,
+			auditLogReason,
+			notifyReporter,
+			resolution,
+			outcome,
+			duplicateOf,
+		}: StaffReportResolution,
 	) {
 		const {reportService, auditService, reporterResolutionNotifier} = this.deps;
+		const reporterOutcome =
+			staffOutcome(resolution, outcome, duplicateOf) ?? (await this.duplicatedOutcome(reportId, duplicateOf));
 		const sentComment = notifyReporter ? publicComment : null;
 		const internalComment = notifyReporter ? null : publicComment;
 		const resolvedReport = await reportService.resolveReport(reportId, adminUserId, sentComment, auditLogReason, {
 			outcome: resolution,
 			resolvedBy: 'staff',
+			reporterOutcome,
 		});
-		const notice = await reporterResolutionNotifier.notifyReporterOfResolution(resolvedReport, sentComment);
+		const notice = reporterOutcome
+			? await reporterResolutionNotifier.notifyReporterOfResolution(resolvedReport, sentComment, reporterOutcome)
+			: null;
 		await auditService.createAuditLog({
 			adminUserId,
 			targetType: 'report',
@@ -192,8 +254,12 @@ export class AdminReportService {
 				['report_type', resolvedReport.reportType.toString()],
 				['notify_reporter', notifyReporter ? 'true' : 'false'],
 				...(internalComment ? [['internal_comment', internalComment] as [string, string]] : []),
-				...describeReporterNotice(notice),
-				...(resolution ? [['resolution', resolution] as [string, string]] : []),
+				...(notice
+					? describeReporterNotice(notice)
+					: [['reporter_notice_skipped', 'duplicate_outcome_unknown'] as [string, string]]),
+				['resolution', resolution],
+				...(duplicateOf ? [['duplicate_of', duplicateOf.toString()] as [string, string]] : []),
+				...(reporterOutcome ? [['outcome', reporterOutcome] as [string, string]] : []),
 			]),
 		});
 		return {
@@ -202,6 +268,16 @@ export class AdminReportService {
 			resolved_at: resolvedReport.resolvedAt?.toISOString() ?? null,
 			public_comment: resolvedReport.publicComment,
 		};
+	}
+
+	private async duplicatedOutcome(
+		reportId: ReportID,
+		duplicateOf: ReportID | undefined,
+	): Promise<ReportItemOutcome | null> {
+		if (duplicateOf === undefined) return null;
+		if (duplicateOf === reportId) refuse('duplicate_of');
+		const original = await this.deps.reportService.getReport(duplicateOf);
+		return original.reporterOutcome;
 	}
 
 	async searchReports(data: SearchReportsRequest, acls: ReadonlySet<string>) {
@@ -301,16 +377,16 @@ export class AdminReportService {
 		const reporterInfo = await this.buildUserTag(report.reporterId, requestCache);
 		const reportedUserInfo = await this.buildUserTag(report.reportedUserId, requestCache);
 		const canViewReporterPii = acls.has(AdminACLs.REPORT_VIEW_REPORTER_PII) || acls.has(AdminACLs.WILDCARD);
-		const reportedGuildNsfwLevel =
-			report.reportedGuildNsfw !== null
-				? report.reportedGuildNsfw
-					? 3
-					: 0
-				: await this.getGuildNsfwLevelForContext(
-						report.reportedChannelId,
-						report.reportedGuildId ?? report.guildContextId ?? null,
-						reportLookupCache,
-					);
+		let reportedGuildNsfwLevel: number | null;
+		if (report.reportedGuildNsfw !== null) {
+			reportedGuildNsfwLevel = report.reportedGuildNsfw ? 3 : 0;
+		} else {
+			reportedGuildNsfwLevel = await this.getGuildNsfwLevelForContext(
+				report.reportedChannelId,
+				report.reportedGuildId ?? report.guildContextId ?? null,
+				reportLookupCache,
+			);
+		}
 		const reportedChannelNsfw =
 			report.reportedChannelEffectiveNsfw !== null
 				? report.reportedChannelEffectiveNsfw
@@ -442,20 +518,25 @@ export class AdminReportService {
 		}
 		const asset = (value: ReportProfileAssetSnapshot | null) => this.mapProfileSnapshotAsset(report.reportId, value);
 		const {user, member, guild} = snapshot;
+		const capturedAt = snapshot.captured_at;
+		let userResponse: NonNullable<z.infer<typeof ReportAdminResponseSchema>['reported_profile_snapshot']>['user'] =
+			null;
+		if (user) {
+			userResponse = {
+				id: user.id,
+				username: user.username,
+				discriminator: user.discriminator === null ? null : user.discriminator.toString().padStart(4, '0'),
+				global_name: user.global_name,
+				bio: user.bio,
+				pronouns: user.pronouns,
+				custom_status: user.custom_status,
+				avatar: await asset(user.avatar),
+				banner: await asset(user.banner),
+			};
+		}
 		return {
-			captured_at: snapshot.captured_at,
-			user: user
-				? {
-						id: user.id,
-						username: user.username,
-						discriminator: user.discriminator === null ? null : user.discriminator.toString().padStart(4, '0'),
-						global_name: user.global_name,
-						bio: user.bio,
-						pronouns: user.pronouns,
-						avatar: await asset(user.avatar),
-						banner: await asset(user.banner),
-					}
-				: null,
+			captured_at: capturedAt,
+			user: userResponse,
 			member: member
 				? {
 						guild_id: member.guild_id,
@@ -491,10 +572,11 @@ export class AdminReportService {
 			return {hash: asset.hash, url: null};
 		}
 		try {
-			const url = await this.deps.storageService.getPresignedDownloadURL({
-				bucket: Config.s3.buckets.reports,
+			const url = await buildAdminDownloadUrl(this.deps.storageService, {
+				bucket: 'reports',
 				key: asset.key,
-				expiresIn: seconds('5 minutes'),
+				filename: asset.key.split('/').at(-1) ?? asset.hash,
+				expiresInSeconds: seconds('5 minutes'),
 			});
 			return {hash: asset.hash, url};
 		} catch (error) {
@@ -685,10 +767,11 @@ export class AdminReportService {
 		const filename = String(attachment.filename);
 		const key = makeAttachmentCdnKey(channelId, attachmentId, filename);
 		try {
-			const url = await storageService.getPresignedDownloadURL({
-				bucket: Config.s3.buckets.reports,
+			const url = await buildAdminDownloadUrl(storageService, {
+				bucket: 'reports',
 				key,
-				expiresIn: seconds('5 minutes'),
+				filename,
+				expiresInSeconds: seconds('5 minutes'),
 			});
 			return {
 				id: attachment.attachment_id.toString(),

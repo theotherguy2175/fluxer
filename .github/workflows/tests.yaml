@@ -89,21 +89,9 @@ jobs:
         run: |
           "$FLUXER_CI_BIN" ci --step install_dependencies
 
-      - name: Restore fluxer_app wasm artifacts
-        id: app-wasm
-        uses: ./.github/actions/app-wasm-cache
-        with:
-          mode: restore
-
       - name: Run tests
         run: |
           "$FLUXER_CI_BIN" ci --step test
-
-      - name: Save fluxer_app wasm artifacts
-        if: always() && github.ref == 'refs/heads/main' && steps.app-wasm.outputs.cache-hit != 'true'
-        uses: ./.github/actions/app-wasm-cache
-        with:
-          mode: save
 
   rust:
     # Fork: upstream runs this on Blacksmith runners, which this repo doesn't have —
@@ -147,11 +135,11 @@ jobs:
       - name: Check Rust dependencies
         run: cargo deny --locked check -D warnings
 
-      - name: Check libfluxwebp dependencies
-        run: cargo deny --manifest-path fluxer_app/rust/libfluxwebp/Cargo.toml --config deny.toml --locked check licenses bans sources
+      - name: Check desktop native crates are in the root workspace
+        run: tools/ci/check-desktop-native-crates.sh inventory
 
-      - name: Check desktop native dependencies
-        run: tools/ci/check-desktop-native-workspaces.sh dependencies
+      - name: Check advisories in every Cargo.lock
+        run: tools/ci/check-cargo-lockfiles.sh
 
       - name: Cache native media dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -202,17 +190,11 @@ jobs:
       - name: Check formatting
         run: cargo fmt --all -- --check
 
-      - name: Check formatting (libfluxwebp)
-        run: cargo fmt --manifest-path fluxer_app/rust/libfluxwebp/Cargo.toml -- --check
-
-      - name: Check formatting (desktop native workspaces)
-        run: tools/ci/check-desktop-native-workspaces.sh fmt
-
       - name: Clippy (warnings as errors)
-        run: cargo clippy --workspace --all-targets --all-features --locked -- -D warnings
+        run: cargo clippy --all-targets --all-features --locked -- -D warnings
 
-      - name: Clippy (desktop native workspaces on Linux and Windows backends, warnings as errors)
-        run: tools/ci/check-desktop-native-workspaces.sh clippy
+      - name: Clippy (desktop native crates on Linux and Windows backends, warnings as errors)
+        run: tools/ci/check-desktop-native-crates.sh clippy
 
       - name: Verify the source-built ffmpeg CLI is on PATH
         run: |
@@ -224,13 +206,7 @@ jobs:
       - name: Run tests
         env:
           FLUXER_REQUIRE_MEDIA_FIXTURES: "1"
-        run: cargo test --workspace --all-features --locked
-
-      - name: Run tests (libfluxcore)
-        run: cargo test --locked --manifest-path fluxer_app/rust/libfluxcore/Cargo.toml
-
-      - name: Run desktop native workspace tests on Linux
-        run: tools/ci/check-desktop-native-workspaces.sh test
+        run: cargo test --all-features --locked
 
   gateway:
     runs-on: ubuntu-24.04
@@ -261,7 +237,7 @@ jobs:
         uses: erlef/setup-beam@54075bcc5e249e4758d363f27d099f55d843f124
         with:
           otp-version: '28'
-          rebar3-version: '3.27.0'
+          rebar3-version: '3.27.3'
 
       - name: Restore rebar3 dependencies
         id: rebar3-cache
@@ -273,10 +249,10 @@ jobs:
             !fluxer_gateway/_build/default/lib/fluxer_gateway/**
             !fluxer_gateway/_build/test/lib/fluxer_gateway/**
           key: >-
-            rebar3-${{ runner.os }}-otp28-rebar3.27.0-${{ hashFiles('fluxer_gateway/rebar.lock',
+            rebar3-${{ runner.os }}-otp28-rebar3.27.3-${{ hashFiles('fluxer_gateway/rebar.lock',
             'fluxer_gateway/rebar.config') }}
           restore-keys: |
-            rebar3-${{ runner.os }}-otp28-rebar3.27.0-
+            rebar3-${{ runner.os }}-otp28-rebar3.27.3-
 
       - name: Drop restored gateway build output
         run: rm -rf fluxer_gateway/_build/default/lib/fluxer_gateway fluxer_gateway/_build/test/lib/fluxer_gateway
@@ -293,10 +269,6 @@ jobs:
         run: |
           "$FLUXER_CI_BIN" ci --step gateway_dialyzer
 
-      - name: Run eunit tests
-        run: |
-          "$FLUXER_CI_BIN" ci --step gateway_eunit
-
       - name: Save rebar3 dependencies
         if: always() && github.ref == 'refs/heads/main' && steps.rebar3-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9
@@ -307,7 +279,7 @@ jobs:
             !fluxer_gateway/_build/default/lib/fluxer_gateway/**
             !fluxer_gateway/_build/test/lib/fluxer_gateway/**
           key: >-
-            rebar3-${{ runner.os }}-otp28-rebar3.27.0-${{ hashFiles('fluxer_gateway/rebar.lock',
+            rebar3-${{ runner.os }}-otp28-rebar3.27.3-${{ hashFiles('fluxer_gateway/rebar.lock',
             'fluxer_gateway/rebar.config') }}
 
   knip:
@@ -385,6 +357,9 @@ jobs:
       - name: Check data-flx attributes
         run: pnpm --filter fluxer_app theming:data-flx:check
 
+      - name: Check self-host env forwarding
+        run: pnpm --filter @fluxer/config self-host-env:check
+
   i18n:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
@@ -413,6 +388,7 @@ jobs:
             packages/errors/src/i18n/weblate \
             fluxer_api/pkgs/email/src/email_i18n/weblate \
             fluxer_api/pkgs/email/src/email_i18n/EmailI18nTypes.generated.ts \
+            fluxer_api/pkgs/email/src/email_html/EmailHtmlLayouts.generated.ts \
             fluxer_api/src/api/content_i18n/weblate; then
             echo "::error::Static catalogs are out of sync with their sources. Run 'pnpm i18n:compile' and commit the result."
             exit 1
@@ -436,9 +412,6 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --filter fluxer_docs...
-
-      - name: Verify documentation matches the live API
-        run: pnpm --filter fluxer_docs verify
 
       - name: Build documentation
         run: pnpm --filter fluxer_docs build

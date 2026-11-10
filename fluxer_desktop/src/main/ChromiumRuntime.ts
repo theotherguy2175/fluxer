@@ -6,6 +6,7 @@ import {createRequire} from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import type {BuildChannel} from '@electron/common/BuildChannel';
+import {getAppResourcesPath} from '@electron/main/DesktopDistributionPath';
 import {app} from 'electron';
 import log from 'electron-log';
 
@@ -115,7 +116,7 @@ function safeFileFingerprint(filePath: string): {mtimeMs: number | null; size: n
 
 function getRuntimeCacheKey(): string {
 	const executable = safeFileFingerprint(process.execPath);
-	const appBundle = safeFileFingerprint(path.join(process.resourcesPath, 'app.asar'));
+	const appBundle = safeFileFingerprint(path.join(getAppResourcesPath(), 'app.asar'));
 	return JSON.stringify({
 		appVersion: app.getVersion(),
 		electronVersion: process.versions.electron ?? null,
@@ -250,7 +251,12 @@ export function hasEnabledBlinkFeature(feature: string): boolean {
 }
 
 export function appendConfiguredChromiumSwitches(rawSwitches: unknown): void {
-	const switches = Array.isArray(rawSwitches) ? rawSwitches : isRecord(rawSwitches) ? Object.keys(rawSwitches) : [];
+	let switches: Array<unknown> = [];
+	if (Array.isArray(rawSwitches)) {
+		switches = rawSwitches;
+	} else if (isRecord(rawSwitches)) {
+		switches = Object.keys(rawSwitches);
+	}
 	for (const chromiumSwitch of switches) {
 		if (typeof chromiumSwitch !== 'string') continue;
 		if (!CONFIGURED_CHROMIUM_SWITCH_ALLOWLIST.has(chromiumSwitch)) continue;
@@ -292,6 +298,11 @@ export function appendLinuxChromiumFlagsConfig(channel: BuildChannel): void {
 			log.warn('[ChromiumRuntime] Failed to load Linux Chromium flags config', {path: filePath, error});
 		}
 	}
+}
+
+export function addLinuxHardwareVideoDecodeFeatures(features: Set<string>): void {
+	if (process.platform !== 'linux') return;
+	features.add('VaapiOnNvidiaGPUs');
 }
 
 export function addLinuxHardwareVideoEncodeFeatures(features: Set<string>): void {

@@ -66,7 +66,7 @@ import {CHANNEL_SETTINGS_LABEL_DESCRIPTOR} from '@app/features/user/components/s
 import type {User} from '@app/features/user/models/User';
 import UserGuildSettings from '@app/features/user/state/UserGuildSettings';
 import Users from '@app/features/user/state/Users';
-import MediaEngine from '@app/features/voice/engine/MediaEngineFacade';
+import VoiceRuntime from '@app/features/voice/engine/VoiceRuntime';
 import {usePendingVoiceConnection} from '@app/features/voice/hooks/usePendingVoiceConnection';
 import {computeChannelE2EEStatus} from '@app/features/voice/state/ChannelE2EEStatus';
 import CompactVoiceCallHeight, {getGuildVoiceCallExpansionKey} from '@app/features/voice/state/CompactVoiceCallHeight';
@@ -232,8 +232,8 @@ export const ChannelItem = observer(
 		const shouldDimForVoiceDrag = Boolean(isVoiceDragActive && channelIsText && channel.parentId !== null);
 		const unreadCount = ReadStates.getUnreadCount(channel.id);
 		const hasUnread = channel.isThreadOnly() ? hasForumUnread(channel) : ReadStates.hasUnread(channel.id);
-		const connectedVoiceGuildId = channelIsVoice ? MediaEngine.guildId : null;
-		const connectedVoiceChannelId = channelIsVoice ? MediaEngine.channelId : null;
+		const connectedVoiceGuildId = channelIsVoice ? VoiceRuntime.guildId : null;
+		const connectedVoiceChannelId = channelIsVoice ? VoiceRuntime.channelId : null;
 		const canManageChannels = Permission.can(Permissions.MANAGE_CHANNELS, channel);
 		const canUpdateRtcRegion = channelIsVoice && Permission.can(Permissions.UPDATE_RTC_REGION, channel);
 		const canEditChannel = canManageChannels || canUpdateRtcRegion;
@@ -243,7 +243,7 @@ export const ChannelItem = observer(
 		const isChannelDirectlyMuted = UserGuildSettings.isChannelDirectlyMuted(guild.id, channel.id);
 		const currentUserCount =
 			channelIsVoice && channel.userLimit != null && channel.userLimit > 0
-				? Object.keys(MediaEngine.getAllVoiceStatesInChannel(guild.id, channel.id)).length
+				? Object.keys(VoiceRuntime.getAllVoiceStatesInChannel(guild.id, channel.id)).length
 				: 0;
 		const isMobileLayout = mobileLayout.enabled;
 		const allowHoverAffordances = !isMobileLayout;
@@ -351,7 +351,7 @@ export const ChannelItem = observer(
 						}
 						const currentUserId = Users.getCurrentUser()?.id ?? null;
 						if (currentUserId && item.userId === currentUserId) {
-							void MediaEngine.connectToVoiceChannel(guild.id, channel.id);
+							void VoiceRuntime.withEngine('join', (engine) => engine.connectToVoiceChannel(guild.id, channel.id));
 							setDropIndicator(null);
 							return;
 						}
@@ -486,11 +486,14 @@ export const ChannelItem = observer(
 				data-flx="app.channel-item.unread-indicator"
 			/>
 		) : null;
-		const channelKindLabel = channelIsCategory
-			? i18n._(CATEGORY_DESCRIPTOR)
-			: channelIsVoice
-				? i18n._(VOICE_CHANNEL_DESCRIPTOR)
-				: i18n._(CHANNEL_DESCRIPTOR);
+		let channelKindLabel: string;
+		if (channelIsCategory) {
+			channelKindLabel = i18n._(CATEGORY_DESCRIPTOR);
+		} else if (channelIsVoice) {
+			channelKindLabel = i18n._(VOICE_CHANNEL_DESCRIPTOR);
+		} else {
+			channelKindLabel = i18n._(CHANNEL_DESCRIPTOR);
+		}
 		const ariaLabelParts = [channel.name, channelKindLabel];
 		if (shouldShowSelectedState) ariaLabelParts.push(i18n._(SELECTED_DESCRIPTOR));
 		if (channelIsCategory)
@@ -622,23 +625,26 @@ export const ChannelItem = observer(
 			? i18n._(EDIT_CATEGORY_DESCRIPTOR)
 			: i18n._(CHANNEL_SETTINGS_LABEL_DESCRIPTOR);
 		const voiceLocked = channelIsVoice && !Permission.can(Permissions.CONNECT, channel);
+		let channelIconStateClass = styles.channelItemIconUnselected;
+		if (shouldShowSelectedState || (isHighlight && isSelected)) {
+			channelIconStateClass = styles.channelItemIconSelected;
+		} else if (isVoiceSelected && channel.type === ChannelTypes.GUILD_VOICE) {
+			channelIconStateClass = styles.channelItemHighlight;
+		} else if (isHighlight && !isSelected) {
+			channelIconStateClass = styles.channelItemIconHighlight;
+		}
+		let channelIconOptions: {locked?: boolean; e2eeEncrypted?: boolean} | undefined;
+		if (voiceLocked) {
+			channelIconOptions = {locked: true};
+		} else if (channelIsE2EEEncrypted) {
+			channelIconOptions = {e2eeEncrypted: true};
+		}
 		const channelIconNode = channelIsCategory
 			? null
 			: ChannelUtils.getIcon(
 					channel,
-					{
-						className: clsx(
-							styles.channelItemIcon,
-							shouldShowSelectedState || (isHighlight && isSelected)
-								? styles.channelItemIconSelected
-								: isVoiceSelected && channel.type === ChannelTypes.GUILD_VOICE
-									? styles.channelItemHighlight
-									: isHighlight && !isSelected
-										? styles.channelItemIconHighlight
-										: styles.channelItemIconUnselected,
-						),
-					},
-					voiceLocked ? {locked: true} : channelIsE2EEEncrypted ? {e2eeEncrypted: true} : undefined,
+					{className: clsx(styles.channelItemIcon, channelIconStateClass)},
+					channelIconOptions,
 				);
 		const typingIndicatorNode =
 			!channelIsCategory &&

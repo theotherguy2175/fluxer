@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import {Routes} from '@app/app/Routes';
 import {ClientInfo} from '@app/features/app/components/dialogs/components/ClientInfo';
 import {LogoutModal} from '@app/features/app/components/dialogs/components/LogoutModal';
 import styles from '@app/features/app/components/dialogs/components/MobileSettingsView.module.css';
@@ -9,10 +10,18 @@ import {
 	MobileSettingsDangerItem,
 } from '@app/features/app/components/dialogs/shared/MobileSettingsComponents';
 import {SettingsCurrentTabProvider} from '@app/features/app/components/dialogs/shared/SettingsCurrentTabContext';
+import {settingsModalStyles} from '@app/features/app/components/dialogs/shared/SettingsModalLayout';
 import {SETTINGS_FADE_VARIANTS} from '@app/features/app/components/dialogs/shared/SettingsTransitions';
 import {LongPressable} from '@app/features/app/components/LongPressable';
 import {usePressable} from '@app/features/app/hooks/usePressable';
-import {SETTINGS_DESCRIPTOR, SIGN_OUT_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
+import {
+	DONATE_DESCRIPTOR,
+	OPENS_IN_BROWSER_DESCRIPTOR,
+	SETTINGS_DESCRIPTOR,
+	SIGN_OUT_DESCRIPTOR,
+	SUBMIT_FEEDBACK_DESCRIPTOR,
+	WHATS_NEW_DESCRIPTOR,
+} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {isKeyboardActivationKey} from '@app/features/input/utils/KeyboardUtils';
 import {activateLatestServiceWorker} from '@app/features/platform/types/Versioning';
 import {Logger} from '@app/features/platform/utils/AppLogger';
@@ -24,6 +33,9 @@ import {NotificationDot} from '@app/features/ui/components/NotificationDot';
 import {Scroller, type ScrollerHandle} from '@app/features/ui/components/Scroller';
 import {Spinner} from '@app/features/ui/components/Spinner';
 import {StatusAwareAvatar} from '@app/features/ui/components/StatusAwareAvatar';
+import {ArrowLeftIcon} from '@app/features/ui/icons/DirectionalIcons';
+import {useToastAnchor} from '@app/features/ui/toast/ToastAnchor';
+import {openExternalUrl} from '@app/features/ui/utils/NativeUtils';
 import ApplicationsTabState from '@app/features/user/components/modals/tabs/applications_tab/ApplicationsTabState';
 import userSettingsStyles from '@app/features/user/components/modals/UserSettingsModal.module.css';
 import {getSettingsTabComponent} from '@app/features/user/components/settings_utils/DesktopSettingsTabs';
@@ -49,7 +61,15 @@ import UserSettings from '@app/features/user/state/UserSettings';
 import Users from '@app/features/user/state/Users';
 import {msg} from '@lingui/core/macro';
 import {useLingui} from '@lingui/react/macro';
-import {ArrowClockwiseIcon, ArrowLeftIcon, type IconWeight, SignOutIcon} from '@phosphor-icons/react';
+import {
+	ArrowClockwiseIcon,
+	ArrowSquareOutIcon,
+	ChatCircleDotsIcon,
+	HandHeartIcon,
+	type IconWeight,
+	SignOutIcon,
+	SparkleIcon,
+} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {AnimatePresence, motion} from 'framer-motion';
 import {observer} from 'mobx-react-lite';
@@ -204,10 +224,12 @@ interface MobileSettingsActionItemProps {
 	isLoading?: boolean;
 	iconWeight?: IconWeight;
 	showArrow?: boolean;
+	external?: boolean;
 }
 
 const MobileSettingsActionItem: React.FC<MobileSettingsActionItemProps> = observer(
-	({icon: IconComponent, label, onClick, isLoading = false, iconWeight, showArrow = true}) => {
+	({icon: IconComponent, label, onClick, isLoading = false, iconWeight, showArrow = true, external = false}) => {
+		const {i18n} = useLingui();
 		const {isPressed, pressableProps} = usePressable();
 		return (
 			<LongPressable
@@ -242,6 +264,14 @@ const MobileSettingsActionItem: React.FC<MobileSettingsActionItemProps> = observ
 						>
 							{label}
 						</span>
+						{external && (
+							<span
+								className={settingsModalStyles.srOnly}
+								data-flx="app.mobile-settings-view.mobile-settings-action-item.external-hint"
+							>
+								{i18n._(OPENS_IN_BROWSER_DESCRIPTOR)}
+							</span>
+						)}
 						{isLoading && (
 							<Spinner
 								size="small"
@@ -251,11 +281,20 @@ const MobileSettingsActionItem: React.FC<MobileSettingsActionItemProps> = observ
 						)}
 					</div>
 				</div>
-				{showArrow && (
-					<ArrowLeftIcon
-						className={styles.settingsItemArrow}
-						data-flx="app.mobile-settings-view.mobile-settings-action-item.settings-item-arrow"
+				{external ? (
+					<ArrowSquareOutIcon
+						className={styles.settingsItemExternalIcon}
+						weight="bold"
+						aria-hidden="true"
+						data-flx="app.mobile-settings-view.mobile-settings-action-item.settings-item-external-icon"
 					/>
+				) : (
+					showArrow && (
+						<ArrowLeftIcon
+							className={styles.settingsItemArrow}
+							data-flx="app.mobile-settings-view.mobile-settings-action-item.settings-item-arrow"
+						/>
+					)
 				)}
 			</LongPressable>
 		);
@@ -382,6 +421,9 @@ const MobileSettingsList = observer(
 		const handleLogout = useCallback(() => {
 			ModalCommands.push(modal(() => <LogoutModal data-flx="app.mobile-settings-view.handle-logout.logout-modal" />));
 		}, []);
+		const patchNotesUrl = Routes.patchNotes();
+		const feedbackUrl = Routes.feedback();
+		const donateUrl = Routes.donate();
 		const categories = Object.entries(mobileVisibleTabs);
 		const lastCategoryIndex = categories.length - 1;
 		return (
@@ -416,18 +458,22 @@ const MobileSettingsList = observer(
 							{tabs.map((tab, index) => {
 								const isLastTab = index === tabs.length - 1;
 								const isLastCategory = categoryIndex === lastCategoryIndex;
-								const badge =
-									tab.type === 'gift_inventory' && currentUser?.hasUnreadGiftInventory ? (
+								let badge: React.ReactNode;
+								if (tab.type === 'gift_inventory' && currentUser?.hasUnreadGiftInventory) {
+									badge = (
 										<MentionBadgeAnimated
 											mentionCount={currentUser.unreadGiftInventoryCount ?? 1}
 											data-flx="app.mobile-settings-view.mobile-settings-list.mention-badge-animated"
 										/>
-									) : tab.type === 'advanced_settings' && advancedSettingsHasNew ? (
+									);
+								} else if (tab.type === 'advanced_settings' && advancedSettingsHasNew) {
+									badge = (
 										<SettingsStatusBadge
 											kind="new"
 											data-flx="app.mobile-settings-view.mobile-settings-list.settings-status-badge"
 										/>
-									) : undefined;
+									);
+								}
 								return (
 									<div key={tab.type} data-flx="app.mobile-settings-view.mobile-settings-list.div">
 										<PressableSettingsItem
@@ -450,6 +496,45 @@ const MobileSettingsList = observer(
 									</div>
 								);
 							})}
+							{categoryIndex === lastCategoryIndex && patchNotesUrl && (
+								<>
+									<MobileSettingsActionItem
+										icon={SparkleIcon}
+										iconWeight="fill"
+										label={i18n._(WHATS_NEW_DESCRIPTOR)}
+										onClick={() => void openExternalUrl(patchNotesUrl)}
+										external={true}
+										data-flx="app.mobile-settings-view.mobile-settings-list.mobile-settings-action-item.whats-new"
+									/>
+									<div className={styles.divider} data-flx="app.mobile-settings-view.mobile-settings-list.divider--2" />
+								</>
+							)}
+							{categoryIndex === lastCategoryIndex && feedbackUrl && (
+								<>
+									<MobileSettingsActionItem
+										icon={ChatCircleDotsIcon}
+										iconWeight="fill"
+										label={i18n._(SUBMIT_FEEDBACK_DESCRIPTOR)}
+										onClick={() => void openExternalUrl(feedbackUrl)}
+										external={true}
+										data-flx="app.mobile-settings-view.mobile-settings-list.mobile-settings-action-item.submit-feedback"
+									/>
+									<div className={styles.divider} data-flx="app.mobile-settings-view.mobile-settings-list.divider--3" />
+								</>
+							)}
+							{categoryIndex === lastCategoryIndex && donateUrl && (
+								<>
+									<MobileSettingsActionItem
+										icon={HandHeartIcon}
+										iconWeight="fill"
+										label={i18n._(DONATE_DESCRIPTOR)}
+										onClick={() => void openExternalUrl(donateUrl)}
+										external={true}
+										data-flx="app.mobile-settings-view.mobile-settings-list.mobile-settings-action-item.donate"
+									/>
+									<div className={styles.divider} data-flx="app.mobile-settings-view.mobile-settings-list.divider--4" />
+								</>
+							)}
 							{categoryIndex === lastCategoryIndex && (
 								<MobileSettingsDangerItem
 									icon={SignOutIcon}
@@ -614,6 +699,8 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 			currentTabId && !(currentTabId === 'applications' && ApplicationsTabState.isDetailView)
 				? buildUserSettingsDeepLink(currentTabId)
 				: null;
+		const headerRef = useRef<HTMLDivElement>(null);
+		useToastAnchor(headerRef);
 		const listScrollPositionRef = useRef(0);
 		const listScrollerRef = useRef<ScrollerHandle | null>(null);
 		const handleListScroll = useCallback((event: UIEvent<HTMLDivElement>) => {
@@ -630,7 +717,11 @@ export const MobileSettingsView: React.FC<MobileSettingsViewProps> = observer(
 		const currentTabComponent = currentTab ? getSettingsTabComponent(currentTab.type) : null;
 		return (
 			<div className={userSettingsStyles.mobileWrapper} data-flx="app.mobile-settings-view.div">
-				<div className={userSettingsStyles.mobileHeaderContainer} data-flx="app.mobile-settings-view.div--2">
+				<div
+					ref={headerRef}
+					className={userSettingsStyles.mobileHeaderContainer}
+					data-flx="app.mobile-settings-view.div--2"
+				>
 					<AnimatePresence
 						mode="wait"
 						custom={mobileNav.direction}

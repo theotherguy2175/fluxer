@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import {handleMediaPermissionBlocked} from '@app/features/permissions/system/commands/MacPermissionsModalCommands';
 import {Logger} from '@app/features/platform/utils/AppLogger';
+import {isInsecureBrowserContext} from '@app/features/platform/utils/SecureContext';
 import {getElectronAPI, supportsDesktopScreenShareAudioCapture} from '@app/features/ui/utils/NativeUtils';
 import MediaEngine from '@app/features/voice/engine/MediaEngineFacade';
 import ScreenShareCodecNegotiation from '@app/features/voice/engine/ScreenShareCodecNegotiation';
@@ -466,11 +468,12 @@ async function runConfiguredDisplayScreenShare(
 			? await resolveAppShareAudioScope(ActiveScreenShareSource.getPendingWindowAudioScope())
 			: null;
 		const appShareAudioRoute = appShareAudioScope == null ? null : selectAppShareAudioRouteForScope(appShareAudioScope);
-		const linuxAudioSourceMode = requestedAppAudioOnLinux
-			? appShareAudioRouteToSourceMode(appShareAudioRoute)
-			: electronApi.platform === 'linux' && (requestedDesktopAudio || requestedNativePickerAudioOnLinux)
-				? VoiceSettings.getEffectiveScreenShareAudioSourceMode()
-				: null;
+		let linuxAudioSourceMode: ReturnType<typeof appShareAudioRouteToSourceMode> = null;
+		if (requestedAppAudioOnLinux) {
+			linuxAudioSourceMode = appShareAudioRouteToSourceMode(appShareAudioRoute);
+		} else if (electronApi.platform === 'linux' && (requestedDesktopAudio || requestedNativePickerAudioOnLinux)) {
+			linuxAudioSourceMode = VoiceSettings.getEffectiveScreenShareAudioSourceMode();
+		}
 		if (requestedAppAudioOnLinux && appShareAudioRoute === 'window') {
 			try {
 				nativeAudioArmed = await armNativeAudioForNextCapture(sourceId ?? '');
@@ -490,7 +493,14 @@ async function runConfiguredDisplayScreenShare(
 			}
 		} else if (requestedNativeDesktopAudio) {
 			try {
-				nativeAudioArmed = await armNativeSystemAudioForNextCapture();
+				nativeAudioArmed = await armNativeSystemAudioForNextCapture(
+					electronApi.platform === 'win32'
+						? {
+								all: VoiceSettings.getWindowsDesktopAudioAll(),
+								devices: VoiceSettings.getWindowsDesktopAudioDevices(),
+							}
+						: undefined,
+				);
 			} catch (error) {
 				logger.warn('Failed to arm native desktop audio capture', {
 					sourceId,
@@ -625,7 +635,9 @@ async function runConfiguredDisplayScreenShare(
 				ActiveScreenShareSource.setWindowAudioScope(appShareAudioScope ?? 'window');
 			}
 			if (captured && useWaylandPortal) {
-				ActiveScreenShareSource.setPublishedSource('wayland', null);
+				ActiveScreenShareSource.setPublishedSource('wayland', null, {
+					portalSurface: options?.preferredDisplaySurface,
+				});
 				ActiveScreenShareSource.setSourceDimensions(null);
 			}
 			if (!captured && useWaylandPortal && mode !== 'switch') {
@@ -777,6 +789,10 @@ export async function startConfiguredDisplayScreenShare(
 	sourceId?: string | null,
 	options?: ConfiguredDisplayScreenShareOptions,
 ): Promise<boolean> {
+	if (isInsecureBrowserContext()) {
+		handleMediaPermissionBlocked('screen');
+		return false;
+	}
 	return scheduleConfiguredScreenShareMutation(async () => {
 		let didStart = false;
 		await executeScreenShareOperation(async () => {

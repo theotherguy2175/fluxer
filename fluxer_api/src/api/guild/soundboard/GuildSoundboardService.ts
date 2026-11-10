@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import crypto from 'node:crypto';
-import {resolveEntranceSoundDurationMs} from '@app/api/user/entrance_sound/EntranceSoundDurationProbe';
 import {AuditLogActionType} from '@fluxer/constants/src/AuditLogActionType';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {
@@ -304,15 +303,15 @@ export class GuildSoundboardService {
 				format: metadata.format ?? metadata.content_type ?? 'unknown',
 			});
 		}
-		const metadataDurationSeconds = typeof metadata.duration === 'number' ? metadata.duration : null;
-		const durationMs = await resolveEntranceSoundDurationMs({
-			bytes,
-			extension,
-			metadataDurationSeconds,
-		});
-		if (durationMs == null) {
+		const metadataDurationSeconds =
+			typeof metadata.duration === 'number' && Number.isFinite(metadata.duration) && metadata.duration > 0
+				? metadata.duration
+				: null;
+		const durationSeconds = (await this.mediaService.getAudioDurationSeconds(trimmed)) ?? metadataDurationSeconds;
+		if (durationSeconds == null) {
 			throw InputValidationError.fromCode('audio', ValidationErrorCodes.SOUNDBOARD_SOUND_INVALID_FORMAT);
 		}
+		const durationMs = Math.round(durationSeconds * 1000);
 		if (durationMs > limits.maxDurationMs) {
 			throw InputValidationError.fromCode('audio', ValidationErrorCodes.SOUNDBOARD_SOUND_DURATION_EXCEEDS_LIMIT, {
 				max_ms: limits.maxDurationMs,

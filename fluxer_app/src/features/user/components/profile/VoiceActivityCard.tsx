@@ -15,6 +15,7 @@ import {Button} from '@app/features/ui/button/Button';
 import {Avatar} from '@app/features/ui/components/Avatar';
 import {LiveBadge} from '@app/features/ui/components/LiveBadge';
 import {Spinner} from '@app/features/ui/components/Spinner';
+import {CaretRightIcon} from '@app/features/ui/icons/DirectionalIcons';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
 import styles from '@app/features/user/components/profile/VoiceActivityCard.module.css';
 import {
@@ -33,7 +34,7 @@ import {
 	createVoiceParticipantSortSnapshot,
 	sortVoiceParticipantItemsWithSnapshot,
 } from '@app/features/voice/components/VoiceParticipantSortUtils';
-import MediaEngine from '@app/features/voice/engine/MediaEngineFacade';
+import VoiceRuntime from '@app/features/voice/engine/VoiceRuntime';
 import {usePendingVoiceConnection} from '@app/features/voice/hooks/usePendingVoiceConnection';
 import type {UserVoiceActivity} from '@app/features/voice/hooks/useUserVoiceActivities';
 import {useVoiceJoinEligibility} from '@app/features/voice/hooks/useVoiceJoinEligibility';
@@ -43,7 +44,7 @@ import {ME} from '@fluxer/constants/src/AppConstants';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {msg} from '@lingui/core/macro';
 import {Trans, useLingui} from '@lingui/react/macro';
-import {CaretRightIcon, PhoneIcon, SpeakerHighIcon} from '@phosphor-icons/react';
+import {PhoneIcon, SpeakerHighIcon} from '@phosphor-icons/react';
 import {clsx} from 'clsx';
 import {observer} from 'mobx-react-lite';
 import type React from 'react';
@@ -102,7 +103,7 @@ export const VoiceActivityCard: React.FC<VoiceActivityCardProps> = observer(({ac
 		activity;
 	const isConnectedToChannel = useMemo(() => {
 		if (!channelId) return false;
-		return MediaEngine.channelId === channelId && MediaEngine.guildId === (guildId ?? null);
+		return VoiceRuntime.channelId === channelId && VoiceRuntime.guildId === (guildId ?? null);
 	}, [channelId, guildId]);
 	const {canJoin} = useVoiceJoinEligibility({
 		guildId: guildId ?? null,

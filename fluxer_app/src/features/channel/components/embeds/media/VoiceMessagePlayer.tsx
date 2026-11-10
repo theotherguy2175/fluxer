@@ -6,7 +6,6 @@ import styles from '@app/features/channel/components/embeds/media/VoiceMessagePl
 import {useMaybeMessageViewContext} from '@app/features/channel/components/MessageViewContext';
 import {PAUSE_DESCRIPTOR, PLAY_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {getCachedNumberFormat} from '@app/features/i18n/utils/IntlCache';
-import {useAttachmentRefreshOnError} from '@app/features/messaging/hooks/useAttachmentRefreshOnError';
 import {resolveDesktopCrossOriginMediaURL} from '@app/features/messaging/utils/DesktopResourceUrl';
 import {buildMediaProxyURL} from '@app/features/messaging/utils/MediaProxyUtils';
 import {Logger} from '@app/features/platform/utils/AppLogger';
@@ -14,6 +13,7 @@ import {remFromPx} from '@app/features/theme/layout/RemFromPx';
 import {MediaContextMenu} from '@app/features/ui/action_menu/MediaContextMenu';
 import * as ContextMenuCommands from '@app/features/ui/commands/ContextMenuCommands';
 import MobileLayout from '@app/features/ui/state/MobileLayout';
+import {getFormattingLocale} from '@app/features/user/utils/LocaleUtils';
 import {MediaPlaybackRate} from '@app/features/voice/components/media_player/components/MediaPlaybackRate';
 import {MediaVerticalVolumeControl} from '@app/features/voice/components/media_player/components/MediaVerticalVolumeControl';
 import {useMediaPlayer} from '@app/features/voice/components/media_player/hooks/useMediaPlayer';
@@ -121,7 +121,6 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = observer(
 		const {i18n} = useLingui();
 		const messageViewContext = useMaybeMessageViewContext();
 		const effectiveSrc = buildMediaProxyURL(src);
-		const handleMediaError = useAttachmentRefreshOnError(effectiveSrc);
 		const [hasStarted, setHasStarted] = useState(false);
 		const [wantsMetadata, setWantsMetadata] = useState(false);
 		const [prePlayCurrentTime, setPrePlayCurrentTime] = useState(0);
@@ -306,7 +305,7 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = observer(
 		const remainingSeconds = Math.max(0, Math.ceil(displayDuration - displayCurrentTime));
 		const readoutText =
 			displayDuration > 0
-				? formatTime(hasBegunPlayback ? remainingSeconds : Math.ceil(displayDuration), i18n.locale)
+				? formatTime(hasBegunPlayback ? remainingSeconds : Math.ceil(displayDuration), getFormattingLocale())
 				: '--:--';
 		const isMobile = MobileLayout.enabled;
 		return (
@@ -327,7 +326,6 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = observer(
 					ref={mediaRef as React.RefObject<HTMLAudioElement>}
 					src={hasStarted || wantsMetadata ? resolveDesktopCrossOriginMediaURL(effectiveSrc) : undefined}
 					preload={wantsMetadata ? 'metadata' : 'none'}
-					onError={handleMediaError}
 					data-flx="channel.embeds.media.voice-message-player.audio"
 				>
 					<track kind="captions" data-flx="channel.embeds.media.voice-message-player.track" />
@@ -389,7 +387,7 @@ const VoiceMessagePlayer: React.FC<VoiceMessagePlayerProps> = observer(
 					aria-valuemax={100}
 					aria-valuetext={
 						displayDuration > 0
-							? `${formatTime(displayCurrentTime, i18n.locale)} / ${formatTime(displayDuration, i18n.locale)}`
+							? `${formatTime(displayCurrentTime, getFormattingLocale())} / ${formatTime(displayDuration, getFormattingLocale())}`
 							: undefined
 					}
 					data-flx="channel.embeds.media.voice-message-player.waveform-container.waveform-click"

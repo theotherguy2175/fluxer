@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import {EVERYONE_MENTION} from '@app/features/app/config/I18nDisplayConstants';
+import {useShouldAnimate} from '@app/features/app/hooks/useShouldAnimate';
 import Channels from '@app/features/channel/state/Channels';
 import Emoji from '@app/features/emoji/state/Emoji';
 import styles from '@app/features/guild/components/modals/guild_tabs/GuildAuditLogTab.module.css';
@@ -34,6 +35,7 @@ import {formatPermissionLabel} from '@app/features/permissions/utils/PermissionU
 import Users from '@app/features/user/state/Users';
 import {getEmojiURL} from '@app/features/user/utils/AvatarUtils';
 import {getFormattedDateTime} from '@app/features/user/utils/DateFormatting';
+import {getFormattingLocale} from '@app/features/user/utils/LocaleUtils';
 import {ChannelTypes} from '@fluxer/constants/src/ChannelConstants';
 import type {I18n} from '@lingui/core';
 import {msg} from '@lingui/core/macro';
@@ -180,6 +182,23 @@ function renderText(value: string): React.ReactNode {
 	);
 }
 
+const AuditLogEmojiImage: React.FC<{id: string; animated: boolean; 'data-flx'?: string}> = ({
+	id,
+	animated,
+	'data-flx': dataFlx,
+}) => {
+	const shouldAnimate = useShouldAnimate({kind: 'emoji', isAnimated: animated});
+	return (
+		<img
+			src={getEmojiURL({id, animated: animated && shouldAnimate})}
+			alt=""
+			draggable={false}
+			className={styles.inlineEmojiImage}
+			data-flx={dataFlx ?? 'guild.guild-tabs.guild-audit-log-sentence.render-emoji.inline-emoji-image'}
+		/>
+	);
+};
+
 function renderEmoji({id, name}: EmojiPlaceholder): React.ReactNode {
 	const label = `:${name}:`;
 	const emoji = id === null ? undefined : Emoji.getEmojiById(id);
@@ -188,12 +207,10 @@ function renderEmoji({id, name}: EmojiPlaceholder): React.ReactNode {
 	}
 	return (
 		<span className={styles.inlineEmoji} data-flx="guild.guild-tabs.guild-audit-log-sentence.render-emoji.inline-emoji">
-			<img
-				src={getEmojiURL({id, animated: emoji.animated})}
-				alt=""
-				draggable={false}
-				className={styles.inlineEmojiImage}
-				data-flx="guild.guild-tabs.guild-audit-log-sentence.render-emoji.inline-emoji-image"
+			<AuditLogEmojiImage
+				id={id}
+				animated={emoji.animated === true}
+				data-flx="guild.guild-tabs.guild-audit-log-sentence.render-emoji.audit-log-emoji-image"
 			/>
 			<strong data-flx="guild.guild-tabs.guild-audit-log-sentence.render-emoji.strong--2">{label}</strong>
 		</span>
@@ -247,7 +264,8 @@ export const GuildAuditLogSentence: React.FC<GuildAuditLogSentenceProps> = obser
 			values[name] = renderPlaceholder(value, guildId, i18n);
 			continue;
 		}
-		values[name] = name === PLURAL_COUNT_VALUE ? value : renderValue(getCachedNumberFormat(i18n.locale).format(value));
+		values[name] =
+			name === PLURAL_COUNT_VALUE ? value : renderValue(getCachedNumberFormat(getFormattingLocale()).format(value));
 	}
 	return <Trans id={sentence.descriptor.id} message={sentence.descriptor.message} values={values} />;
 });

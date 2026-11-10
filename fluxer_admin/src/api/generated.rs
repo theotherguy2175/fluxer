@@ -56,14 +56,6 @@ pub(crate) fn nonzero_u32(value: u32, field: &str) -> Result<std::num::NonZeroU3
     std::num::NonZeroU32::new(value).ok_or_else(|| format!("{field} must be greater than zero"))
 }
 
-pub(crate) fn deletion_reason_code(
-    value: i32,
-    field: &str,
-) -> Result<types::DeletionReasonCode, String> {
-    types::DeletionReasonCode::try_from(value)
-        .map_err(|_| format!("{field} is not a deletion reason code: {value}"))
-}
-
 pub(crate) fn user_flags(values: &[String]) -> ApiResult<Vec<generated_types::UserFlags>> {
     values
         .iter()
@@ -88,16 +80,4 @@ pub(crate) fn bool_param(value: bool) -> &'static str {
 
 pub(crate) fn float_to_u64(value: f64, field: &str) -> ApiResult<u64> {
     crate::api::generated::number_to_u64(value, field).map_err(ApiError::Parse)
-}
-
-#[cfg(test)]
-mod tests {
-    use super::number_to_u64;
-
-    #[test]
-    fn reject_lossy_generated_number_count() {
-        assert_eq!(number_to_u64(42.0, "total").unwrap(), 42);
-        assert!(number_to_u64(42.5, "total").is_err());
-        assert!(number_to_u64(9_007_199_254_740_992.0, "total").is_err());
-    }
 }

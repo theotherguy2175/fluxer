@@ -141,7 +141,7 @@ const EDIT_PUBLISHED_MESSAGE_TITLE_DESCRIPTOR = msg({
 });
 const EDIT_PUBLISHED_MESSAGE_BODY_DESCRIPTOR = msg({
 	message:
-		'Your changes reach every community that follows this channel, which can take a minute. Each published message allows 3 quick edits, then 1 every 20 minutes.',
+		'Your changes go to every community that follows this channel, which can take a minute. Each published message allows 3 quick edits, then 1 every 20 minutes.',
 	comment: 'Body of the confirmation shown before saving an edit to a message published from an announcement channel.',
 });
 const SAVE_EDIT_DESCRIPTOR = msg({
@@ -249,7 +249,7 @@ async function requestMissingGuildMembers(channelId: string, messages: Array<Wir
 	if (userIds.length === 0) {
 		return;
 	}
-	await GuildMembers.ensureMembersLoadedForMessages(guildId, userIds);
+	await GuildMembers.hydrateMembers(guildId, userIds);
 }
 
 async function applyDeveloperFetchDelay(): Promise<void> {
@@ -371,9 +371,7 @@ export async function ensureMembersForMessages(messages: ReadonlyArray<MessageMo
 		}
 	}
 	if (byGuild.size === 0) return;
-	await Promise.all(
-		Array.from(byGuild, ([guildId, ids]) => GuildMembers.ensureMembersLoadedForMessages(guildId, Array.from(ids))),
-	);
+	await Promise.all(Array.from(byGuild, ([guildId, ids]) => GuildMembers.hydrateMembers(guildId, Array.from(ids))));
 }
 
 interface SendMessageParams {

@@ -5,6 +5,8 @@ import {DesktopGuildSettingsView} from '@app/features/app/components/dialogs/com
 import {MobileGuildSettingsView} from '@app/features/app/components/dialogs/components/MobileGuildSettingsView';
 import * as Modal from '@app/features/app/components/dialogs/Modal';
 import {SettingsModalContainer} from '@app/features/app/components/dialogs/shared/SettingsModalLayout';
+import settingsModalStyles from '@app/features/app/components/dialogs/shared/SettingsModalLayout.module.css';
+import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
 import GatewaySessions from '@app/features/gateway/transport/GatewaySessionPool';
 import GuildSettingsModalState from '@app/features/guild/state/GuildSettingsModal';
 import Guilds from '@app/features/guild/state/Guilds';
@@ -35,6 +37,7 @@ export const GuildSettingsModal: React.FC<GuildSettingsModalProps> = observer(
 		const {i18n} = useLingui();
 		const guild = Guilds.getGuild(guildId);
 		const [selectedTab, setSelectedTab] = useState<GuildSettingsTabType>(initialTabProp ?? 'overview');
+		const discoveryEnabled = RuntimeConfig.discoveryEnabled;
 		const availableTabs = useMemo(() => {
 			const guildSettingsTabs = getGuildSettingsTabs(i18n);
 			if (!guild) return guildSettingsTabs;
@@ -48,9 +51,12 @@ export const GuildSettingsModal: React.FC<GuildSettingsModalProps> = observer(
 				if (tab.requireFeature && !guild.features.has(tab.requireFeature)) {
 					return false;
 				}
+				if (tab.requireDiscovery && !discoveryEnabled) {
+					return false;
+				}
 				return true;
 			});
-		}, [guild, guildId, i18n.locale]);
+		}, [discoveryEnabled, guild, guildId, i18n.locale]);
 
 		const mobileNav = useMobileNavigation<GuildSettingsTabType>();
 		const mobileNavigateTo = mobileNav.navigateTo;
@@ -153,7 +159,12 @@ export const GuildSettingsModal: React.FC<GuildSettingsModalProps> = observer(
 			return null;
 		}
 		return (
-			<Modal.Root size="fullscreen" onClose={handleClose} data-flx="guild.guild-settings-modal.modal-root">
+			<Modal.Root
+				size="fullscreen"
+				className={settingsModalStyles.modalRoot}
+				onClose={handleClose}
+				data-flx="guild.guild-settings-modal.modal-root"
+			>
 				<Modal.ScreenReaderLabel
 					text={i18n._(GUILD_SETTINGS_LABEL_DESCRIPTOR)}
 					data-flx="guild.guild-settings-modal.modal-screen-reader-label"

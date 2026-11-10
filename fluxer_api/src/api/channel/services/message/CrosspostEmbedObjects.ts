@@ -48,7 +48,7 @@ export function forEachEmbedMedia(
 	}
 }
 
-export function collectEmbedContentHashes(message: Message): Array<string> {
+function collectEmbedContentHashes(message: Message): Array<string> {
 	const hashes: Array<string> = [];
 	forEachEmbedMedia(
 		message.embeds.map((embed) => embed.toMessageEmbed()),
@@ -63,6 +63,8 @@ export function scanMessageForModeration(message: Message, context: Omit<Moderat
 	const textContext = {...context, surface: 'message_content' as const};
 	contentModerationService.scanText(message.content, textContext);
 	for (const embed of message.embeds) {
+		if (embed.url) contentModerationService.scanUrl(embed.url, textContext);
+		if (embed.author?.url) contentModerationService.scanUrl(embed.author.url, textContext);
 		if (embed.type !== 'rich') continue;
 		contentModerationService.scanText(embed.title, textContext);
 		contentModerationService.scanText(embed.description, textContext);

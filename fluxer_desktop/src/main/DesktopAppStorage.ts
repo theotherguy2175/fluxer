@@ -5,6 +5,7 @@ import fsPromises from 'node:fs/promises';
 import path from 'node:path';
 import {errorMessage as describeError} from '@electron/common/ErrorMessage';
 import type {AppStoreBoundary, AppStoreBoundaryFactory} from '@electron/main/AppStoreNativeBoundary';
+import {writeFileAtomically} from '@electron/main/AtomicFile';
 import {desktopAppStoreStateFile} from '@electron/main/DesktopAppStoreHealth';
 import type {
 	DesktopAccountCompareAndSwapRequest,
@@ -28,8 +29,8 @@ import {
 	DESKTOP_LEGACY_AUTHORITY_MARKER_VALUE,
 } from '@fluxer/desktop_ipc/src/StorageContract';
 
-export const DESKTOP_APP_STORE_FILE_NAME = 'desktop-app-store.sqlite3';
-export const DESKTOP_APP_STORE_DERIVATION_VERSION = '1';
+const DESKTOP_APP_STORE_FILE_NAME = 'desktop-app-store.sqlite3';
+const DESKTOP_APP_STORE_DERIVATION_VERSION = '1';
 
 const ENTRY_STORE = 'app';
 const SCHEMA_VERSION_MARKER = 'schema.version';
@@ -37,8 +38,6 @@ const DESKTOP_AUTHORITY_SENTINEL_FILE_NAME = 'desktop-app-authority-v1';
 
 const PENDING_OPERATIONS_MAX = 64;
 const PENDING_INPUT_BYTES_MAX = 128 * 1024 * 1024;
-const PENDING_RESPONSE_BYTES_MAX = 128 * 1024 * 1024;
-const NATIVE_JSON_MAX_BYTES = 64 * 1024 * 1024;
 const LOOKUP_KEY_MAX_BYTES = 1024;
 const ENTRY_VALUE_MAX_BYTES = 8 * 1024 * 1024;
 const MARKER_VALUE_MAX_BYTES = 64 * 1024;
@@ -64,35 +63,35 @@ interface DesktopAppStorageRecoveryResult {
 	readonly reseedRequired: boolean;
 }
 
-export class DesktopAppStoreRequestError extends TypeError {
+class DesktopAppStoreRequestError extends TypeError {
 	public constructor(context: string, reason: string) {
 		super(`Desktop app store request is invalid: ${context} ${reason}`);
 		this.name = 'DesktopAppStoreRequestError';
 	}
 }
 
-export class DesktopAppStoreUnavailableError extends Error {
+class DesktopAppStoreUnavailableError extends Error {
 	public constructor(reason: string) {
 		super(`Desktop app store is unavailable: ${reason}`);
 		this.name = 'DesktopAppStoreUnavailableError';
 	}
 }
 
-export class DesktopAppStoreShutdownError extends Error {
+class DesktopAppStoreShutdownError extends Error {
 	public constructor() {
 		super('Desktop app store is shutting down');
 		this.name = 'DesktopAppStoreShutdownError';
 	}
 }
 
-export class DesktopAppStoreCapacityError extends Error {
+class DesktopAppStoreCapacityError extends Error {
 	public constructor(resource: string, limit: number) {
 		super(`Desktop app store ${resource} is limited to ${limit}`);
 		this.name = 'DesktopAppStoreCapacityError';
 	}
 }
 
-export class DesktopAppStoreWriteRefusedError extends Error {
+class DesktopAppStoreWriteRefusedError extends Error {
 	public constructor(refusals: ReadonlyArray<string>) {
 		super(`Desktop app store refused ${refusals.length} write(s): ${refusals.join('; ')}`);
 		this.name = 'DesktopAppStoreWriteRefusedError';
@@ -234,7 +233,6 @@ const UNOPENED_STATUS: DesktopStoreStatus = Object.freeze({
 
 interface DesktopAppStoreOperation<T> {
 	readonly inputBytes: number;
-	readonly maximumResponseBytes: number;
 	readonly operation: (boundary: AppStoreBoundary) => Promise<T>;
 }
 
@@ -254,7 +252,6 @@ export class DesktopAppStorage {
 	private tail: Promise<unknown> = Promise.resolve();
 	private readonly pending = new Set<Promise<unknown>>();
 	private pendingInputBytes = 0;
-	private pendingResponseBytes = 0;
 	private stamp = 0;
 	private authorityExpected: boolean;
 	private readonly authoritySentinelPath: string;
@@ -317,7 +314,6 @@ export class DesktopAppStorage {
 		try {
 			await this.runOperation({
 				inputBytes: byteLength(SCHEMA_VERSION_MARKER),
-				maximumResponseBytes: MARKER_VALUE_MAX_BYTES,
 				operation: (boundary) => boundary.getMetadata({key: SCHEMA_VERSION_MARKER}),
 			});
 		} catch (error) {
@@ -343,7 +339,6 @@ export class DesktopAppStorage {
 	public getAllAccounts(): Promise<Array<DesktopAccountRecord>> {
 		return this.runOperation({
 			inputBytes: 0,
-			maximumResponseBytes: NATIVE_JSON_MAX_BYTES,
 			operation: async (boundary) => {
 				const accounts = await boundary.getAllAccounts();
 				return accounts.flatMap((account) => {
@@ -358,7 +353,6 @@ export class DesktopAppStorage {
 		const key = requireLookupKey(storageKey, 'account storage key');
 		return this.runOperation({
 			inputBytes: byteLength(key),
-			maximumResponseBytes: RECORD_MAX_BYTES,
 			operation: async (boundary) => {
 				const account = await boundary.getAccount({storageKey: key});
 				const record = account == null ? null : readAccountRecord(account.record);
@@ -371,7 +365,6 @@ export class DesktopAppStorage {
 		const entry = requireAccountRecord(account, 'account');
 		return this.runOperation({
 			inputBytes: this.recordBytes(entry.storageKey, entry.record),
-			maximumResponseBytes: 0,
 			operation: (boundary) => boundary.upsertAccount(entry),
 		});
 	}
@@ -391,7 +384,6 @@ export class DesktopAppStorage {
 			inputBytes:
 				this.recordBytes(expected.storageKey, expected.record) +
 				this.recordBytes(replacement.storageKey, replacement.record),
-			maximumResponseBytes: 0,
 			operation: (boundary) => boundary.compareAndSwapAccount(validated),
 		});
 	}
@@ -400,7 +392,6 @@ export class DesktopAppStorage {
 		const key = requireLookupKey(storageKey, 'account storage key');
 		return this.runOperation({
 			inputBytes: byteLength(key),
-			maximumResponseBytes: 0,
 			operation: (boundary) => boundary.deleteAccount({storageKey: key}),
 		});
 	}
@@ -417,7 +408,6 @@ export class DesktopAppStorage {
 		}
 		return this.runOperation({
 			inputBytes,
-			maximumResponseBytes: NATIVE_JSON_MAX_BYTES,
 			operation: (boundary) => boundary.importAccounts({records, marker}),
 		});
 	}
@@ -435,7 +425,6 @@ export class DesktopAppStorage {
 		);
 		return this.runOperation({
 			inputBytes: knownStorageKeys.reduce((total, key) => total + byteLength(key), 0),
-			maximumResponseBytes: NATIVE_JSON_MAX_BYTES,
 			operation: (boundary) => boundary.prune({knownStorageKeys, listIsAuthoritative}),
 		});
 	}
@@ -444,7 +433,6 @@ export class DesktopAppStorage {
 		const entryScope = requireLookupKey(scope, 'storage scope');
 		return this.runOperation({
 			inputBytes: byteLength(entryScope),
-			maximumResponseBytes: NATIVE_JSON_MAX_BYTES,
 			operation: async (boundary) => {
 				const entries = await boundary.getEntries({store: ENTRY_STORE, scope: entryScope});
 				return entries.map((entry) => {
@@ -460,7 +448,6 @@ export class DesktopAppStorage {
 		const entryKey = requireLookupKey(key, 'storage key');
 		return this.runOperation({
 			inputBytes: byteLength(entryScope) + byteLength(entryKey),
-			maximumResponseBytes: ENTRY_VALUE_MAX_BYTES,
 			operation: async (boundary) => {
 				const entry = await boundary.getEntry({store: ENTRY_STORE, scope: entryScope, key: entryKey});
 				if (entry == null) {
@@ -478,7 +465,6 @@ export class DesktopAppStorage {
 		const entryValue = requireBoundedString(value, 'storage value', ENTRY_VALUE_MAX_BYTES);
 		return this.runOperation({
 			inputBytes: byteLength(entryScope) + byteLength(entryKey) + byteLength(entryValue),
-			maximumResponseBytes: 0,
 			operation: (boundary) =>
 				boundary.setEntry({
 					store: ENTRY_STORE,
@@ -495,7 +481,6 @@ export class DesktopAppStorage {
 		const entryKey = requireLookupKey(key, 'storage key');
 		return this.runOperation({
 			inputBytes: byteLength(entryScope) + byteLength(entryKey),
-			maximumResponseBytes: 0,
 			operation: (boundary) => boundary.deleteEntry({store: ENTRY_STORE, scope: entryScope, key: entryKey}),
 		});
 	}
@@ -504,7 +489,6 @@ export class DesktopAppStorage {
 		const entryScope = requireLookupKey(scope, 'storage scope');
 		return this.runOperation({
 			inputBytes: byteLength(entryScope),
-			maximumResponseBytes: 0,
 			operation: (boundary) => boundary.clearScope({scope: entryScope}),
 		});
 	}
@@ -515,7 +499,6 @@ export class DesktopAppStorage {
 		);
 		return this.runOperation({
 			inputBytes: keys.reduce((total, key) => total + byteLength(key), 0),
-			maximumResponseBytes: 0,
 			operation: (boundary) => boundary.clearStoreExcept({store: ENTRY_STORE, keysToKeep: keys}),
 		});
 	}
@@ -538,7 +521,6 @@ export class DesktopAppStorage {
 		}
 		return this.runOperation({
 			inputBytes,
-			maximumResponseBytes: NATIVE_JSON_MAX_BYTES,
 			operation: async (boundary) => {
 				const present = await this.readPresentKeys(boundary, requested);
 				const entries = requested
@@ -583,7 +565,6 @@ export class DesktopAppStorage {
 		}
 		return this.runOperation({
 			inputBytes,
-			maximumResponseBytes: NATIVE_JSON_MAX_BYTES,
 			operation: (boundary) => {
 				for (const entry of entries) {
 					this.observeStamp(entry.updatedAt);
@@ -606,7 +587,6 @@ export class DesktopAppStorage {
 		const markerKey = requireLookupKey(key, 'store marker key');
 		return this.runOperation({
 			inputBytes: byteLength(markerKey),
-			maximumResponseBytes: MARKER_VALUE_MAX_BYTES,
 			operation: (boundary) => boundary.getMetadata({key: markerKey}),
 		});
 	}
@@ -630,15 +610,12 @@ export class DesktopAppStorage {
 	private writeMetadata(markerKey: string, markerValue: string): Promise<void> {
 		return this.runOperation({
 			inputBytes: byteLength(markerKey) + byteLength(markerValue),
-			maximumResponseBytes: 0,
 			operation: (boundary) => boundary.setMetadata({key: markerKey, value: markerValue}),
 		});
 	}
 
 	private async writeAuthoritySentinel(): Promise<void> {
-		const temporary = `${this.authoritySentinelPath}.tmp`;
-		await fsPromises.writeFile(temporary, '1\n', {encoding: 'utf8', mode: 0o600});
-		await fsPromises.rename(temporary, this.authoritySentinelPath);
+		await writeFileAtomically(this.authoritySentinelPath, '1\n', 0o600);
 		this.authorityExpected = true;
 		this.status = {...this.status, authorityExpected: true};
 	}
@@ -652,7 +629,6 @@ export class DesktopAppStorage {
 	public getAllKnownInstances(): Promise<Array<DesktopKnownInstanceRecord>> {
 		return this.runOperation({
 			inputBytes: 0,
-			maximumResponseBytes: NATIVE_JSON_MAX_BYTES,
 			operation: async (boundary) => {
 				const stored = await boundary.getAllKnownInstances();
 				return stored.flatMap((instance) => {
@@ -667,7 +643,6 @@ export class DesktopAppStorage {
 		const record = requireKnownInstanceRecord(instance, 'known instance');
 		return this.runOperation({
 			inputBytes: this.recordBytes(record.instanceKey, record),
-			maximumResponseBytes: 0,
 			operation: (boundary) => boundary.upsertKnownInstance({key: record.instanceKey, record}),
 		});
 	}
@@ -676,7 +651,6 @@ export class DesktopAppStorage {
 		const key = requireLookupKey(instanceKey, 'known instance key');
 		return this.runOperation({
 			inputBytes: byteLength(key),
-			maximumResponseBytes: 0,
 			operation: (boundary) => boundary.deleteKnownInstance({key}),
 		});
 	}
@@ -719,7 +693,7 @@ export class DesktopAppStorage {
 		}
 	}
 
-	private runOperation<T>({inputBytes, maximumResponseBytes, operation}: DesktopAppStoreOperation<T>): Promise<T> {
+	private runOperation<T>({inputBytes, operation}: DesktopAppStoreOperation<T>): Promise<T> {
 		if (this.boundary == null) {
 			return Promise.reject(
 				new DesktopAppStoreUnavailableError(this.status.unavailableReason ?? 'the store did not open'),
@@ -734,11 +708,7 @@ export class DesktopAppStorage {
 		if (this.pendingInputBytes + inputBytes > PENDING_INPUT_BYTES_MAX) {
 			return Promise.reject(new DesktopAppStoreCapacityError('pending request bytes', PENDING_INPUT_BYTES_MAX));
 		}
-		if (this.pendingResponseBytes + maximumResponseBytes > PENDING_RESPONSE_BYTES_MAX) {
-			return Promise.reject(new DesktopAppStoreCapacityError('pending response bytes', PENDING_RESPONSE_BYTES_MAX));
-		}
 		this.pendingInputBytes += inputBytes;
-		this.pendingResponseBytes += maximumResponseBytes;
 		const result = this.tail.then(() => {
 			const boundary = this.boundary;
 			if (!this.accepting || boundary == null) {
@@ -749,7 +719,6 @@ export class DesktopAppStorage {
 		const tracked = result.finally(() => {
 			this.pending.delete(tracked);
 			this.pendingInputBytes -= inputBytes;
-			this.pendingResponseBytes -= maximumResponseBytes;
 		});
 		this.pending.add(tracked);
 		this.tail = tracked.then(

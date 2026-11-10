@@ -59,8 +59,10 @@ import KeyboardMode from '@app/features/ui/state/KeyboardMode';
 import MediaViewer from '@app/features/ui/state/MediaViewer';
 import Modal from '@app/features/ui/state/Modal';
 import type {User} from '@app/features/user/models/User';
+import AdvancedSettings from '@app/features/user/state/AdvancedSettings';
 import UserSettings from '@app/features/user/state/UserSettings';
 import Users from '@app/features/user/state/Users';
+import VoiceRuntime from '@app/features/voice/engine/VoiceRuntime';
 import Window from '@app/features/window/state/Window';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {MAX_MESSAGES_PER_CHANNEL} from '@fluxer/constants/src/LimitConstants';
@@ -539,6 +541,7 @@ const CachedMessages = observer(function CachedMessages({channel, allowAutoAck =
 		};
 	}, [channel.id]);
 	const spammerOverrideVersion = LocalUserSpamOverride.version;
+	const hideBlocked = AdvancedSettings.hideBlockedMessages;
 	const channelStream = useMemo<Array<ChannelStreamItem>>(() => {
 		if (!state.messages) return [];
 		return createChannelStream({
@@ -546,8 +549,9 @@ const CachedMessages = observer(function CachedMessages({channel, allowAutoAck =
 			messages: state.messages,
 			oldestUnreadMessageId: state.visualUnreadMessageId,
 			treatSpam: true,
+			hideBlocked,
 		});
-	}, [channel, state.messages, state.messageVersion, state.visualUnreadMessageId, spammerOverrideVersion]);
+	}, [channel, state.messages, state.messageVersion, state.visualUnreadMessageId, spammerOverrideVersion, hideBlocked]);
 	useEffect(() => {
 		const messages = state.messages;
 		if (!messages?.ready) {
@@ -555,6 +559,9 @@ const CachedMessages = observer(function CachedMessages({channel, allowAutoAck =
 		}
 		void MessageCommands.ensureMembersForMessages(messages.toArray());
 	}, [channel.id, state.messages?.ready, state.messageVersion]);
+	useEffect(() => {
+		if (state.messages?.ready) VoiceRuntime.noteChannelContentRendered();
+	}, [state.messages?.ready]);
 	const immediateHighlightedMessageId = (() => {
 		const messages = state.messages;
 		if (!messages?.ready || !messages.hasJumped || !messages.jumpHighlight || !messages.jumpDestinationId) {
@@ -609,21 +616,25 @@ const CachedMessages = observer(function CachedMessages({channel, allowAutoAck =
 		onMessageEdit,
 		onReveal,
 	]);
-	const bottomBar =
-		windowBar === 'retry' ? (
+	let bottomBar: React.ReactNode = null;
+	if (windowBar === 'retry') {
+		bottomBar = (
 			<LoadErrorBar
 				loading={safeMessages.loadingMore}
 				onRetry={onRetryLoadMessages}
 				data-flx="channel.messages.load-error-bar"
 			/>
-		) : windowBar === 'present' ? (
+		);
+	} else if (windowBar === 'present') {
+		bottomBar = (
 			<JumpToPresentBar
 				loadingMore={safeMessages.loadingMore}
 				landedAtLiveEdge={safeMessages.landedAtLiveEdge}
 				onJumpToPresent={onScrollToPresent}
 				data-flx="channel.messages.jump-to-present-bar"
 			/>
-		) : null;
+		);
+	}
 	const showNewMessagesBar = Boolean(windowStatus.phase === 'stream' && state.unreadCount > 0);
 	const unreadTimestampMessageId = state.oldestUnreadMessageId ?? state.ackMessageId;
 	const topBar = showNewMessagesBar ? (

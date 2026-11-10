@@ -45,6 +45,7 @@ import * as RandomUtils from '@app/api/utils/RandomUtils';
 import {inputValidationErrorFromZodIssues} from '@app/api/Validator';
 import {transform as GitHubTransform} from '@app/api/webhook/transformers/GitHubTransformer';
 import {instatusDeliveryKey, transformInstatusWebhook} from '@app/api/webhook/transformers/InstatusTransformer';
+import {transformLibredeskWebhook} from '@app/api/webhook/transformers/LibredeskTransformer';
 import type {WebhookRepository} from '@app/api/webhook/WebhookRepository';
 import {AuditLogActionType} from '@fluxer/constants/src/AuditLogActionType';
 import {
@@ -74,6 +75,7 @@ import type {GuildResponse} from '@fluxer/schema/src/domains/guild/GuildResponse
 import type {AllowedMentionsRequest} from '@fluxer/schema/src/domains/message/SharedMessageSchemas';
 import type {GitHubWebhook} from '@fluxer/schema/src/domains/webhook/GitHubWebhookSchemas';
 import type {InstatusWebhook} from '@fluxer/schema/src/domains/webhook/InstatusWebhookSchemas';
+import type {LibredeskWebhook} from '@fluxer/schema/src/domains/webhook/LibredeskWebhookSchemas';
 import {
 	type WebhookCreateRequest,
 	WebhookForumPostRequestFields,
@@ -146,6 +148,17 @@ interface WebhookExecuteInstatusParams extends WebhookTokenParams {
 	data: InstatusWebhook;
 	requestCache: RequestCache;
 }
+
+interface WebhookExecuteLibredeskParams extends WebhookTokenParams, WebhookThreadParams {
+	data: LibredeskWebhook;
+	requestCache: RequestCache;
+}
+
+const WEBHOOK_AUDIT_ACTIONS = {
+	create: {name: 'guild_webhook_create', type: AuditLogActionType.WEBHOOK_CREATE},
+	update: {name: 'guild_webhook_update', type: AuditLogActionType.WEBHOOK_UPDATE},
+	delete: {name: 'guild_webhook_delete', type: AuditLogActionType.WEBHOOK_DELETE},
+} as const;
 
 const WEBHOOK_AVATAR_MISSING_CACHE_VALUE = '__fluxer_webhook_avatar_missing__';
 const HOSTED_WEBHOOK_AVATAR_URLS = {
@@ -441,6 +454,13 @@ export class WebhookService {
 		service,
 	}: WebhookExecuteParams): Promise<Message> {
 		const {webhook, channel} = await this.getTokenAuthenticatedWebhookChannel({webhookId, token});
+		contentModerationService.scanText(data.username ?? null, {
+			userId: webhook.creatorId,
+			guildId: webhook.guildId,
+			channelId: webhook.channelId,
+			messageId: null,
+			surface: 'webhook',
+		});
 		const forumPost = this.resolveForumPost(channel, data);
 		if (channel.isThreadOnly()) {
 			if (service && threadId === undefined) throw new WebhookServiceForumUnsupportedError();
@@ -601,6 +621,22 @@ export class WebhookService {
 			requestCache,
 		});
 		if (delivery) await this.cacheService.set(`instatus:${webhookId}:${delivery}`, 1, seconds('1 day'));
+	}
+
+	async executeLibredeskWebhook(params: WebhookExecuteLibredeskParams): Promise<void> {
+		const {webhookId, token, threadId, data, requestCache} = params;
+		const {webhook, channel} = await this.getTokenAuthenticatedWebhookChannel({webhookId, token});
+		if (channel.isThreadOnly() && threadId === undefined) throw new WebhookServiceForumUnsupportedError();
+		const thread = await this.resolveWebhookThread(webhook, threadId);
+		const embed = transformLibredeskWebhook(data);
+		if (!embed) return;
+		await this.channelService.messages.send.sendWebhookMessage({
+			webhook,
+			thread,
+			data: {embeds: [embed], allowed_mentions: WebhookService.NO_ALLOWED_MENTIONS},
+			username: 'Libredesk',
+			requestCache,
+		});
 	}
 
 	async dispatchWebhooksUpdate({
@@ -955,22 +991,12 @@ export class WebhookService {
 		previousSnapshot?: Record<string, unknown> | null;
 		auditLogReason?: string | null;
 	}): Promise<void> {
-		const actionName =
-			params.action === 'create'
-				? 'guild_webhook_create'
-				: params.action === 'update'
-					? 'guild_webhook_update'
-					: 'guild_webhook_delete';
+		const actionName = WEBHOOK_AUDIT_ACTIONS[params.action].name;
 		const previousSnapshot =
 			params.action === 'create' ? null : (params.previousSnapshot ?? this.serializeWebhookForAudit(params.webhook));
 		const nextSnapshot = params.action === 'delete' ? null : this.serializeWebhookForAudit(params.webhook);
 		const changes = this.guildAuditLogService.computeChanges(previousSnapshot, nextSnapshot);
-		const actionType =
-			params.action === 'create'
-				? AuditLogActionType.WEBHOOK_CREATE
-				: params.action === 'update'
-					? AuditLogActionType.WEBHOOK_UPDATE
-					: AuditLogActionType.WEBHOOK_DELETE;
+		const actionType = WEBHOOK_AUDIT_ACTIONS[params.action].type;
 		try {
 			await this.guildAuditLogService
 				.createBuilder(params.guildId, params.userId)

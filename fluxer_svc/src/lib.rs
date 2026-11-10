@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+pub mod combined;
 pub mod config;
 pub mod hash_ring;
 pub mod metrics;
@@ -13,10 +14,10 @@ pub mod transport;
 #[cfg(feature = "scylla")]
 pub mod scylla;
 
-pub fn init_tracing() {
+pub fn init_tracing(env: &fluxer_common::config::EnvMap) {
     tracing_subscriber::fmt()
         .json()
-        .with_env_filter(fluxer_common::config::env_filter("info"))
+        .with_env_filter(env.tracing_filter("info"))
         .try_init()
         .ok();
 }

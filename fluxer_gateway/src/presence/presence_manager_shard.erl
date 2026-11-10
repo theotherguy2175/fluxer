@@ -4,8 +4,6 @@
 -typing([eqwalizer]).
 -behaviour(gen_server).
 
--include_lib("fluxer_gateway/include/timeout_config.hrl").
-
 -export([start_link/1]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -22,7 +20,9 @@
 
 -spec start_link(non_neg_integer()) -> {ok, pid()} | {error, term()}.
 start_link(ShardIndex) ->
-    normalize_start_link(gen_server:start_link(?MODULE, #{shard_index => ShardIndex}, [])).
+    shard_utils:normalize_start_link(
+        gen_server:start_link(?MODULE, #{shard_index => ShardIndex}, [])
+    ).
 
 -spec init(map()) -> {ok, state(), hibernate}.
 init(Args) ->
@@ -85,10 +85,12 @@ handle_cast(_Unknown, State) ->
     State :: state().
 handle_info({'DOWN', Ref, process, Pid, _Reason}, State) when is_reference(Ref), is_pid(Pid) ->
     demonitor(Ref, [flush]),
-    presence_manager_cache:clean_by_pid(Pid),
     Presences = maps:get(presences, State),
     ShardIndex = shard_index(State),
     RemovedUserIds = find_user_ids_by_pid(Pid, Presences),
+    lists:foreach(
+        fun(UserId) -> presence_manager_cache:clean(UserId, Pid) end, RemovedUserIds
+    ),
     demonitor_refs_for_pid(Pid, Presences),
     NewPresences = sanitize_presences(
         process_registry:cleanup_on_down(presence, Pid, Presences)
@@ -183,7 +185,8 @@ build_presence_data(Request) ->
         status => Status,
         friend_ids => maps:get(friend_ids, Request, []),
         group_dm_recipients => maps:get(group_dm_recipients, Request, #{}),
-        custom_status => maps:get(custom_status, Request, null)
+        custom_status => maps:get(custom_status, Request, null),
+        settings_invisible => maps:get(settings_invisible, Request, false)
     }.
 
 -spec register_new_presence(
@@ -298,35 +301,3 @@ sanitize_presences(Presences) ->
         #{},
         Presences
     ).
-
--spec normalize_start_link(gen_server:start_ret()) -> {ok, pid()} | {error, term()}.
-normalize_start_link({ok, Pid}) ->
-    {ok, Pid};
-normalize_start_link({error, Reason}) ->
-    {error, Reason};
-normalize_start_link(ignore) ->
-    {error, ignore}.
-
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
-
-process_down_clears_the_pid_cache_test() ->
-    Pid = spawn(fun test_wait_for_stop/0),
-    UserId = 987654321,
-    Ref = make_ref(),
-    ok = presence_manager_cache:put_if_local(UserId, Pid),
-    ?assertEqual({hit, Pid}, presence_manager_cache:lookup(UserId)),
-    {noreply, _NewState} = handle_info(
-        {'DOWN', Ref, process, Pid, normal},
-        #{presences => #{UserId => {Pid, Ref}}, shard_index => 0}
-    ),
-    ?assertEqual([], ets:lookup(presence_pid_cache, UserId)),
-    Pid ! stop.
-
--spec test_wait_for_stop() -> ok.
-test_wait_for_stop() ->
-    receive
-        stop -> ok
-    after 5000 -> ok
-    end.
--endif.

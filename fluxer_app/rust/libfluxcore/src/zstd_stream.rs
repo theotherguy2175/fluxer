@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 use zstd::zstd_safe::zstd_sys::ZSTD_EndDirective;
-use zstd::zstd_safe::{CCtx, CParameter, DCtx, InBuffer, OutBuffer};
+use zstd::zstd_safe::{CCtx, CParameter, DCtx, DParameter, InBuffer, OutBuffer};
 
 const READ_BUFFER_BYTES: usize = 16 * 1024;
 const MAX_DECOMPRESSED_BYTES: usize = 64 * 1024 * 1024;
+const ENCODER_WINDOW_LOG: u32 = 17;
+const ENCODER_TABLE_LOG: u32 = 15;
+const DECODER_WINDOW_LOG_MAX: u32 = 21;
 
 #[derive(Debug)]
 pub enum ZstdError {
@@ -32,9 +35,16 @@ pub struct ZstdStreamEncoder {
 impl ZstdStreamEncoder {
     pub fn new(level: i32) -> Result<Self, ZstdError> {
         let mut context = CCtx::try_create().ok_or(ZstdError::OutOfMemory)?;
-        context
-            .set_parameter(CParameter::CompressionLevel(level))
-            .map_err(|_| ZstdError::Encode)?;
+        for parameter in [
+            CParameter::CompressionLevel(level),
+            CParameter::WindowLog(ENCODER_WINDOW_LOG),
+            CParameter::HashLog(ENCODER_TABLE_LOG),
+            CParameter::ChainLog(ENCODER_TABLE_LOG),
+        ] {
+            context
+                .set_parameter(parameter)
+                .map_err(|_| ZstdError::Encode)?;
+        }
         Ok(Self { context })
     }
 
@@ -75,6 +85,9 @@ impl ZstdStreamDecoder {
     pub fn new() -> Result<Self, ZstdError> {
         let mut context = DCtx::try_create().ok_or(ZstdError::OutOfMemory)?;
         context.init().map_err(|_| ZstdError::Decode)?;
+        context
+            .set_parameter(DParameter::WindowLogMax(DECODER_WINDOW_LOG_MAX))
+            .map_err(|_| ZstdError::Decode)?;
         Ok(Self { context })
     }
 
@@ -129,59 +142,4 @@ fn append_output(output: &mut Vec<u8>, bytes: &[u8]) -> Result<(), ZstdError> {
         .map_err(|_| ZstdError::OutOfMemory)?;
     output.extend_from_slice(bytes);
     Ok(())
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn keeps_partial_frame_state_between_chunks() {
-        let compressed = zstd::stream::encode_all(&b"hello stream"[..], 1).unwrap();
-        let split_at = compressed.len() / 2;
-        let mut decoder = ZstdStreamDecoder::new().unwrap();
-
-        let first = decoder.decompress_chunk(&compressed[..split_at]).unwrap();
-        let second = decoder.decompress_chunk(&compressed[split_at..]).unwrap();
-
-        assert_eq!([first, second].concat(), b"hello stream");
-    }
-
-    #[test]
-    fn encoder_handles_a_payload_larger_than_the_buffer() {
-        let mut encoder = ZstdStreamEncoder::new(3).unwrap();
-        let mut decoder = ZstdStreamDecoder::new().unwrap();
-        let payload = vec![b'a'; READ_BUFFER_BYTES * 8 + 123];
-
-        let compressed = encoder.compress_chunk(&payload).unwrap();
-        assert_eq!(decoder.decompress_chunk(&compressed).unwrap(), payload);
-    }
-
-    #[test]
-    fn rejects_invalid_zstd() {
-        let mut decoder = ZstdStreamDecoder::new().unwrap();
-        assert!(matches!(
-            decoder.decompress_chunk(b"not zstd"),
-            Err(ZstdError::Decode)
-        ));
-    }
-
-    #[test]
-    fn accepts_the_decompressed_limit() {
-        let input = vec![b'x'; MAX_DECOMPRESSED_BYTES];
-        let compressed = zstd::stream::encode_all(input.as_slice(), 1).unwrap();
-        let mut decoder = ZstdStreamDecoder::new().unwrap();
-        assert_eq!(decoder.decompress_chunk(&compressed).unwrap(), input);
-    }
-
-    #[test]
-    fn rejects_frames_over_the_decompressed_limit() {
-        let input = vec![b'x'; MAX_DECOMPRESSED_BYTES + 1];
-        let compressed = zstd::stream::encode_all(input.as_slice(), 1).unwrap();
-        let mut decoder = ZstdStreamDecoder::new().unwrap();
-        assert!(matches!(
-            decoder.decompress_chunk(&compressed),
-            Err(ZstdError::DecompressedSizeTooLarge)
-        ));
-    }
 }

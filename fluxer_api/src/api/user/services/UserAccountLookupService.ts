@@ -1,30 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import type {GuildID, UserID} from '@app/api/BrandedTypes';
+import {Config} from '@app/api/Config';
+import {isConnectionAvailable} from '@app/api/connection/ConnectionMappers';
 import type {ConnectionRepository} from '@app/api/connection/ConnectionRepository';
 import type {UserConnectionRow} from '@app/api/database/types/ConnectionTypes';
 import type {GuildRepository} from '@app/api/guild/repositories/GuildRepository';
 import type {GuildService} from '@app/api/guild/services/GuildService';
 import type {DiscriminatorService} from '@app/api/infrastructure/DiscriminatorService';
 import type {RequestCache} from '@app/api/middleware/RequestCacheMiddleware';
+import {getInstanceConfigRepository} from '@app/api/middleware/ServiceSingletons';
 import type {GuildMember} from '@app/api/models/GuildMember';
 import type {User} from '@app/api/models/User';
+import {isProfileHidden} from '@app/api/user/ProfileVisibility';
+import {applyPremiumBadgeMasking} from '@app/api/user/profile_badges/PremiumBadgeMasking';
 import type {UserRepository} from '@app/api/user/repositories/UserRepository';
 import {isUsernameTaken} from '@app/api/user/UniqueUsernames';
-import {getBadgePremiumType} from '@app/api/user/UserHelpers';
 import {hasFixedDiscriminator} from '@app/api/user/UserTag';
 import {ChannelTypes} from '@fluxer/constants/src/ChannelConstants';
 import {
-	PremiumFlags,
 	ProfileFieldPrivacyFlags,
 	ProfilePrivacyLevels,
 	RelationshipTypes,
 	SMALL_GUILD_MEMBER_THRESHOLD,
 	type UserPremiumType,
-	UserPremiumTypes,
 } from '@fluxer/constants/src/UserConstants';
 import {MissingAccessError} from '@fluxer/errors/src/domains/core/MissingAccessError';
-import {UnknownUserError} from '@fluxer/errors/src/domains/user/UnknownUserError';
 import type {GuildMemberResponse} from '@fluxer/schema/src/domains/guild/GuildMemberSchemas';
 
 interface ProfileFieldPrivacyContext {
@@ -73,12 +74,12 @@ export class UserAccountLookupService {
 		restrictProfile: boolean;
 	}> {
 		const {userId, targetId, guildId, withMutualFriends, withMutualGuilds, requestCache} = params;
-		const user = await this.deps.userAccountRepository.findUnique(targetId);
-		if (!user) throw new UnknownUserError();
+		const user = await this.deps.userAccountRepository.findUniqueAssert(targetId);
 		if (userId !== targetId) {
 			await this.validateProfileAccess(userId, targetId, user);
 		}
 		const restrictProfile = await this.shouldRestrictProfile(userId, targetId, user);
+		const hiddenFromViewer = userId !== targetId && isProfileHidden(user);
 		let guildMember: GuildMemberResponse | null = null;
 		let guildMemberDomain: GuildMember | null = null;
 		if (guildId != null) {
@@ -95,31 +96,18 @@ export class UserAccountLookupService {
 				}
 			}
 		}
-		let premiumType = getBadgePremiumType(user);
-		let premiumSince = user.premiumSince ?? undefined;
-		let premiumLifetimeSequence = user.premiumLifetimeSequence ?? undefined;
-		if (restrictProfile || user.premiumFlags & PremiumFlags.BADGE_HIDDEN) {
-			premiumType = undefined;
-			premiumSince = undefined;
-			premiumLifetimeSequence = undefined;
-		} else {
-			if (user.premiumType === UserPremiumTypes.LIFETIME) {
-				if (user.premiumFlags & PremiumFlags.BADGE_MASKED) {
-					premiumType = UserPremiumTypes.SUBSCRIPTION;
-				}
-				if (user.premiumFlags & PremiumFlags.BADGE_SEQUENCE_HIDDEN) {
-					premiumLifetimeSequence = undefined;
-				}
-			}
-			if (user.premiumFlags & PremiumFlags.BADGE_TIMESTAMP_HIDDEN) {
-				premiumSince = undefined;
-			}
-		}
+		const {premiumType, premiumSince, premiumLifetimeSequence} = applyPremiumBadgeMasking(user, {
+			premiumFlags: user.premiumFlags,
+			hidden: user.hiddenProfileBadges,
+			selfHosted: Config.instance.selfHosted,
+			restricted: restrictProfile || hiddenFromViewer,
+		});
 		const profileFieldPrivacyContext = restrictProfile
 			? null
 			: await this.getProfileFieldPrivacyContext(userId, targetId);
 		const timezoneVisible =
 			!restrictProfile &&
+			!hiddenFromViewer &&
 			user.timezone != null &&
 			profileFieldPrivacyContext != null &&
 			this.canViewProfileField(user.timezonePrivacyFlags, profileFieldPrivacyContext);
@@ -293,9 +281,16 @@ export class UserAccountLookupService {
 		targetId: UserID,
 		privacyContext: ProfileFieldPrivacyContext,
 	): Promise<Array<UserConnectionRow>> {
-		const connections = await this.deps.connectionRepository.findByUserId(targetId);
-		const verified = connections.filter((connection) => connection.verified);
-		return verified.filter((connection) => this.canViewProfileField(connection.visibility_flags, privacyContext));
+		const [connections, providers] = await Promise.all([
+			this.deps.connectionRepository.findByUserId(targetId),
+			getInstanceConfigRepository().getConnectionProviderIndex(),
+		]);
+		return connections.filter(
+			(connection) =>
+				connection.verified &&
+				isConnectionAvailable(connection, providers) &&
+				this.canViewProfileField(connection.visibility_flags, privacyContext),
+		);
 	}
 
 	private async getProfileFieldPrivacyContext(viewerId: UserID, targetId: UserID): Promise<ProfileFieldPrivacyContext> {

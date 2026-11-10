@@ -7,6 +7,7 @@ const SOUNDBOARD_USER_VOLUME_MAX = 200;
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import {makePersistent} from '@app/features/platform/utils/MobXPersistence';
 import {initializeStore} from '@app/features/platform/utils/StoreInitialization';
+import {getCameraCaptureDimensions} from '@app/features/voice/engine/v2/VoiceEngineV2AppCameraResolutionPresets';
 import type {
 	CodecPreference,
 	ScreenShareContentHint,
@@ -17,9 +18,13 @@ import {
 	isVoiceNoiseSuppressionBackend,
 	type VoiceNoiseSuppressionBackend,
 } from '@app/features/voice/utils/noise_suppression/NoiseSuppressionBackends';
-import type {ScreenShareBitrateBudget} from '@app/features/voice/utils/ScreenShareOptions';
+import {
+	normaliseResolutionForContext,
+	type ScreenShareBitrateBudget,
+} from '@app/features/voice/utils/ScreenShareOptions';
 import {
 	getScreenShareBitrateCeilingBps,
+	getVideoQualityCaps,
 	hasHigherVideoQuality,
 } from '@app/features/voice/utils/VideoQualityEntitlement';
 import {areVoiceBackgroundsAvailable} from '@app/features/voice/utils/VoiceBackgroundAvailability';
@@ -51,15 +56,17 @@ const MAX_VOICE_PROCESSING_DEVICE_OVERRIDES = 16;
 const VIDEO_FRAME_RATE_MIN = 15;
 const VIDEO_FRAME_RATE_MAX = 120;
 const VIDEO_FRAME_RATE_DEFAULT = 30;
-const FREE_VIDEO_FRAME_RATE_MAX = 30;
 const RETIRED_SCREENSHARE_RESOLUTION_REPLACEMENT: ScreenshareResolution = 'low_480p';
-const PREMIUM_SCREENSHARE_RESOLUTIONS: ReadonlySet<ScreenshareResolution> = new Set(['high', 'ultra', 'source']);
 export const CAMERA_EFFECT_STRENGTH_MIN = 0;
 export const CAMERA_EFFECT_STRENGTH_MAX = 100;
 export const CAMERA_EFFECT_STRENGTH_DEFAULT = 50;
 const DEFAULT_SCREEN_SHARE_CONTENT_HINT: ScreenShareContentHint = 'text';
 const DEFAULT_SCREEN_SHARE_ENCODER_MODE: ScreenShareEncoderMode = 'auto';
 const DEFAULT_SCREEN_SHARE_SCALABILITY_MODE: ScreenShareScalabilityModePreference = 'auto';
+export const WINDOWS_DEFAULT_PLAYBACK_DEVICE = 'default';
+const DEFAULT_WINDOWS_DESKTOP_AUDIO_DEVICES: ReadonlyArray<string> = [WINDOWS_DEFAULT_PLAYBACK_DEVICE];
+export const MAX_WINDOWS_DESKTOP_AUDIO_DEVICES = 16;
+const MAX_WINDOWS_DESKTOP_AUDIO_DEVICE_ID_LENGTH = 512;
 
 export type VoiceSettingsUpdate = Partial<{
 	inputDeviceId: string;
@@ -83,6 +90,8 @@ export type VoiceSettingsUpdate = Partial<{
 	shareDesktopAudio: boolean;
 	shareDeviceAudio: boolean;
 	screenShareAudioDeviceId: string;
+	windowsDesktopAudioAll: boolean;
+	windowsDesktopAudioDevices: Array<string>;
 	backgroundImageId: string;
 	backgroundImages: Array<BackgroundImage>;
 	backgroundBlurStrength: number;
@@ -445,6 +454,8 @@ class VoiceSettings {
 	shareDesktopAudio = true;
 	shareDeviceAudio = true;
 	screenShareAudioDeviceId = 'default';
+	windowsDesktopAudioAll = false;
+	windowsDesktopAudioDevices: Array<string> = [...DEFAULT_WINDOWS_DESKTOP_AUDIO_DEVICES];
 	screenShareAudioConsentMigratedV1 = false;
 	screenShareAudioDefaultOnMigratedV1 = false;
 	outputVolumeRecalibratedV1 = false;
@@ -517,6 +528,8 @@ class VoiceSettings {
 				getShareDeviceAudio: false,
 				getScreenShareAudioDeviceId: false,
 				getEffectiveScreenShareAudioDeviceId: false,
+				getWindowsDesktopAudioAll: false,
+				getWindowsDesktopAudioDevices: false,
 				getBackgroundImageId: false,
 				getBackgroundImages: false,
 				getBackgroundBlurStrength: false,
@@ -621,6 +634,8 @@ class VoiceSettings {
 				'shareDesktopAudio',
 				'shareDeviceAudio',
 				'screenShareAudioDeviceId',
+				'windowsDesktopAudioAll',
+				'windowsDesktopAudioDevices',
 				'screenShareAudioConsentMigratedV1',
 				'screenShareAudioDefaultOnMigratedV1',
 				'outputVolumeRecalibratedV1',
@@ -791,10 +806,8 @@ class VoiceSettings {
 	}
 
 	getCameraResolution(): CameraResolution {
-		if (this.cameraResolution === 'high' && !hasHigherVideoQuality()) {
-			return 'medium';
-		}
-		return this.cameraResolution;
+		const allowed = getCameraCaptureDimensions(this.cameraResolution).height <= getVideoQualityCaps().cameraMaxHeight;
+		return allowed ? this.cameraResolution : 'medium';
 	}
 
 	getMirrorCamera(): boolean {
@@ -802,17 +815,11 @@ class VoiceSettings {
 	}
 
 	getScreenshareResolution(): ScreenshareResolution {
-		if (PREMIUM_SCREENSHARE_RESOLUTIONS.has(this.screenshareResolution) && !hasHigherVideoQuality()) {
-			return 'medium';
-		}
-		return this.screenshareResolution;
+		return normaliseResolutionForContext(this.screenshareResolution, 'display', getVideoQualityCaps());
 	}
 
 	getVideoFrameRate(): number {
-		if (this.videoFrameRate > FREE_VIDEO_FRAME_RATE_MAX && !hasHigherVideoQuality()) {
-			return FREE_VIDEO_FRAME_RATE_MAX;
-		}
-		return this.videoFrameRate;
+		return Math.min(this.videoFrameRate, getVideoQualityCaps().screenShareMaxFrameRate);
 	}
 
 	getStreamingMode(): StreamingMode {
@@ -841,6 +848,14 @@ class VoiceSettings {
 
 	getScreenShareAudioDeviceId(): string {
 		return this.screenShareAudioDeviceId;
+	}
+
+	getWindowsDesktopAudioAll(): boolean {
+		return this.windowsDesktopAudioAll === true;
+	}
+
+	getWindowsDesktopAudioDevices(): Array<string> {
+		return validateWindowsDesktopAudioDevices(this.windowsDesktopAudioDevices);
 	}
 
 	getEffectiveScreenShareAudioDeviceId(): string {
@@ -1009,6 +1024,9 @@ class VoiceSettings {
 		if (validated.shareDeviceAudio !== undefined) this.shareDeviceAudio = validated.shareDeviceAudio;
 		if (validated.screenShareAudioDeviceId !== undefined)
 			this.screenShareAudioDeviceId = validated.screenShareAudioDeviceId;
+		if (validated.windowsDesktopAudioAll !== undefined) this.windowsDesktopAudioAll = validated.windowsDesktopAudioAll;
+		if (validated.windowsDesktopAudioDevices !== undefined)
+			this.windowsDesktopAudioDevices = validated.windowsDesktopAudioDevices;
 		if (validated.backgroundImageId !== undefined) this.backgroundImageId = validated.backgroundImageId;
 		if (validated.backgroundImages !== undefined) this.backgroundImages = validated.backgroundImages;
 		if (validated.backgroundBlurStrength !== undefined) this.backgroundBlurStrength = validated.backgroundBlurStrength;
@@ -1133,6 +1151,11 @@ class VoiceSettings {
 			shareDesktopAudio: data.shareDesktopAudio ?? this.shareDesktopAudio,
 			shareDeviceAudio: data.shareDeviceAudio ?? this.shareDeviceAudio,
 			screenShareAudioDeviceId: data.screenShareAudioDeviceId ?? this.screenShareAudioDeviceId,
+			windowsDesktopAudioAll:
+				data.windowsDesktopAudioAll === undefined ? this.windowsDesktopAudioAll : data.windowsDesktopAudioAll === true,
+			windowsDesktopAudioDevices: validateWindowsDesktopAudioDevices(
+				data.windowsDesktopAudioDevices ?? this.windowsDesktopAudioDevices,
+			),
 			backgroundImageId,
 			backgroundImages,
 			backgroundBlurStrength: clampCameraEffectStrength(data.backgroundBlurStrength ?? this.backgroundBlurStrength),
@@ -1236,6 +1259,23 @@ function validateStreamingMode(mode: unknown): StreamingMode {
 
 function validateAudioSourceMode(mode: unknown): 'none' | 'system' | 'specific' {
 	return mode === 'none' || mode === 'system' || mode === 'specific' ? mode : 'system';
+}
+
+function isValidWindowsDesktopAudioDevice(entry: unknown): entry is string {
+	if (entry === WINDOWS_DEFAULT_PLAYBACK_DEVICE) return true;
+	return (
+		typeof entry === 'string' &&
+		entry.length <= MAX_WINDOWS_DESKTOP_AUDIO_DEVICE_ID_LENGTH &&
+		entry.startsWith('{') &&
+		!entry.includes('\0')
+	);
+}
+
+function validateWindowsDesktopAudioDevices(value: unknown): Array<string> {
+	const devices = Array.isArray(value)
+		? [...new Set(value.filter(isValidWindowsDesktopAudioDevice))].slice(0, MAX_WINDOWS_DESKTOP_AUDIO_DEVICES)
+		: [];
+	return devices.length > 0 ? devices : [...DEFAULT_WINDOWS_DESKTOP_AUDIO_DEVICES];
 }
 
 function validateSourceList(value: unknown): Array<Record<string, string>> | undefined {

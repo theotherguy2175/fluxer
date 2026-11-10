@@ -1,6 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
-use scraper::{Html, Selector};
+use std::borrow::Cow;
+use std::cell::Cell;
+use std::rc::Rc;
+
+use html5ever::driver::{self, ParseOpts, Parser};
+use html5ever::tendril::{StrTendril, TendrilSink};
+use html5ever::tree_builder::{ElementFlags, NodeOrText, QuirksMode, TreeSink};
+use html5ever::{Attribute, QualName, local_name, ns};
+use scraper::{Html, HtmlTreeSink, Selector};
+
+const MAX_NESTING_DEPTH: usize = 512;
+
+const PARSE_CHUNK_BYTES: usize = 4096;
 
 const TEXTUAL_KEYS: [&str; 5] = [
     "og:title",
@@ -13,6 +25,184 @@ const TEXTUAL_KEYS: [&str; 5] = [
 const CLASSIFYING_CARDS: [&str; 3] = ["summary_large_image", "photo", "player"];
 
 const INERT_ELEMENTS: [&str; 4] = ["script", "style", "noscript", "template"];
+
+type Handle = <HtmlTreeSink as TreeSink>::Handle;
+
+struct DepthLimitedSink {
+    inner: HtmlTreeSink,
+    too_deep: Rc<Cell<bool>>,
+}
+
+impl DepthLimitedSink {
+    fn note_depth_below(&self, node: &Handle) {
+        if self.too_deep.get() {
+            return;
+        }
+        let html = self.inner.0.borrow();
+        let depth = html
+            .tree
+            .get(*node)
+            .map_or(0, |node| node.ancestors().take(MAX_NESTING_DEPTH).count());
+        if depth >= MAX_NESTING_DEPTH {
+            self.too_deep.set(true);
+        }
+    }
+}
+
+impl TreeSink for DepthLimitedSink {
+    type Output = Html;
+    type Handle = Handle;
+    type ElemName<'a> = <HtmlTreeSink as TreeSink>::ElemName<'a>;
+
+    fn finish(self) -> Html {
+        self.inner.finish()
+    }
+
+    fn parse_error(&self, msg: Cow<'static, str>) {
+        self.inner.parse_error(msg);
+    }
+
+    fn get_document(&self) -> Handle {
+        self.inner.get_document()
+    }
+
+    fn elem_name<'a>(&'a self, target: &'a Handle) -> Self::ElemName<'a> {
+        self.inner.elem_name(target)
+    }
+
+    fn create_element(&self, name: QualName, attrs: Vec<Attribute>, flags: ElementFlags) -> Handle {
+        self.inner.create_element(name, attrs, flags)
+    }
+
+    fn create_comment(&self, text: StrTendril) -> Handle {
+        self.inner.create_comment(text)
+    }
+
+    fn create_pi(&self, target: StrTendril, data: StrTendril) -> Handle {
+        self.inner.create_pi(target, data)
+    }
+
+    fn append(&self, parent: &Handle, child: NodeOrText<Handle>) {
+        if matches!(child, NodeOrText::AppendNode(_)) {
+            self.note_depth_below(parent);
+        }
+        self.inner.append(parent, child);
+    }
+
+    fn append_based_on_parent_node(
+        &self,
+        element: &Handle,
+        prev_element: &Handle,
+        child: NodeOrText<Handle>,
+    ) {
+        if matches!(child, NodeOrText::AppendNode(_)) {
+            self.note_depth_below(element);
+            self.note_depth_below(prev_element);
+        }
+        self.inner
+            .append_based_on_parent_node(element, prev_element, child);
+    }
+
+    fn append_doctype_to_document(
+        &self,
+        name: StrTendril,
+        public_id: StrTendril,
+        system_id: StrTendril,
+    ) {
+        self.inner
+            .append_doctype_to_document(name, public_id, system_id);
+    }
+
+    fn mark_script_already_started(&self, node: &Handle) {
+        self.inner.mark_script_already_started(node);
+    }
+
+    fn pop(&self, node: &Handle) {
+        self.inner.pop(node);
+    }
+
+    fn get_template_contents(&self, target: &Handle) -> Handle {
+        self.inner.get_template_contents(target)
+    }
+
+    fn same_node(&self, x: &Handle, y: &Handle) -> bool {
+        self.inner.same_node(x, y)
+    }
+
+    fn set_quirks_mode(&self, mode: QuirksMode) {
+        self.inner.set_quirks_mode(mode);
+    }
+
+    fn append_before_sibling(&self, sibling: &Handle, new_node: NodeOrText<Handle>) {
+        if matches!(new_node, NodeOrText::AppendNode(_)) {
+            self.note_depth_below(sibling);
+        }
+        self.inner.append_before_sibling(sibling, new_node);
+    }
+
+    fn add_attrs_if_missing(&self, target: &Handle, attrs: Vec<Attribute>) {
+        self.inner.add_attrs_if_missing(target, attrs);
+    }
+
+    fn remove_from_parent(&self, target: &Handle) {
+        self.inner.remove_from_parent(target);
+    }
+
+    fn reparent_children(&self, node: &Handle, new_parent: &Handle) {
+        self.note_depth_below(new_parent);
+        self.inner.reparent_children(node, new_parent);
+    }
+}
+
+fn parse_with_depth_limit(
+    input: &str,
+    document: Html,
+    start: impl FnOnce(DepthLimitedSink) -> Parser<DepthLimitedSink>,
+) -> Html {
+    let too_deep = Rc::new(Cell::new(false));
+    let mut parser = start(DepthLimitedSink {
+        inner: HtmlTreeSink::new(document),
+        too_deep: Rc::clone(&too_deep),
+    });
+    let mut rest = input;
+    while !rest.is_empty() && !too_deep.get() {
+        let (chunk, tail) = rest.split_at(rest.floor_char_boundary(PARSE_CHUNK_BYTES));
+        parser.process(StrTendril::from_slice(chunk));
+        rest = tail;
+    }
+    parser.finish()
+}
+
+pub(crate) fn with_document<T>(html: &str, read: impl FnOnce(&Html) -> T) -> T {
+    off_worker(|| {
+        read(&parse_with_depth_limit(
+            html,
+            Html::new_document(),
+            |sink| driver::parse_document(sink, ParseOpts::default()),
+        ))
+    })
+}
+
+fn off_worker<T>(work: impl FnOnce() -> T) -> T {
+    match tokio::runtime::Handle::try_current() {
+        Ok(handle) if handle.runtime_flavor() == tokio::runtime::RuntimeFlavor::MultiThread => {
+            tokio::task::block_in_place(work)
+        }
+        _ => work(),
+    }
+}
+
+pub(crate) fn parse_fragment(fragment: &str) -> Html {
+    parse_with_depth_limit(fragment, Html::new_fragment(), |sink| {
+        driver::parse_fragment(
+            sink,
+            ParseOpts::default(),
+            QualName::new(None, ns!(html), local_name!("body")),
+            Vec::new(),
+            false,
+        )
+    })
+}
 
 #[derive(Debug, Default, Clone)]
 pub struct OgMetadata {
@@ -81,10 +271,39 @@ impl MetaTags {
     }
 }
 
-pub fn parse_opengraph(html: &str) -> OgMetadata {
-    let doc = Html::parse_document(html);
-    let meta = MetaTags::parse(&doc);
+#[derive(Debug, Default, Clone)]
+pub struct PageMetadata {
+    pub og: OgMetadata,
+    pub twitter_card: TwitterCardMetadata,
+    pub rsd_url: Option<String>,
+    pub activity_pub_link: Option<String>,
+    pub has_fediverse_profile_username: bool,
+    pub canonical_url: Option<String>,
+    pub apple_touch_icon: Option<String>,
+    pub oembed_endpoints: Vec<crate::oembed::OEmbedEndpoint>,
+}
 
+pub fn parse_page(html: &str, base_url: &url::Url) -> PageMetadata {
+    with_document(html, |doc| {
+        let meta = MetaTags::parse(doc);
+        PageMetadata {
+            og: opengraph(doc, &meta),
+            twitter_card: twitter_card(&meta),
+            rsd_url: rsd_url(doc),
+            activity_pub_link: activity_pub_link(doc),
+            has_fediverse_profile_username: has_fediverse_profile_username(&meta),
+            canonical_url: canonical_url(doc, base_url),
+            apple_touch_icon: apple_touch_icon(doc, base_url),
+            oembed_endpoints: crate::oembed::discover_oembed_endpoints(doc),
+        }
+    })
+}
+
+pub(crate) fn opengraph_of(doc: &Html) -> OgMetadata {
+    opengraph(doc, &MetaTags::parse(doc))
+}
+
+fn opengraph(doc: &Html, meta: &MetaTags) -> OgMetadata {
     let description = meta
         .first("og:description")
         .or_else(|| meta.first("description"));
@@ -99,7 +318,7 @@ pub fn parse_opengraph(html: &str) -> OgMetadata {
         title: meta.first("og:title"),
         description,
         image,
-        images: extract_image_urls(&meta),
+        images: extract_image_urls(meta),
         image_alt: meta
             .first("og:image:alt")
             .or_else(|| meta.first("twitter:image:alt"))
@@ -122,7 +341,7 @@ pub fn parse_opengraph(html: &str) -> OgMetadata {
     if og.title.is_none() {
         og.title = meta
             .first("twitter:title")
-            .or_else(|| document_title(&doc))
+            .or_else(|| document_title(doc))
             .or_else(|| meta.first("title"));
     }
 
@@ -143,10 +362,7 @@ fn document_title(doc: &Html) -> Option<String> {
     Some(trimmed.to_owned())
 }
 
-pub fn parse_twitter_card(html: &str) -> TwitterCardMetadata {
-    let doc = Html::parse_document(html);
-    let meta = MetaTags::parse(&doc);
-
+fn twitter_card(meta: &MetaTags) -> TwitterCardMetadata {
     TwitterCardMetadata {
         classifying_card: meta
             .all("twitter:card")
@@ -156,8 +372,7 @@ pub fn parse_twitter_card(html: &str) -> TwitterCardMetadata {
     }
 }
 
-pub fn find_rsd_url(html: &str) -> Option<String> {
-    let doc = Html::parse_document(html);
+fn rsd_url(doc: &Html) -> Option<String> {
     let sel = Selector::parse("link").ok()?;
 
     for el in doc.select(&sel) {
@@ -184,8 +399,7 @@ pub fn find_rsd_url(html: &str) -> Option<String> {
     None
 }
 
-pub fn find_activity_pub_link(html: &str) -> Option<String> {
-    let doc = Html::parse_document(html);
+fn activity_pub_link(doc: &Html) -> Option<String> {
     let sel = Selector::parse("link").ok()?;
 
     for el in doc.select(&sel) {
@@ -216,8 +430,29 @@ pub fn find_activity_pub_link(html: &str) -> Option<String> {
     None
 }
 
-pub fn find_canonical_url(html: &str, base_url: &url::Url) -> Option<String> {
-    let doc = Html::parse_document(html);
+fn has_fediverse_profile_username(meta: &MetaTags) -> bool {
+    meta.all("og:profile:username")
+        .chain(meta.all("profile:username"))
+        .any(is_acct_shaped)
+}
+
+fn is_acct_shaped(value: &str) -> bool {
+    let value = value.trim();
+    let value = value.strip_prefix('@').unwrap_or(value);
+    let Some((local, host)) = value.split_once('@') else {
+        return false;
+    };
+    !local.is_empty()
+        && local
+            .chars()
+            .all(|c| c.is_alphanumeric() || matches!(c, '_' | '.' | '-'))
+        && host.contains('.')
+        && host.split('.').all(|label| {
+            !label.is_empty() && label.chars().all(|c| c.is_alphanumeric() || c == '-')
+        })
+}
+
+fn canonical_url(doc: &Html, base_url: &url::Url) -> Option<String> {
     let sel = Selector::parse("link[rel=\"canonical\"]").ok()?;
     let el = doc.select(&sel).next()?;
     let href = el.value().attr("href")?;
@@ -227,8 +462,7 @@ pub fn find_canonical_url(html: &str, base_url: &url::Url) -> Option<String> {
     base_url.join(href).ok().map(|u| u.to_string())
 }
 
-pub fn find_apple_touch_icon(html: &str, base_url: &url::Url) -> Option<String> {
-    let doc = Html::parse_document(html);
+fn apple_touch_icon(doc: &Html, base_url: &url::Url) -> Option<String> {
     for selector in [
         r#"link[rel="apple-touch-icon"][sizes="180x180"]"#,
         r#"link[rel="apple-touch-icon"]"#,
@@ -296,18 +530,51 @@ fn is_http_url(url: &url::Url) -> bool {
 mod tests {
     use super::*;
 
-    fn og(html: &str) -> OgMetadata {
-        parse_opengraph(html)
+    #[test]
+    fn deeply_nested_page_keeps_head_metadata() {
+        let mut html =
+            String::from(r#"<html><head><meta property="og:title" content="Kept"></head><body>"#);
+        html.push_str(&"<div>".repeat(200_000));
+        let base = url::Url::parse("https://example.com/").unwrap();
+        assert_eq!(parse_page(&html, &base).og.title.as_deref(), Some("Kept"));
     }
 
     #[test]
-    fn images_reject_bad_url_references() {
-        let h = r#"<head>
-            <meta property="og:image" content="javascript:alert(1)">
-            <meta property="og:image" content="data:image/png;base64,abcd">
-            <meta property="og:image" content="bad url.png">
-            <meta property="og:image" content="https://a.com/ok.png">
-        </head>"#;
-        assert_eq!(og(h).images, vec!["https://a.com/ok.png".to_owned()]);
+    fn parse_page_reads_every_field_from_one_parse() {
+        let html = r#"<html><head>
+            <meta property="og:title" content="Post">
+            <meta name="twitter:card" content="player">
+            <meta name="twitter:player" content="https://player.example/embed">
+            <meta property="profile:username" content="@alice@social.example">
+            <link rel="EditURI" type="application/rsd+xml" href="/w/api.php?action=rsd">
+            <link rel="alternate" type="application/activity+json" href="/notes/1">
+            <link rel="canonical" href="/canonical">
+            <link rel="apple-touch-icon" href="/icon.png">
+            <link rel="alternate" type="application/json+oembed" href="/oembed?format=json">
+        </head></html>"#;
+        let base = url::Url::parse("https://social.example/post/1").unwrap();
+        let page = parse_page(html, &base);
+        assert_eq!(page.og.title.as_deref(), Some("Post"));
+        assert_eq!(
+            page.twitter_card.classifying_card.as_deref(),
+            Some("player")
+        );
+        assert_eq!(
+            page.twitter_card.player.as_deref(),
+            Some("https://player.example/embed")
+        );
+        assert!(page.has_fediverse_profile_username);
+        assert_eq!(page.rsd_url.as_deref(), Some("/w/api.php?action=rsd"));
+        assert_eq!(page.activity_pub_link.as_deref(), Some("/notes/1"));
+        assert_eq!(
+            page.canonical_url.as_deref(),
+            Some("https://social.example/canonical")
+        );
+        assert_eq!(
+            page.apple_touch_icon.as_deref(),
+            Some("https://social.example/icon.png")
+        );
+        assert_eq!(page.oembed_endpoints.len(), 1);
+        assert_eq!(page.oembed_endpoints[0].url, "/oembed?format=json");
     }
 }

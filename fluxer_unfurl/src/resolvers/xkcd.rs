@@ -4,7 +4,7 @@ use super::{ResolveContext, Resolver, ResolverResult};
 use crate::charset;
 use crate::html_parser;
 use crate::http_fetch;
-use crate::media_proxy::{MediaMetadata, MediaProxyClient};
+use crate::media_proxy::MediaProxyClient;
 use crate::types::{EmbedFooter, EmbedMedia, MessageEmbed};
 use scraper::{Html, Selector};
 use std::future::Future;
@@ -46,14 +46,12 @@ impl Resolver for XkcdResolver {
                     .get(reqwest::header::CONTENT_TYPE)
                     .and_then(|value| value.to_str().ok()),
             );
-            let og = html_parser::parse_opengraph(&html);
+            let (og, image_alt) = html_parser::with_document(&html, |doc| {
+                (html_parser::opengraph_of(doc), extract_comic_alt(doc))
+            });
 
             let title = og.title.as_deref().map(|t| parse_text(t, 70));
 
-            let image_alt = {
-                let doc = Html::parse_document(&html);
-                extract_comic_alt(&doc)
-            };
             let footer_text = image_alt.clone();
             let image_media = match og.image.as_deref() {
                 Some(image_url) => {
@@ -100,28 +98,10 @@ async fn resolve_media_url(
         .media_proxy
         .get_metadata(&resolved_url, nsfw_str)
         .await?;
-    Ok(Some(build_embed_media_payload(
-        &resolved_url,
-        &meta,
-        None,
-        None,
+    Ok(Some(EmbedMedia {
         description,
-    )))
-}
-
-fn build_embed_media_payload(
-    url: &str,
-    metadata: &MediaMetadata,
-    width: Option<u32>,
-    height: Option<u32>,
-    description: Option<String>,
-) -> EmbedMedia {
-    EmbedMedia {
-        width: width.or(metadata.width),
-        height: height.or(metadata.height),
-        description,
-        ..metadata.to_embed_media(url)
-    }
+        ..meta.to_embed_media(&resolved_url)
+    }))
 }
 
 fn extract_comic_alt(doc: &Html) -> Option<String> {

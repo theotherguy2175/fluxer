@@ -13,7 +13,10 @@ import {
 	resolveVideoPublishCodecPolicy,
 	type VideoPublishCodecPolicy,
 } from '@app/features/voice/utils/CodecCapabilityDetector';
-import {loadGpuEncoderReport} from '@app/features/voice/utils/GpuEncoderCapabilities';
+import {
+	isSoftwareVideoEncodeExpectedSync,
+	loadGpuEncoderReport,
+} from '@app/features/voice/utils/GpuEncoderCapabilities';
 import {loadNativeHardwareEncoderCapabilities} from '@app/features/voice/utils/NativeHardwareEncoderCapabilities';
 import {getVideoCodecFromMimeType} from '@app/features/voice/utils/ScreenShareCodecDiagnostics';
 import {
@@ -30,7 +33,7 @@ import {
 } from '@app/features/voice/utils/ScreenShareOptions';
 import {ScreenShareRollbackIncompleteError} from '@app/features/voice/utils/ScreenShareRollbackIncompleteError';
 import {classifyVideoEncoderAcceleration} from '@app/features/voice/utils/VideoAccelerationClassification';
-import {hasHigherVideoQuality} from '@app/features/voice/utils/VideoQualityEntitlement';
+import {getVideoQualityCaps} from '@app/features/voice/utils/VideoQualityEntitlement';
 import {
 	BackupCodecPolicy,
 	type LocalParticipant,
@@ -214,7 +217,7 @@ export function resolveConfiguredScreenShareTarget(
 		mode: VoiceSettings.getStreamingMode(),
 		storedResolution: VoiceSettings.getScreenshareResolution(),
 		storedFrameRate: VoiceSettings.getVideoFrameRate(),
-		entitled: hasHigherVideoQuality(),
+		caps: getVideoQualityCaps(),
 		context,
 		sourceDimensions,
 		hintSetting: VoiceSettings.getScreenShareContentHint(),
@@ -337,7 +340,9 @@ export async function getEffectivePublishOptions(
 			resolution: target.resolution,
 			frameRate: target.frameRate,
 		});
-		SoftwareEncoderWarning.triggerWarning(preferredVideoCodec, UNKNOWN_ENCODER_IMPLEMENTATION);
+		if (!isSoftwareVideoEncodeExpectedSync()) {
+			SoftwareEncoderWarning.triggerWarning(preferredVideoCodec, UNKNOWN_ENCODER_IMPLEMENTATION);
+		}
 	}
 	return {
 		...publishOptions,
@@ -592,6 +597,7 @@ function shouldTriggerSoftwareEncoderWarning(codec: VideoCodec): boolean {
 	const encoderMode = VoiceSettings.getScreenShareEncoderMode();
 	if (encoderMode === 'software') return false;
 	if (encoderMode === 'hardware') return true;
+	if (isSoftwareVideoEncodeExpectedSync()) return false;
 	return getCodecCapabilityReport()[codec].hardwareAccelerated === 'hardware';
 }
 

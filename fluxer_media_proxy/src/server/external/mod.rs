@@ -9,6 +9,7 @@ use crate::{
     config::Config,
     constants::{self, AssetExtension},
     mime,
+    public_net_policy::external_url_for_log,
     server::{
         download_stream::DownloadStreamPolicy,
         external::{
@@ -26,10 +27,11 @@ use crate::{
             content_type_is_trustworthy, image_extension_from_filename, is_svg_content_type,
             source_image_format,
         },
-        params::{animated_param, bool_param, url_filename},
+        params::{bool_param, requests_transform, url_filename},
         response::{
             content_disposition_header,
             error::{text, text_with_source},
+            retained_response_bytes,
         },
         state::AppState,
         stored::response::passthrough_head_response,
@@ -209,12 +211,7 @@ impl<'a> PreparedExternalRequest<'a> {
         };
         let url_ext_is_svg =
             image_extension_from_filename(&url_filename(&url)) == Some(AssetExtension::Svg);
-        let wants_transform = url_ext_is_svg
-            || params.contains_key("width")
-            || params.contains_key("height")
-            || params.contains_key("format")
-            || params.contains_key("quality")
-            || animated_param(params, false);
+        let wants_transform = url_ext_is_svg || requests_transform(params);
         let client_range = headers
             .get(header::RANGE)
             .and_then(|value| value.to_str().ok())
@@ -417,7 +414,7 @@ async fn serve_fetched_external(
         app.media.transforms(),
         ServeBytesRequest {
             method,
-            data: data.as_bytes().clone(),
+            data: retained_response_bytes(data),
             content_type,
             cache_identity: &fetched_url,
             filename: &filename,
@@ -446,6 +443,7 @@ pub(in crate::server) async fn fetch_external(
 }
 
 fn external_fetch_error_response(url: &str, err: ExternalFetchError) -> Response {
+    let url = external_url_for_log(url);
     match err {
         ExternalFetchError::BlockedUrl => text_with_source(
             StatusCode::BAD_REQUEST,

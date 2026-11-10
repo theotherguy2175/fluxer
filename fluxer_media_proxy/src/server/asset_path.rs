@@ -2,7 +2,7 @@
 
 use crate::{
     asset_hash::AssetHash,
-    constants::{AssetExtension, AssetKind},
+    constants::{AssetExtension, AssetKind, OPERATOR_WALL_PATH_PREFIX},
     storage::safe_key,
 };
 use std::fmt;
@@ -26,10 +26,12 @@ pub(in crate::server) fn parse_standard_asset_path(path: &str) -> Option<ParsedA
     let kind = match prefix {
         "avatars" => AssetKind::Avatar,
         "icons" => AssetKind::GuildIcon,
-        "branding" => AssetKind::GuildIcon,
+        "branding" | "branding-backdrops" => AssetKind::Branding,
+        "custom-badges" => AssetKind::Branding,
         "banners" => AssetKind::Banner,
         "splashes" => AssetKind::Splash,
         "embed-splashes" => AssetKind::EmbedSplash,
+        "role-icons" => AssetKind::RoleIcon,
         _ => return None,
     };
     if !valid_asset_owner_key(prefix, owner_key) {
@@ -152,6 +154,22 @@ pub(in crate::server) fn parse_soundboard_sound_path(path: &str) -> Option<Strin
     Some(format!("soundboard-sounds/{guild_id}/{filename}"))
 }
 
+const OPERATOR_WALL_AVATAR_SIZES: [u16; 7] = [48, 60, 72, 96, 120, 144, 192];
+
+pub(in crate::server) fn parse_operator_wall_avatar_path(path: &str) -> Option<String> {
+    let storage_key = canonical_public_path(path)?;
+    let filename = path.strip_prefix(OPERATOR_WALL_PATH_PREFIX)?;
+    let (hash, size) = filename.strip_suffix(".webp")?.split_once('-')?;
+    if hash.len() != 64 || !hash.bytes().all(|b| matches!(b, b'0'..=b'9' | b'a'..=b'f')) {
+        return None;
+    }
+    let parsed_size: u16 = size.parse().ok()?;
+    if parsed_size.to_string() != size || !OPERATOR_WALL_AVATAR_SIZES.contains(&parsed_size) {
+        return None;
+    }
+    Some(storage_key.to_owned())
+}
+
 struct ParsedAssetFilename<'a> {
     hash: &'a str,
     ext: AssetExtension,
@@ -199,7 +217,7 @@ impl fmt::Display for SnowflakeId {
 }
 
 fn valid_asset_owner_key(prefix: &str, owner_key: &str) -> bool {
-    if prefix == "branding" {
+    if prefix == "branding" || prefix == "branding-backdrops" {
         return !owner_key.is_empty()
             && owner_key.len() <= ASSET_OWNER_KEY_MAX_BYTES
             && owner_key

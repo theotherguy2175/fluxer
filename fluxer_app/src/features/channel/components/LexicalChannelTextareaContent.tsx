@@ -49,7 +49,6 @@ import ChannelSearch from '@app/features/channel/state/ChannelSearch';
 import ChannelSticker from '@app/features/channel/state/ChannelSticker';
 import Channels from '@app/features/channel/state/Channels';
 import * as ChannelDisplayUtils from '@app/features/channel/utils/ChannelUtils';
-import * as CommandUtils from '@app/features/devtools/utils/CommandUtils';
 import ExpressionPicker from '@app/features/emoji/state/ExpressionPicker';
 import type {FlatEmoji} from '@app/features/emoji/types/EmojiTypes';
 import {ExpressionPickerSheet} from '@app/features/expressions/components/modals/ExpressionPickerSheet';
@@ -80,7 +79,7 @@ import {useTextareaEditing} from '@app/features/messaging/hooks/useTextareaEditi
 import {useTextareaExpressionHandlers} from '@app/features/messaging/hooks/useTextareaExpressionHandlers';
 import {useTextareaExpressionPicker} from '@app/features/messaging/hooks/useTextareaExpressionPicker';
 import {useTextareaSegments} from '@app/features/messaging/hooks/useTextareaSegments';
-import {useTextareaSubmit} from '@app/features/messaging/hooks/useTextareaSubmit';
+import {shouldBlockSubmissionForSlowmode, useTextareaSubmit} from '@app/features/messaging/hooks/useTextareaSubmit';
 import {
 	createMentionConfirmationSnapshot,
 	type MentionConfirmationEvent,
@@ -101,6 +100,7 @@ import {
 	getComposerMessageContent,
 	hasVisibleMessageContent,
 } from '@app/features/messaging/utils/MessageRequestUtils';
+import * as ReplaceCommandUtils from '@app/features/messaging/utils/ReplaceCommandUtils';
 import type {MentionSegment} from '@app/features/messaging/utils/TextareaSegmentManager';
 import {
 	resolveTypedEmojiShortcodes,
@@ -166,6 +166,7 @@ export const LexicalChannelTextareaContent = observer(
 		enableReply = true,
 		enableEditLast = true,
 		enableSlashCommands = true,
+		submitOnEnter = true,
 		draftChannelId,
 		placeholder,
 		bare = false,
@@ -183,6 +184,7 @@ export const LexicalChannelTextareaContent = observer(
 		enableReply?: boolean;
 		enableEditLast?: boolean;
 		enableSlashCommands?: boolean;
+		submitOnEnter?: boolean;
 		draftChannelId?: string;
 		placeholder?: string;
 		bare?: boolean;
@@ -191,8 +193,9 @@ export const LexicalChannelTextareaContent = observer(
 	}) => {
 		const {i18n} = useLingui();
 		const composerKey = draftChannelId ?? channel.id;
-		const editingMessageId = MessageEdit.getEditingMessageId(channel.id);
-		const editingMobileMessageId = MessageEditMobile.getEditingMobileMessageId(channel.id);
+		const ownsChannelEdits = draftChannelId == null;
+		const editingMessageId = ownsChannelEdits ? MessageEdit.getEditingMessageId(channel.id) : null;
+		const editingMobileMessageId = ownsChannelEdits ? MessageEditMobile.getEditingMobileMessageId(channel.id) : null;
 		const isEditingMessageInComposer = editingMobileMessageId != null;
 		let initialDraftDisplay = '';
 		if (!disabled && !isEditingMessageInComposer && draft !== null) {
@@ -578,22 +581,17 @@ export const LexicalChannelTextareaContent = observer(
 			[isEditingMessageOnMobile, trimmedMessageContent],
 		);
 		const hasMessageContent = useMemo(() => hasVisibleMessageContent(composerMessageContent), [composerMessageContent]);
-		const isSubmissionBlockedBySlowmode = useMemo(() => {
-			if (!isSlowmodeActive || isEditingMessageInComposer) {
-				return false;
-			}
-			if (!enableSlashCommands) {
-				return true;
-			}
-			const resolution = LexicalMessageCommandResolver.resolve(handleRef.current);
-			if (resolution.status === LexicalMessageCommandResolutionStatus.NO_COMMAND) {
-				return true;
-			}
-			if (resolution.status === LexicalMessageCommandResolutionStatus.INVALID_COMMAND) {
-				return false;
-			}
-			return CommandUtils.doesCommandSendCurrentChannelMessage(resolution.command);
-		}, [enableSlashCommands, handleRef, isEditingMessageInComposer, isSlowmodeActive, value]);
+		const isSubmissionBlockedBySlowmode = useMemo(
+			() =>
+				shouldBlockSubmissionForSlowmode(
+					isSlowmodeActive,
+					isEditingMessageInComposer,
+					null,
+					enableSlashCommands ? LexicalMessageCommandResolver.resolve(handleRef.current) : null,
+					enableSlashCommands && ReplaceCommandUtils.isReplaceCommand(wireValue),
+				),
+			[enableSlashCommands, handleRef, isEditingMessageInComposer, isSlowmodeActive, value, wireValue],
+		);
 		useChannelComposerPaste({
 			channel,
 			attachmentKey: composerKey,
@@ -812,8 +810,7 @@ export const LexicalChannelTextareaContent = observer(
 			}
 		}, []);
 		const dismissTopmostComposerAffordance = useCallback((): boolean => {
-			const editingInline = MessageEdit.getEditingMessageId(channel.id) !== null;
-			if (editingInline) {
+			if (editingMessageId !== null) {
 				MessageCommands.stopEdit(channel.id);
 				return true;
 			}
@@ -848,6 +845,7 @@ export const LexicalChannelTextareaContent = observer(
 			channel.id,
 			composerKey,
 			editingMessageForComposer,
+			editingMessageId,
 			focusComposer,
 			handleCancelEdit,
 			handleClearSlashCommand,
@@ -984,15 +982,18 @@ export const LexicalChannelTextareaContent = observer(
 			isFocused,
 			handleArrowUpEmpty,
 		});
-		const placeholderText = placeholder
-			? placeholder
-			: disabled
-				? i18n._(YOU_DO_NOT_HAVE_PERMISSION_TO_SEND_MESSAGES_DESCRIPTOR)
-				: channel.guildId != null
-					? i18n._(MESSAGE_CHANNEL_DESCRIPTOR, {channelName: channel.name || i18n._(CHANNEL_DESCRIPTOR)})
-					: channel.isDM()
-						? i18n._(MESSAGE_USER_DESCRIPTOR, {userName: ChannelDisplayUtils.getDMDisplayName(channel)})
-						: i18n._(MESSAGE_GROUP_DESCRIPTOR, {groupName: ChannelDisplayUtils.getDMDisplayName(channel)});
+		let placeholderText: string;
+		if (placeholder) {
+			placeholderText = placeholder;
+		} else if (disabled) {
+			placeholderText = i18n._(YOU_DO_NOT_HAVE_PERMISSION_TO_SEND_MESSAGES_DESCRIPTOR);
+		} else if (channel.guildId != null) {
+			placeholderText = i18n._(MESSAGE_CHANNEL_DESCRIPTOR, {channelName: channel.name || i18n._(CHANNEL_DESCRIPTOR)});
+		} else if (channel.isDM()) {
+			placeholderText = i18n._(MESSAGE_USER_DESCRIPTOR, {userName: ChannelDisplayUtils.getDMDisplayName(channel)});
+		} else {
+			placeholderText = i18n._(MESSAGE_GROUP_DESCRIPTOR, {groupName: ChannelDisplayUtils.getDMDisplayName(channel)});
+		}
 		useEffect(() => ActiveComposer.register(draftChannelId ?? channel.id), [channel.id, draftChannelId]);
 		useEffect(() => {
 			const unsubscribe = ComponentBus.subscribe('FOCUS_TEXTAREA', (payload?: unknown) => {
@@ -1408,7 +1409,7 @@ export const LexicalChannelTextareaContent = observer(
 										specialMentionsAllowed={specialMentionsAllowed}
 										channelId={channel.id}
 										guildId={channel.guildId}
-										submitOnEnter={!mobileLayout.enabled}
+										submitOnEnter={submitOnEnter && !mobileLayout.enabled}
 										maxWireLength={maxMessageLength}
 										silentMessagePrefix={!isEditingMessageOnMobile}
 										focusRingTarget={containerRef}

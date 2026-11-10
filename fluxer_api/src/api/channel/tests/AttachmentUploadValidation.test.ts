@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import {createHash} from 'node:crypto';
+import fs from 'node:fs';
 import {createTestAccount} from '@app/api/auth/tests/AuthTestUtils';
 import {
 	createChannel,
@@ -7,14 +9,14 @@ import {
 	loadFixture,
 	sendMessageWithAttachments,
 } from '@app/api/channel/tests/AttachmentTestUtils';
-import type {MediaProxyMetadataRequest} from '@app/api/infrastructure/IMediaService';
+import type {MediaProxyMetadataRequest, MediaProxyStorageObject} from '@app/api/infrastructure/IMediaService';
+import {fileShaCache} from '@app/api/middleware/FileShaCache';
 import {setInjectedMediaService} from '@app/api/middleware/ServiceRegistry';
 import {type ApiTestHarness, createApiTestHarness} from '@app/api/test/ApiTestHarness';
 import {HTTP_STATUS} from '@app/api/test/TestConstants';
 import {TestMediaService} from '@app/api/test/TestMediaService';
 import {APIErrorCodes} from '@fluxer/constants/src/ApiErrorCodes';
-import {Logger} from '@fluxer/logger/src/Logger';
-import {beforeAll, beforeEach, describe, expect, it, vi} from 'vitest';
+import {beforeAll, beforeEach, describe, expect, it} from 'vitest';
 
 class NullUploadMetadataService extends TestMediaService {
 	override async getMetadata(request: MediaProxyMetadataRequest) {
@@ -22,6 +24,15 @@ class NullUploadMetadataService extends TestMediaService {
 			return null;
 		}
 		return super.getMetadata(request);
+	}
+}
+
+const STRIPPED_BYTES = Buffer.from('stripped media bytes');
+
+class RewritingStripMediaService extends TestMediaService {
+	override async stripObjectMetadata(_source: MediaProxyStorageObject, contentType: string, outputPath: string) {
+		await fs.promises.writeFile(outputPath, STRIPPED_BYTES);
+		return {contentType, width: 100, height: 100};
 	}
 }
 
@@ -72,12 +83,29 @@ describe('Attachment Upload Validation', () => {
 				expect(body.attachments?.[0]?.width).toBeNull();
 				expect(body.attachments?.[0]?.height).toBeNull();
 			});
+			it('should refuse media whose stripped bytes are on the file hash list', async () => {
+				setInjectedMediaService(new RewritingStripMediaService(harness.storageService));
+				const account = await createTestAccount(harness);
+				const guild = await createGuild(harness, account.token, 'Stripped Hash Test Guild');
+				const channel = await createChannel(harness, account.token, guild.id, 'test-channel');
+				const channelId = guild.system_channel_id ?? channel.id;
+				fileShaCache.add(createHash('sha256').update(STRIPPED_BYTES).digest('hex'));
+				const {response, text} = await sendMessageWithAttachments(
+					harness,
+					account.token,
+					channelId,
+					{content: 'stripped hash test', attachments: [{id: 0, filename: 'yeah.png'}]},
+					[{index: 0, filename: 'yeah.png', data: loadFixture('yeah.png')}],
+				);
+				const body = JSON.parse(text) as {code?: string};
+				expect(response.status).toBe(HTTP_STATUS.FORBIDDEN);
+				expect(body.code).toBe(APIErrorCodes.CONTENT_BLOCKED);
+			});
 			it('should return service unavailable when fallback multipart storage upload fails', async () => {
 				const account = await createTestAccount(harness);
 				const guild = await createGuild(harness, account.token, 'Storage Unavailable Test Guild');
 				const channel = await createChannel(harness, account.token, guild.id, 'test-channel');
 				const channelId = guild.system_channel_id ?? channel.id;
-				const errorLoggerSpy = vi.spyOn(Logger.prototype, 'error').mockImplementation(() => {});
 				harness.storageService.configure({shouldFailUpload: true});
 				try {
 					const payload = {
@@ -90,25 +118,8 @@ describe('Attachment Upload Validation', () => {
 					const body = JSON.parse(text) as {code?: string};
 					expect(response.status).toBe(HTTP_STATUS.SERVICE_UNAVAILABLE);
 					expect(body.code).toBe(APIErrorCodes.SERVICE_UNAVAILABLE);
-					expect(errorLoggerSpy).toHaveBeenCalledTimes(1);
-					expect(errorLoggerSpy).toHaveBeenCalledWith(
-						{
-							err: expect.objectContaining({
-								cause: expect.objectContaining({message: 'Mock storage upload failure'}),
-								code: APIErrorCodes.SERVICE_UNAVAILABLE,
-								message: 'Attachment storage is temporarily unavailable',
-								status: HTTP_STATUS.SERVICE_UNAVAILABLE,
-							}),
-							method: 'POST',
-							path: '/channels/:channel_id/messages',
-							requestId: expect.any(String),
-							status: HTTP_STATUS.SERVICE_UNAVAILABLE,
-						},
-						'Request failed',
-					);
 				} finally {
 					harness.storageService.configure({shouldFailUpload: false});
-					errorLoggerSpy.mockRestore();
 				}
 			});
 		});

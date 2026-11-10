@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+import {ResettableStates} from '@app/features/app/state/ResettableStates';
 import Channels from '@app/features/channel/state/Channels';
 import GatewaySessions from '@app/features/gateway/transport/GatewaySessionPool';
 import Guilds from '@app/features/guild/state/Guilds';
@@ -22,6 +23,7 @@ import type {ChannelId} from '@fluxer/schema/src/branded/WireIds';
 import type {GuildMemberData} from '@fluxer/schema/src/domains/guild/GuildMemberSchemas';
 import type {Message as WireMessage} from '@fluxer/schema/src/domains/message/MessageResponseSchemas';
 import type {PollResponse} from '@fluxer/schema/src/domains/message/PollSchemas';
+import * as SnowflakeUtils from '@fluxer/snowflake/src/SnowflakeUtils';
 import {makeAutoObservable, reaction} from 'mobx';
 
 const STALE_WINDOW_REFETCH_INTERVAL_MS = 10_000;
@@ -33,7 +35,7 @@ interface GuildMemberUpdateAction {
 	member: GuildMemberData;
 }
 
-export interface PendingJumpDispatch {
+interface PendingJumpDispatch {
 	messageId: string;
 	flash?: boolean;
 	offset?: number;
@@ -201,6 +203,19 @@ class Messages {
 
 	private hasLoadedPage(messages: ChannelMessages): boolean {
 		return messages.ready && messages.length > 0 && !messages.cached;
+	}
+
+	handlePassiveLastMessageUpdates(channels: Record<string, string>): void {
+		let changed = false;
+		for (const [channelId, lastMessageId] of Object.entries(channels)) {
+			const messages = ChannelMessages.get(channelId);
+			const newestLoadedId = messages?.last()?.id;
+			if (!messages || messages.cached || !newestLoadedId || !messages.hasNewestMessages()) continue;
+			if (SnowflakeUtils.compare(lastMessageId, newestLoadedId) <= 0) continue;
+			this.commitMessages(messages.withPatch({cached: true}));
+			changed = true;
+		}
+		if (changed) this.notifyChange();
 	}
 
 	shouldPreloadLatestPage(channelId: string): boolean {
@@ -419,7 +434,13 @@ class Messages {
 			channelId: selectedChannelId,
 			messageId: undefined,
 		});
-		if (!didChannelSelect && currentMessages && currentMessages.length === 0 && !currentMessages.ready) {
+		if (
+			!didChannelSelect &&
+			currentMessages &&
+			currentMessages.length === 0 &&
+			!currentMessages.ready &&
+			!currentMessages.loadingMore
+		) {
 			this.commitMessages(currentMessages.withPatch({loadingMore: true}));
 			MessageCommands.fetchMessages(selectedChannelId, null, null, MAX_MESSAGES_PER_CHANNEL);
 			this.notifyChange();
@@ -564,6 +585,13 @@ class Messages {
 		return true;
 	}
 
+	clearReferencedMessage(channelId: string, messageId: string): void {
+		const existing = ChannelMessages.get(channelId);
+		if (!existing?.get(messageId)?.referencedMessage) return;
+		this.commitMessages(existing.update(messageId, (message) => message.withoutReferencedMessage()));
+		this.notifyChange();
+	}
+
 	handleMessageDeleteBulk(action: {ids: Array<string>; channelId: string}): boolean {
 		const existing = ChannelMessages.get(action.channelId);
 		if (!existing) return false;
@@ -622,6 +650,12 @@ class Messages {
 			this.notifyChange();
 		}
 		return hasChanges;
+	}
+
+	forgetUnfocusedVisitChannel(channelId: string): void {
+		if (SelectedChannel.currentChannelId === channelId) return;
+		this.clearMessages(channelId);
+		this.notifyChange();
 	}
 
 	handleGuildThreadsPurged(guildId: string): void {
@@ -775,6 +809,8 @@ class Messages {
 }
 
 const messages = new Messages();
+
+ResettableStates.register(messages, () => messages.handleSessionInvalidated());
 
 AccountScopedWork.registerTransition({
 	suspend: () => {},

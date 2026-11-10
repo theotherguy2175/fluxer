@@ -3,7 +3,7 @@
 import {randomUUID} from 'node:crypto';
 import type {UserID} from '@app/api/BrandedTypes';
 import type {BlueskyCallbackResult} from '@app/api/bluesky/IBlueskyOAuthService';
-import {mapConnectionToResponse} from '@app/api/connection/ConnectionMappers';
+import {mapConnectionsToResponse} from '@app/api/connection/ConnectionMappers';
 import type {
 	ConnectionRepository,
 	ConnectionSortOrderUpdate,
@@ -17,9 +17,9 @@ import {ConnectionInvalidTypeError} from '@app/api/connection/errors/ConnectionI
 import {ConnectionLimitReachedError} from '@app/api/connection/errors/ConnectionLimitReachedError';
 import {ConnectionNotFoundError} from '@app/api/connection/errors/ConnectionNotFoundError';
 import {ConnectionVerificationFailedError} from '@app/api/connection/errors/ConnectionVerificationFailedError';
-import {DomainConnectionVerifier} from '@app/api/connection/verification/DomainConnectionVerifier';
 import type {RevisionedUserConnectionRow, UserConnectionRow} from '@app/api/database/types/ConnectionTypes';
 import type {IGatewayService} from '@app/api/infrastructure/IGatewayService';
+import type {IUnfurlerService} from '@app/api/infrastructure/IUnfurlerService';
 import {APIErrorCodes} from '@fluxer/constants/src/ApiErrorCodes';
 import {
 	type ConnectionType,
@@ -35,6 +35,7 @@ export class ConnectionService {
 	constructor(
 		private readonly repository: ConnectionRepository,
 		private readonly gateway: IGatewayService,
+		private readonly unfurler: IUnfurlerService,
 	) {}
 
 	async getConnectionsForUser(userId: UserID): Promise<Array<UserConnectionRow>> {
@@ -59,7 +60,7 @@ export class ConnectionService {
 		}
 	}
 
-	private async requireAvailableConnectionSlot(userId: UserID): Promise<void> {
+	async requireAvailableConnectionSlot(userId: UserID): Promise<void> {
 		const count = await this.repository.count(userId);
 		if (count >= MAX_CONNECTIONS_PER_USER) {
 			throw new ConnectionLimitReachedError();
@@ -103,7 +104,7 @@ export class ConnectionService {
 		await this.gateway.dispatchPresence({
 			userId,
 			event: 'USER_CONNECTIONS_UPDATE',
-			data: {connections: connections.map(mapConnectionToResponse)},
+			data: {connections: await mapConnectionsToResponse(connections)},
 		});
 	}
 
@@ -135,7 +136,7 @@ export class ConnectionService {
 		visibilityFlags: number,
 	): Promise<UserConnectionRow> {
 		await this.requireConnectionCreationAllowed(userId, type, identifier);
-		const isValid = await new DomainConnectionVerifier().verify({identifier, verification_token: verificationCode});
+		const isValid = await this.unfurler.verifyDomain(identifier, verificationCode);
 		if (!isValid) {
 			throw new ConnectionVerificationFailedError();
 		}
@@ -191,14 +192,47 @@ export class ConnectionService {
 		await this.dispatchConnectionsUpdate(userId);
 	}
 
-	async createOrUpdateBlueskyConnection(result: BlueskyCallbackResult): Promise<UserConnectionRow> {
-		const {userId, did, handle, grantId} = result;
-		const existing = await this.repository.findByTypeAndIdentifier(userId, ConnectionTypes.BLUESKY, did);
+	async createOrUpdateBlueskyConnection({
+		userId,
+		did,
+		handle,
+		grantId,
+	}: BlueskyCallbackResult): Promise<UserConnectionRow> {
+		return this.upsertVerifiedConnection({
+			userId,
+			type: ConnectionTypes.BLUESKY,
+			identifier: did,
+			name: handle,
+			grantId,
+		});
+	}
+
+	async createOrUpdateOAuthConnection(userId: UserID, identifier: string, name: string): Promise<UserConnectionRow> {
+		return this.upsertVerifiedConnection({userId, type: ConnectionTypes.OAUTH, identifier, name});
+	}
+
+	private async upsertVerifiedConnection({
+		userId,
+		type,
+		identifier,
+		name,
+		grantId,
+	}: {
+		userId: UserID;
+		type: ConnectionType;
+		identifier: string;
+		name: string;
+		grantId?: string;
+	}): Promise<UserConnectionRow> {
+		const connections = await this.repository.findByUserId(userId);
+		const existing = connections.find(
+			(connection) => connection.connection_type === type && connection.identifier === identifier,
+		);
+		const now = new Date();
 		if (existing) {
 			const snapshot = await this.requireRevision(existing);
-			const now = new Date();
 			const updated = await this.repository.update(snapshot, {
-				name: handle,
+				name,
 				oauth_grant_id: grantId,
 				verified: true,
 				verified_at: snapshot.verified_at ?? now,
@@ -209,14 +243,12 @@ export class ConnectionService {
 			return updated;
 		}
 		await this.requireAvailableConnectionSlot(userId);
-		const connectionId = randomUUID();
-		const now = new Date();
 		return this.createConnection({
 			user_id: userId,
-			connection_id: connectionId,
-			connection_type: ConnectionTypes.BLUESKY,
-			identifier: did,
-			name: handle,
+			connection_id: randomUUID(),
+			connection_type: type,
+			identifier,
+			name,
 			visibility_flags: ConnectionVisibilityFlags.EVERYONE,
 			verification_token: '',
 			oauth_grant_id: grantId,

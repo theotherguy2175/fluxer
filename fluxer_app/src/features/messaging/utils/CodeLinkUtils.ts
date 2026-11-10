@@ -61,7 +61,7 @@ function createPattern(config: CodeLinkConfig): RegExp {
 	return pattern;
 }
 
-function findCodeMatchesInternal(
+function findCodeMatches(
 	content: string | null,
 	config: CodeLinkConfig,
 	options?: {
@@ -97,12 +97,18 @@ export function findCodes(content: string | null, config: CodeLinkConfig): Array
 	return findCodeMatches(content, config).map((match) => match.code);
 }
 
-function findCodeMatches(content: string | null, config: CodeLinkConfig): Array<CodeLinkMatch> {
-	return findCodeMatchesInternal(content, config);
-}
-
 export function findCode(content: string | null, config: CodeLinkConfig): string | null {
 	return findCodeMatches(content, config)[0]?.code ?? null;
+}
+
+export function findCodeAtUrlStart(url: string | null, config: CodeLinkConfig): string | null {
+	if (!url) return null;
+	const pattern = createPattern(config);
+	pattern.lastIndex = 0;
+	const match = pattern.exec(url);
+	pattern.lastIndex = 0;
+	if (match?.index !== 0) return null;
+	return match[1] ?? null;
 }
 
 export function findSpoileredCodeMatches(content: string | null, config: CodeLinkConfig): Array<CodeLinkMatch> {
@@ -111,7 +117,7 @@ export function findSpoileredCodeMatches(content: string | null, config: CodeLin
 	for (const spoilerMatch of content.matchAll(SPOILER_REGEX)) {
 		const spoilerBody = spoilerMatch[1];
 		if (!spoilerBody) continue;
-		for (const codeMatch of findCodeMatchesInternal(spoilerBody, config, {
+		for (const codeMatch of findCodeMatches(spoilerBody, config, {
 			dedupeCodes: false,
 			limit: Number.POSITIVE_INFINITY,
 		})) {

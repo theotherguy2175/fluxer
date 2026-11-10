@@ -2,6 +2,7 @@
 
 import {Routes} from '@app/app/Routes';
 import {GuildSettingsModal, UserSettingsModal} from '@app/features/app/components/dialogs/LoadableSettingsModals';
+import RuntimeConfig from '@app/features/app/state/RuntimeConfig';
 import Authentication from '@app/features/auth/state/Authentication';
 import {CategoryCreateModal} from '@app/features/channel/components/modals/CategoryCreateModal';
 import {ChannelCreateModal} from '@app/features/channel/components/modals/ChannelCreateModal';
@@ -10,8 +11,13 @@ import {DELETE_MY_MESSAGES_DESCRIPTOR} from '@app/features/channel/utils/Channel
 import {COMMUNITY_RECORD_DESCRIPTOR, RecordDebugModal} from '@app/features/devtools/components/debug/RecordDebugModal';
 
 import {hasForumUnread} from '@app/features/forum/state/ForumReadState';
+import {joinVisitedGuild, leaveVisit} from '@app/features/guild/commands/GuildVisitCommands';
 import {GuildNotificationSettingsModal} from '@app/features/guild/components/modals/GuildNotificationSettingsModal';
 import {GuildPrivacySettingsModal} from '@app/features/guild/components/modals/GuildPrivacySettingsModal';
+import {
+	JOIN_COMMUNITY_DESCRIPTOR,
+	STOP_PREVIEWING_DESCRIPTOR,
+} from '@app/features/guild/components/visits/GuildPreviewNagbar';
 import {useDeleteMyMessagesInGuild} from '@app/features/guild/hooks/useDeleteMyMessagesInGuild';
 import {useLeaveGuild} from '@app/features/guild/hooks/useLeaveGuild';
 import type {Guild} from '@app/features/guild/models/Guild';
@@ -32,6 +38,8 @@ import {
 } from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {InviteModal} from '@app/features/invite/components/modals/InviteModal';
 import * as InviteUtils from '@app/features/invite/utils/InviteUtils';
+import {REPORT_COMMUNITY_DESCRIPTOR} from '@app/features/moderation/utils/ModerationMessageDescriptors';
+import {openReportGuildModal} from '@app/features/moderation/utils/ReportActionUtils';
 import * as RouterUtils from '@app/features/navigation/utils/RouterUtils';
 import Permission from '@app/features/permissions/state/Permission';
 import * as ReadStateCommands from '@app/features/read_state/commands/ReadStateCommands';
@@ -50,6 +58,7 @@ import {
 	MuteIcon,
 	NotificationSettingsIcon,
 	PrivacySettingsIcon,
+	ReportMessageIcon,
 	SettingsIcon,
 } from '@app/features/ui/action_menu/ContextMenuIcons';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
@@ -69,6 +78,7 @@ import {
 import UserGuildSettings from '@app/features/user/state/UserGuildSettings';
 import UserSettings from '@app/features/user/state/UserSettings';
 import Users from '@app/features/user/state/Users';
+import {canOpenProfileEditor} from '@app/features/user/utils/ProfileEditAccess';
 import {getMutedText} from '@app/lib/overlay/OverlayContextMenu';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {ContentWarningLevel} from '@fluxer/constants/src/GuildConstants';
@@ -131,7 +141,8 @@ export function useGuildMenuData(guild: Guild, options: UseGuildMenuDataOptions)
 		canBanMembers;
 	const isOwner = guild.isOwner(Authentication.currentUserId);
 	const developerMode = UserSettings.developerMode;
-	const canEditCommunityProfile = Users.getCurrentUser()?.isClaimed() ?? true;
+	const canEditCommunityProfile = canOpenProfileEditor(Users.getCurrentUser());
+	const directMessagesDisabled = RuntimeConfig.directMessagesDisabled;
 	const settings = UserGuildSettings.getSettingsForScope(guild.id);
 	const hideMutedChannels = settings?.hide_muted_channels ?? false;
 	const isMuted = settings?.muted ?? false;
@@ -251,6 +262,11 @@ export function useGuildMenuData(guild: Guild, options: UseGuildMenuDataOptions)
 			handleLeaveCommunity: () => {
 				ModalCommands.runAfterBottomSheetClose(onClose, () => leaveGuild(guild.id));
 			},
+			handleReportCommunity: () => {
+				ModalCommands.runAfterBottomSheetClose(onClose, () =>
+					openReportGuildModal({guild: {id: guild.id, name: guild.name, icon: guild.icon}}),
+				);
+			},
 			handleDeleteMyMessagesInCommunity: () => {
 				ModalCommands.runAfterBottomSheetClose(onClose, () => deleteMyMessagesInGuild(guild.id));
 			},
@@ -284,6 +300,7 @@ export function useGuildMenuData(guild: Guild, options: UseGuildMenuDataOptions)
 		}),
 		[channels, deleteMyMessagesInGuild, guild, i18n.locale, leaveGuild, onClose],
 	);
+	const discoveryEnabled = RuntimeConfig.discoveryEnabled;
 	const availableSettingsTabs = useMemo(() => {
 		const allTabs = getGuildSettingsTabs(i18n);
 		return allTabs.filter((tab) => {
@@ -296,10 +313,37 @@ export function useGuildMenuData(guild: Guild, options: UseGuildMenuDataOptions)
 			if (tab.requireFeature && !guild.features.has(tab.requireFeature)) {
 				return false;
 			}
+			if (tab.requireDiscovery && !discoveryEnabled) {
+				return false;
+			}
 			return true;
 		});
-	}, [guild.features, guild.id, i18n.locale]);
+	}, [discoveryEnabled, guild.features, guild.id, i18n.locale]);
 	const groups = useMemo(() => {
+		if (guild.visiting) {
+			return [
+				{
+					items: [
+						{
+							label: i18n._(JOIN_COMMUNITY_DESCRIPTOR),
+							onClick: () => {
+								onClose();
+								void joinVisitedGuild(guild.id);
+							},
+						},
+						{
+							icon: <LeaveIcon size={20} data-flx="ui.action-menu.items.guild-menu-data.groups.leave-visit-icon" />,
+							label: i18n._(STOP_PREVIEWING_DESCRIPTOR),
+							onClick: () => {
+								onClose();
+								void leaveVisit(guild.id);
+							},
+							danger: true,
+						},
+					],
+				},
+			];
+		}
 		const menuGroups: Array<MenuGroupType> = [];
 		const quickActions: Array<MenuItemType | MenuSubmenuItemType> = [];
 		if (hasGuildUnread) {
@@ -379,14 +423,16 @@ export function useGuildMenuData(guild: Guild, options: UseGuildMenuDataOptions)
 				label: i18n._(NOTIFICATION_SETTINGS_DESCRIPTOR),
 				onClick: handlers.handleNotificationSettings,
 			},
-			{
+		];
+		if (!directMessagesDisabled) {
+			settingsItems.push({
 				icon: (
 					<PrivacySettingsIcon size={20} data-flx="ui.action-menu.items.guild-menu-data.groups.privacy-settings-icon" />
 				),
 				label: i18n._(PRIVACY_SETTINGS_DESCRIPTOR),
 				onClick: handlers.handlePrivacySettings,
-			},
-		];
+			});
+		}
 		if (canEditCommunityProfile) {
 			settingsItems.push({
 				icon: <EditProfileIcon size={20} data-flx="ui.action-menu.items.guild-menu-data.groups.edit-profile-icon" />,
@@ -418,6 +464,14 @@ export function useGuildMenuData(guild: Guild, options: UseGuildMenuDataOptions)
 				danger: true,
 			},
 		];
+		if (!isOwner) {
+			dangerActions.push({
+				icon: <ReportMessageIcon size={20} data-flx="ui.action-menu.items.guild-menu-data.groups.report-icon" />,
+				label: i18n._(REPORT_COMMUNITY_DESCRIPTOR),
+				onClick: handlers.handleReportCommunity,
+				danger: true,
+			});
+		}
 		if (!isOwner && !isStockCommunityGuild(guild.id)) {
 			dangerActions.push({
 				icon: <LeaveIcon size={20} data-flx="ui.action-menu.items.guild-menu-data.groups.leave-icon" />,
@@ -463,8 +517,10 @@ export function useGuildMenuData(guild: Guild, options: UseGuildMenuDataOptions)
 		canAccessGuildSettings,
 		canManageChannels,
 		canEditCommunityProfile,
+		directMessagesDisabled,
 		availableSettingsTabs,
 		guild.id,
+		guild.visiting,
 		isMuted,
 		hideMutedChannels,
 		hasCurrentGuildMatureContentGate,

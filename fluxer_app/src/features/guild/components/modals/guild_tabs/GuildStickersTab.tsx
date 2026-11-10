@@ -19,7 +19,7 @@ import {resolveEnclosingScrollSurface} from '@app/features/guild/components/moda
 import {UploadDropZone} from '@app/features/guild/components/UploadDropZone';
 import {UploadSlotInfo} from '@app/features/guild/components/UploadSlotInfo';
 import Guilds from '@app/features/guild/state/Guilds';
-import {OKAY_DESCRIPTOR, TRY_AGAIN_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
+import {TRY_AGAIN_DESCRIPTOR} from '@app/features/i18n/utils/CommonMessageDescriptors';
 import {NearViewportSurfaceContext} from '@app/features/messaging/hooks/useNearViewport';
 import {openFilePicker} from '@app/features/messaging/utils/FilePickerUtils';
 import {formatFileSize} from '@app/features/messaging/utils/FileUtils';
@@ -31,6 +31,7 @@ import {modal} from '@app/features/ui/commands/ModalCommands';
 import {Input} from '@app/features/ui/components/form/FormInput';
 import {Spinner} from '@app/features/ui/components/Spinner';
 import Users from '@app/features/user/state/Users';
+import {getFormattingLocale} from '@app/features/user/utils/LocaleUtils';
 import {canCropFormat} from '@app/features/voice/utils/MediaCapabilities';
 import {getAcceptString} from '@fluxer/constants/src/AssetFormatPolicy';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
@@ -63,7 +64,7 @@ const NO_STICKER_SLOTS_AVAILABLE_DESCRIPTOR = msg({
 	comment: 'Empty-state text in the guild stickers tab.',
 });
 const STICKER_SLOTS_FULL_DESCRIPTION_DESCRIPTOR = msg({
-	message: "You've reached the maximum number of stickers. Delete some existing stickers to make room.",
+	message: "You can't add more stickers. Delete some existing stickers to make room.",
 	comment:
 		'Sticker upload limit message in community sticker settings. Do not suggest that communities can be upgraded.',
 });
@@ -143,9 +144,6 @@ const GuildStickersTab: React.FC<{guildId: string}> = observer(function GuildSti
 				<ConfirmModal
 					title={i18n._(UNSUPPORTED_STICKER_FILE_DESCRIPTOR)}
 					description={getAssetFormatErrorMessage(i18n, 'sticker', 'unsupported_mime')}
-					primaryText={i18n._(OKAY_DESCRIPTOR)}
-					primaryVariant="primary"
-					onPrimary={() => {}}
 					data-flx="guild.guild-tabs.guild-stickers-tab.unsupported-file-confirm-modal"
 				/>
 			)),
@@ -227,7 +225,7 @@ const GuildStickersTab: React.FC<{guildId: string}> = observer(function GuildSti
 		},
 		[canManageExpressions, canCreateExpressions, currentUserId],
 	);
-	const stickerMaxSizeLabel = formatFileSize(i18n.locale, guild?.maxStickerSize ?? STICKER_MAX_SIZE);
+	const stickerMaxSizeLabel = formatFileSize(getFormattingLocale(), guild?.maxStickerSize ?? STICKER_MAX_SIZE);
 	return (
 		<div className={styles.container} data-flx="guild.guild-tabs.guild-stickers-tab.container">
 			<CloneAllowedToggle

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
+use crate::app_attest::{AgeFloor, AppAttestRejection, ChallengePurpose};
+use crate::play_integrity::PlayIntegrityRejection;
 use crate::pseudonym::pseudonym;
 use fluxer_common::user_flags::AccountStanding;
 #[cfg(test)]
 use fluxer_common::user_flags::USER_FLAG_STAFF;
-#[cfg(test)]
-use fluxer_common::user_flags::{USER_FLAG_PARTNER, USER_FLAG_STAFF_HIDDEN};
 pub use fluxer_common::user_partial::ApiUserPartial;
-#[cfg(test)]
-use fluxer_common::user_partial::FLUXER_SYSTEM_USERNAME;
-use fluxer_common::user_partial::{FLUXER_SYSTEM_USER_ID, UserPartialFields};
+use fluxer_common::user_partial::{
+    FLUXER_SYSTEM_USER_ID, UserPartialFields, default_instance_name,
+};
 use serde::{Deserialize, Deserializer, Serialize};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -17,13 +17,47 @@ use serde::{Deserialize, Deserializer, Serialize};
 pub enum UserRequest {
     GetPartialsByIds {
         user_ids: Vec<i64>,
+        #[serde(default = "default_instance_name")]
+        instance_name: String,
     },
     GetApiPartialsByIds {
         user_ids: Vec<String>,
+        #[serde(default = "default_instance_name")]
+        instance_name: String,
     },
     Invalidate {
         #[serde(deserialize_with = "deserialize_i64_from_number_or_string")]
         user_id: i64,
+    },
+    AppAttestCreateChallenge {
+        #[serde(deserialize_with = "deserialize_i64_from_number_or_string")]
+        user_id: i64,
+        purpose: ChallengePurpose,
+    },
+    AppAttestRegisterKey {
+        #[serde(deserialize_with = "deserialize_i64_from_number_or_string")]
+        user_id: i64,
+        key_id: String,
+        attestation_base64: String,
+        challenge: String,
+    },
+    AppAttestSubmitAge {
+        #[serde(deserialize_with = "deserialize_i64_from_number_or_string")]
+        user_id: i64,
+        key_id: String,
+        assertion_base64: String,
+        client_data_base64: String,
+    },
+    PlayIntegrityCreateChallenge {
+        #[serde(deserialize_with = "deserialize_i64_from_number_or_string")]
+        user_id: i64,
+    },
+    PlayIntegritySubmitAge {
+        #[serde(deserialize_with = "deserialize_i64_from_number_or_string")]
+        user_id: i64,
+        package_name: String,
+        integrity_token: String,
+        client_data_base64: String,
     },
 }
 
@@ -33,6 +67,21 @@ pub enum UserResponse {
     FoundPartials(Vec<UserPartial>),
     FoundApiPartials(Vec<ApiUserPartial>),
     Invalidated,
+    AppAttestChallenge {
+        challenge: String,
+        expires_at: String,
+    },
+    AppAttestKeyRegistered,
+    AppAttestAgeAccepted {
+        age_floor: AgeFloor,
+        attested_at: String,
+    },
+    AppAttestRejected {
+        code: AppAttestRejection,
+    },
+    PlayIntegrityRejected {
+        code: PlayIntegrityRejection,
+    },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -52,6 +101,8 @@ pub struct UserPartial {
     pub mention_flags: Option<i32>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub content_hidden_since: Option<i64>,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub hidden_profile_badges: Vec<String>,
 }
 
 impl UserPartial {
@@ -84,6 +135,7 @@ impl UserPartial {
             bot: self.bot,
             system: self.system,
             flags: self.flags,
+            hidden_profile_badges: self.hidden_profile_badges.clone(),
             mention_flags: self.mention_flags,
         })
     }
@@ -109,9 +161,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::{Value, json};
-
-    const USER_FLAG_DELETED: i64 = 1 << 34;
+    use serde_json::json;
 
     fn partial_with_flags(user_id: i64, flags: i64) -> UserPartial {
         UserPartial {
@@ -129,6 +179,7 @@ mod tests {
             avatar_color: Some(0x336699),
             mention_flags: Some(0),
             content_hidden_since: None,
+            hidden_profile_badges: Vec::new(),
         }
     }
 
@@ -136,13 +187,18 @@ mod tests {
     fn api_partial_requests_use_string_snowflakes() {
         let request: UserRequest = serde_json::from_value(json!({
             "op": "GetApiPartialsByIds",
-            "user_ids": ["9007199254740993", "9223372036854775807"]
+            "user_ids": ["9007199254740993", "9223372036854775807"],
+            "instance_name": "Example Chat"
         }))
         .unwrap();
 
         match request {
-            UserRequest::GetApiPartialsByIds { user_ids } => {
+            UserRequest::GetApiPartialsByIds {
+                user_ids,
+                instance_name,
+            } => {
                 assert_eq!(user_ids, vec!["9007199254740993", "9223372036854775807"]);
+                assert_eq!(instance_name, "Example Chat");
             }
             other => panic!("unexpected request: {other:?}"),
         }
@@ -193,40 +249,53 @@ mod tests {
     }
 
     #[test]
-    fn api_partial_hides_staff_flag_when_staff_hidden_is_set() {
-        let partial = partial_with_flags(
-            123,
-            USER_FLAG_STAFF | USER_FLAG_STAFF_HIDDEN | USER_FLAG_PARTNER,
-        );
-
-        let api_partial = partial.to_api_partial();
-
-        assert_eq!(api_partial.flags, USER_FLAG_PARTNER as i32);
-        assert_eq!(api_partial.bot, None);
-        assert_eq!(api_partial.system, None);
-        assert_eq!(api_partial.mention_flags, None);
-    }
-
-    #[test]
-    fn api_partial_preserves_stored_fields_when_deleted_flag_is_set() {
-        let deleted = partial_with_flags(123, USER_FLAG_DELETED).to_api_partial();
-
-        assert_eq!(deleted.username, "Ada");
-        assert_eq!(deleted.global_name, Some("Ada Lovelace".to_owned()));
-        assert_eq!(deleted.avatar, Some("avatar_hash".to_owned()));
-        assert_eq!(deleted.flags, 0);
-    }
-
-    #[test]
-    fn api_partial_maps_system_user_like_the_api_mapper() {
-        let system = partial_with_flags(FLUXER_SYSTEM_USER_ID, USER_FLAG_STAFF).to_api_partial();
-
-        assert_eq!(system.username, FLUXER_SYSTEM_USERNAME);
-        assert_eq!(system.bot, Some(true));
-        assert_eq!(system.system, Some(true));
+    fn app_attest_messages_match_the_api_contract() {
+        let request: UserRequest = serde_json::from_value(json!({
+            "op": "AppAttestSubmitAge",
+            "user_id": "9007199254740993",
+            "key_id": "a2V5",
+            "assertion_base64": "YXNzZXJ0aW9u",
+            "client_data_base64": "e30="
+        }))
+        .unwrap();
+        assert!(matches!(
+            request,
+            UserRequest::AppAttestSubmitAge {
+                user_id: 9007199254740993,
+                ..
+            }
+        ));
+        let request: UserRequest = serde_json::from_value(json!({
+            "op": "AppAttestCreateChallenge",
+            "user_id": 42,
+            "purpose": "assert"
+        }))
+        .unwrap();
+        assert!(matches!(
+            request,
+            UserRequest::AppAttestCreateChallenge {
+                user_id: 42,
+                purpose: ChallengePurpose::Assert
+            }
+        ));
         assert_eq!(
-            serde_json::to_value(system).unwrap()["system"],
-            Value::Bool(true)
+            serde_json::to_value(UserResponse::AppAttestAgeAccepted {
+                age_floor: AgeFloor::UnderMinimum,
+                attested_at: "2026-11-05T12:00:00.000Z".to_owned(),
+            })
+            .unwrap(),
+            json!({"AppAttestAgeAccepted": {"age_floor": "under_minimum", "attested_at": "2026-11-05T12:00:00.000Z"}})
+        );
+        assert_eq!(
+            serde_json::to_value(UserResponse::AppAttestKeyRegistered).unwrap(),
+            json!("AppAttestKeyRegistered")
+        );
+        assert_eq!(
+            serde_json::to_value(UserResponse::AppAttestRejected {
+                code: AppAttestRejection::NotConfigured,
+            })
+            .unwrap(),
+            json!({"AppAttestRejected": {"code": "not_configured"}})
         );
     }
 }

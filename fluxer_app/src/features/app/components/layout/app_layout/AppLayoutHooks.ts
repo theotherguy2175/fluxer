@@ -6,6 +6,11 @@ import {
 	type NagbarState,
 	NagbarType,
 } from '@app/features/app/components/layout/app_layout/AppLayoutTypes';
+import {useAndroidAppNagbarStarted} from '@app/features/app/components/layout/app_layout/nagbars/AndroidAppNagbarSchedule';
+import {
+	useInstanceNoticeRefresh,
+	useVisibleInstanceNotice,
+} from '@app/features/app/components/layout/app_layout/nagbars/InstanceNoticeState';
 import {isScheduledMaintenanceNagbarDismissed} from '@app/features/app/components/layout/app_layout/ScheduledMaintenanceDismissal';
 import Config from '@app/features/app/config/Config';
 import DomainMovedNotice from '@app/features/app/domain_migration/DomainMovedNotice';
@@ -18,7 +23,9 @@ import Channels from '@app/features/channel/state/Channels';
 import DeveloperOptions from '@app/features/devtools/state/DeveloperOptions';
 import GatewaySessions from '@app/features/gateway/transport/GatewaySessionPool';
 import * as NotificationUtils from '@app/features/notification/utils/NotificationUtils';
+import {isIOSMobileOrTabletUserAgent} from '@app/features/platform/notifications/NotificationAlertOptions';
 import {resolvePriceAnnouncementCampaign} from '@app/features/premium/config/PriceAnnouncementCampaign';
+import {resolvePurchaseAccountState} from '@app/features/premium/hooks/usePurchaseAccountGate';
 import PremiumState from '@app/features/premium/state/PremiumState';
 import {getPremiumGraceEndDate} from '@app/features/premium/utils/PremiumGrace';
 import {
@@ -28,12 +35,15 @@ import {
 } from '@app/features/premium/utils/PremiumUtils';
 import StreamerMode from '@app/features/streamer_mode/state/StreamerMode';
 import WindowsFont, {WINDOWS_FONT_CHANGED_AT_MS} from '@app/features/theme/state/WindowsFont';
+import ThemeSettingsState from '@app/features/theme_settings/state/ThemeSettingsState';
 import Nagbar from '@app/features/ui/state/Nagbar';
+import {isUnclaimedNagbarSnoozed} from '@app/features/ui/state/UnclaimedNagbarSnooze';
 import {hasUnavailableElectronNativeContext, isDesktop, isNativeWindows} from '@app/features/ui/utils/NativeUtils';
 import {isStandalonePwa} from '@app/features/ui/utils/PwaUtils';
 import StatusPage from '@app/features/user/state/StatusPage';
 import Users from '@app/features/user/state/Users';
-import MediaEngine, {useVoiceEngineV2Model} from '@app/features/voice/engine/MediaEngineFacade';
+import {needsEmailConfirmation} from '@app/features/user/utils/AccountGates';
+import VoiceRuntime, {useVoiceRuntimeVersion} from '@app/features/voice/engine/VoiceRuntime';
 import {selectVoiceEngineV2AppConnectionWithFallback} from '@app/features/voice/engine/v2/VoiceEngineV2AppSelectors';
 import CallState from '@app/features/voice/state/CallState';
 import SoftwareEncoderWarning from '@app/features/voice/state/SoftwareEncoderWarning';
@@ -80,7 +90,8 @@ export const useAppLayoutState = (): AppLayoutState => {
 	return {isStandalone};
 };
 export const useNagbarConditions = (): NagbarConditions => {
-	const voiceEngineV2Model = useVoiceEngineV2Model();
+	useVoiceRuntimeVersion();
+	const voiceEngineV2Model = VoiceRuntime.voiceEngineV2Model;
 	const user = Users.currentUser;
 	const nagbarState = Nagbar;
 	const premiumOverrideType = DeveloperOptions.premiumTypeOverride;
@@ -101,17 +112,20 @@ export const useNagbarConditions = (): NagbarConditions => {
 	const voiceSessionRestoreChannel = voiceSessionRestoreSnapshot
 		? Channels.getChannel(voiceSessionRestoreSnapshot.channelId)
 		: null;
-	const voiceConnectionContext = MediaEngine.connectionContext;
-	const voiceEngineV2Connection = selectVoiceEngineV2AppConnectionWithFallback(voiceEngineV2Model, {
-		connected: voiceConnectionContext.connected,
-		connecting: voiceConnectionContext.connecting,
-		reconnecting: voiceConnectionContext.reconnecting,
-		guildId: voiceConnectionContext.guildId,
-		channelId: voiceConnectionContext.channelId,
-		sessionId: voiceConnectionContext.connectionId,
-	});
+	const voiceConnectionContext = VoiceRuntime.connection;
+	const voiceEngineV2Connection =
+		voiceEngineV2Model === null
+			? voiceConnectionContext
+			: selectVoiceEngineV2AppConnectionWithFallback(voiceEngineV2Model, {
+					connected: voiceConnectionContext.connected,
+					connecting: voiceConnectionContext.connecting,
+					reconnecting: voiceConnectionContext.reconnecting,
+					guildId: voiceConnectionContext.guildId,
+					channelId: voiceConnectionContext.channelId,
+					sessionId: voiceConnectionContext.connectionId,
+				});
 	const shouldShowDesktopNotification = (() => {
-		if (!NotificationUtils.hasNotification()) return false;
+		if (isDesktop() || !NotificationUtils.hasNotification()) return false;
 		if (typeof Notification !== 'undefined') {
 			if (Notification.permission === 'granted') return false;
 			if (Notification.permission === 'denied') return false;
@@ -160,7 +174,7 @@ export const useNagbarConditions = (): NagbarConditions => {
 	})();
 	const premiumState = PremiumState.loadedForUserId === user?.id ? PremiumState.state : null;
 	const priceAnnouncementCampaign = resolvePriceAnnouncementCampaign(premiumState);
-	const hasPurchaseReadyAccount = Boolean(user?.isClaimed() && (!RuntimeConfig.emailsEnabled || user.verified));
+	const hasPurchaseReadyAccount = resolvePurchaseAccountState(user).kind === 'ready';
 	const canShowPriceAnnouncement = (() => {
 		if (isSelfHosted) return false;
 		if (!hasPurchaseReadyAccount) return false;
@@ -189,6 +203,14 @@ export const useNagbarConditions = (): NagbarConditions => {
 		if (nagbarState.forceDesktopDownload) return true;
 		return isDesktopBrowser && !nagbarState.desktopDownloadDismissed;
 	})();
+	const androidAppNagbarStarted = useAndroidAppNagbarStarted();
+	const canShowAndroidApp = (() => {
+		if (nagbarState.forceHideAndroidApp) return false;
+		if (nagbarState.forceAndroidApp) return true;
+		if (hasBrokenElectronNativeContext) return false;
+		if (isIOSMobileOrTabletUserAgent(navigator.userAgent, navigator.maxTouchPoints)) return false;
+		return androidAppNagbarStarted && !nagbarState.androidAppDismissed;
+	})();
 	const canShowVisionaryMfa = (() => {
 		if (isSelfHosted) return false;
 		if (nagbarState.forceHideVisionaryMfa) return false;
@@ -201,8 +223,11 @@ export const useNagbarConditions = (): NagbarConditions => {
 		if (nagbarState.forceGuildMembershipCta) return true;
 		if (!user) return false;
 		if (isSelfHosted) return false;
+		if (user.accountTier !== 'verified') return false;
 		return !nagbarState.guildMembershipCtaDismissed;
 	})();
+	useInstanceNoticeRefresh();
+	const canShowInstanceNotice = useVisibleInstanceNotice() !== null;
 	void nagbarState.scheduledMaintenanceDismissalVersion;
 	const canShowScheduledMaintenance = (() => {
 		if (nagbarState.forceHideScheduledMaintenance) return false;
@@ -265,19 +290,25 @@ export const useNagbarConditions = (): NagbarConditions => {
 		user.createdAt.getTime() < WINDOWS_FONT_CHANGED_AT_MS &&
 		!WindowsFont.useFluxerSans &&
 		!WindowsFont.nagbarDismissed;
-	const canShowDomainMoved = nagbarState.forceHideDomainMoved
-		? false
-		: nagbarState.forceDomainMoved
-			? true
-			: DomainMovedNotice.shouldShow(Date.now());
+	let canShowDomainMoved: boolean;
+	if (nagbarState.forceHideDomainMoved) {
+		canShowDomainMoved = false;
+	} else if (nagbarState.forceDomainMoved) {
+		canShowDomainMoved = true;
+	} else {
+		canShowDomainMoved = DomainMovedNotice.shouldShow(Date.now());
+	}
 	const canShowBuildEnvironment =
-		!BUILD_ENVIRONMENT_HIDDEN_RELEASE_CHANNELS.has(Config.PUBLIC_RELEASE_CHANNEL) &&
+		!BUILD_ENVIRONMENT_HIDDEN_RELEASE_CHANNELS.has(Config.RELEASE_CHANNEL) &&
 		!nagbarState.buildEnvironmentDismissedThisSession;
-	const canShowConnection = nagbarState.forceHideConnectionNotice
-		? false
-		: nagbarState.forceConnectionNotice
-			? true
-			: isClientReconnecting();
+	let canShowConnection: boolean;
+	if (nagbarState.forceHideConnectionNotice) {
+		canShowConnection = false;
+	} else if (nagbarState.forceConnectionNotice) {
+		canShowConnection = true;
+	} else {
+		canShowConnection = isClientReconnecting();
+	}
 	const needsTermsAcceptance = (() => {
 		if (!user) return false;
 		if (isSelfHosted) return false;
@@ -292,35 +323,62 @@ export const useNagbarConditions = (): NagbarConditions => {
 			(!user.privacyAgreedAt || user.privacyAgreedAt.toISOString() < PRIVACY_POLICY_LAST_UPDATED);
 		return termsOutdated || privacyOutdated;
 	})();
+	let canShowCorruptedInstallation: boolean;
+	if (nagbarState.forceHideCorruptedInstallation) {
+		canShowCorruptedInstallation = false;
+	} else if (nagbarState.forceCorruptedInstallation) {
+		canShowCorruptedInstallation = true;
+	} else {
+		canShowCorruptedInstallation = hasBrokenElectronNativeContext;
+	}
+	let userIsUnclaimed: boolean;
+	if (nagbarState.forceHideUnclaimedAccount) {
+		userIsUnclaimed = false;
+	} else if (nagbarState.forceUnclaimedAccount) {
+		userIsUnclaimed = true;
+	} else {
+		userIsUnclaimed = Boolean(
+			!Accounts.isSwitching &&
+				user &&
+				!user.isClaimed() &&
+				!nagbarState.unclaimedAccountDismissedThisSession &&
+				!isUnclaimedNagbarSnoozed(user.id),
+		);
+	}
+	let userNeedsVerification: boolean;
+	if (nagbarState.forceHideEmailVerification) {
+		userNeedsVerification = false;
+	} else if (nagbarState.forceEmailVerification) {
+		userNeedsVerification = true;
+	} else {
+		userNeedsVerification = needsEmailConfirmation(user);
+	}
+	let canShowAccountLimited: boolean;
+	if (nagbarState.forceHideAccountLimited) {
+		canShowAccountLimited = false;
+	} else if (nagbarState.forceAccountLimited) {
+		canShowAccountLimited = true;
+	} else {
+		canShowAccountLimited = user?.accountLimited === true;
+	}
+	let canShowDesktopNotification: boolean;
+	if (nagbarState.forceHideDesktopNotification) {
+		canShowDesktopNotification = false;
+	} else if (nagbarState.forceDesktopNotification) {
+		canShowDesktopNotification = true;
+	} else {
+		canShowDesktopNotification = shouldShowDesktopNotification && !nagbarState.desktopNotificationDismissed;
+	}
 	return {
 		canShowBuildEnvironment,
 		canShowConnection,
-		canShowCorruptedInstallation: nagbarState.forceHideCorruptedInstallation
-			? false
-			: nagbarState.forceCorruptedInstallation
-				? true
-				: hasBrokenElectronNativeContext,
+		canShowCorruptedInstallation,
 		canShowScheduledMaintenance,
-		userIsUnclaimed: nagbarState.forceHideUnclaimedAccount
-			? false
-			: nagbarState.forceUnclaimedAccount
-				? true
-				: Boolean(!Accounts.isSwitching && user && !user.isClaimed()),
-		userNeedsVerification: nagbarState.forceHideEmailVerification
-			? false
-			: nagbarState.forceEmailVerification
-				? true
-				: Boolean(RuntimeConfig.emailsEnabled && user?.isClaimed() && !user.verified),
-		canShowAccountLimited: nagbarState.forceHideAccountLimited
-			? false
-			: nagbarState.forceAccountLimited
-				? true
-				: user?.accountLimited === true,
-		canShowDesktopNotification: nagbarState.forceHideDesktopNotification
-			? false
-			: nagbarState.forceDesktopNotification
-				? true
-				: shouldShowDesktopNotification && !nagbarState.desktopNotificationDismissed,
+		canShowInstanceNotice,
+		userIsUnclaimed,
+		userNeedsVerification,
+		canShowAccountLimited,
+		canShowDesktopNotification,
 		canShowPremiumGracePeriod,
 		canShowPremiumExpired,
 		canShowPremiumOnboarding,
@@ -328,6 +386,7 @@ export const useNagbarConditions = (): NagbarConditions => {
 		canShowLegacyPriceOptIn,
 		canShowGiftInventory,
 		canShowDesktopDownload,
+		canShowAndroidApp,
 		canShowGuildMembershipCta,
 		canShowVisionaryMfa,
 		canShowVoiceSessionRestore,
@@ -336,6 +395,7 @@ export const useNagbarConditions = (): NagbarConditions => {
 		canShowStreamerMode,
 		canShowDomainMoved,
 		canShowWindowsFont,
+		canShowCustomCssOff: ThemeSettingsState.customCssOff,
 	};
 };
 export const useActiveNagbars = (conditions: NagbarConditions): Array<NagbarState> => {
@@ -372,10 +432,16 @@ export const useActiveNagbars = (conditions: NagbarConditions): Array<NagbarStat
 				dismissible: true,
 			},
 			{
+				type: NagbarType.INSTANCE_NOTICE,
+				priority: -1.5,
+				visible: conditions.canShowInstanceNotice,
+				dismissible: true,
+			},
+			{
 				type: NagbarType.UNCLAIMED_ACCOUNT,
 				priority: -4,
 				visible: conditions.userIsUnclaimed,
-				dismissible: false,
+				dismissible: true,
 			},
 			{
 				type: NagbarType.EMAIL_VERIFICATION,
@@ -444,6 +510,12 @@ export const useActiveNagbars = (conditions: NagbarConditions): Array<NagbarStat
 				dismissible: true,
 			},
 			{
+				type: NagbarType.ANDROID_APP,
+				priority: 7.5,
+				visible: conditions.canShowAndroidApp,
+				dismissible: true,
+			},
+			{
 				type: NagbarType.DESKTOP_NOTIFICATION,
 				priority: 8,
 				visible: conditions.canShowDesktopNotification,
@@ -478,6 +550,12 @@ export const useActiveNagbars = (conditions: NagbarConditions): Array<NagbarStat
 				priority: 4.5,
 				visible: conditions.canShowWindowsFont,
 				dismissible: true,
+			},
+			{
+				type: NagbarType.CUSTOM_CSS_OFF,
+				priority: -2.75,
+				visible: conditions.canShowCustomCssOff,
+				dismissible: false,
 			},
 		];
 		return selectVisibleNagbars(nagbars);

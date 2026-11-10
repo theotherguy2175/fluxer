@@ -2,10 +2,13 @@
 
 import Accessibility from '@app/features/accessibility/state/Accessibility';
 import * as UnsavedChangesCommands from '@app/features/ui/commands/UnsavedChangesCommands';
+import {Switch} from '@app/features/ui/components/form/FormSwitch';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
 import {getNextTabIndex, getTabNavigationDirection} from '@app/features/ui/tabs/TabKeyboardNavigation';
 import * as UserSettingsCommands from '@app/features/user/commands/UserSettingsCommands';
+import {AgeRangeSection} from '@app/features/user/components/modals/tabs/privacy_safety_tab/AgeRangeSection';
 import styles from '@app/features/user/components/modals/tabs/privacy_safety_tab/SensitiveContentTab.module.css';
+import {shouldShowDirectMessageSettings} from '@app/features/user/components/settings_utils/SettingsVisibility';
 import UserSettings from '@app/features/user/state/UserSettings';
 import Users from '@app/features/user/state/Users';
 import {SensitiveMediaFilterLevel} from '@fluxer/constants/src/UserConstants';
@@ -64,6 +67,17 @@ const OTHERS_DESCRIPTION_DESCRIPTOR = msg({
 const COMMUNITY_DESCRIPTION_DESCRIPTOR = msg({
 	message: 'Media in channels that are not marked 18+. Channels marked 18+ always show it.',
 	comment: 'Helper text under "Messages in community channels" in the sensitive content settings.',
+});
+const ALLOW_MATURE_CONTENT_ON_IOS_DESCRIPTOR = msg({
+	message: 'Allow 18+ content on iPhone and iPad',
+	comment:
+		'Switch in the sensitive content settings. Turns on 18+ communities and channels and the "Show" sensitive media option in the Fluxer app for iPhone and iPad.',
+});
+const ALLOW_MATURE_CONTENT_ON_IOS_DESCRIPTION_DESCRIPTOR = msg({
+	message:
+		'Lets you open communities and channels marked 18+ in the Fluxer app for iPhone and iPad, and choose "Show" for sensitive media there. You can only change this on the web or on desktop.',
+	comment:
+		'Helper text under the "Allow 18+ content on iPhone and iPad" switch. "Show" is the sensitive media option name and must match its translation.',
 });
 const SENSITIVE_CONTENT_TAB_ID = 'privacy_safety';
 
@@ -173,7 +187,7 @@ const SensitiveContentChoiceRow: React.FC<SensitiveContentChoiceRowProps> = ({
 						}
 						style={{
 							width: `calc((100% - 0.375rem) / ${options.length})`,
-							left: `calc(0.1875rem + (100% - 0.375rem) * ${selectedIndex} / ${options.length})`,
+							insetInlineStart: `calc(0.1875rem + (100% - 0.375rem) * ${selectedIndex} / ${options.length})`,
 						}}
 						data-flx={`${dataFlx}.indicator`}
 					/>
@@ -190,15 +204,19 @@ export const SensitiveContentTabContent: React.FC = observer(() => {
 	const [friendDmFilter, setFriendDmFilter] = useState(UserSettings.sensitiveContentFriendDmFilter);
 	const [nonFriendDmFilter, setNonFriendDmFilter] = useState(UserSettings.sensitiveContentNonFriendDmFilter);
 	const [guildFilter, setGuildFilter] = useState(UserSettings.sensitiveContentGuildFilter);
+	const [allowMatureContentOnIos, setAllowMatureContentOnIos] = useState(UserSettings.allowMatureContentOnIos);
 	const [isSubmitting, setIsSubmitting] = useState(false);
 	const hasUnsavedChanges =
 		friendDmFilter !== UserSettings.sensitiveContentFriendDmFilter ||
 		nonFriendDmFilter !== UserSettings.sensitiveContentNonFriendDmFilter ||
-		(isMatureContentAllowed && guildFilter !== UserSettings.sensitiveContentGuildFilter);
+		(isMatureContentAllowed &&
+			(guildFilter !== UserSettings.sensitiveContentGuildFilter ||
+				allowMatureContentOnIos !== UserSettings.allowMatureContentOnIos));
 	const handleReset = useCallback(() => {
 		setFriendDmFilter(UserSettings.sensitiveContentFriendDmFilter);
 		setNonFriendDmFilter(UserSettings.sensitiveContentNonFriendDmFilter);
 		setGuildFilter(UserSettings.sensitiveContentGuildFilter);
+		setAllowMatureContentOnIos(UserSettings.allowMatureContentOnIos);
 	}, []);
 	const handleSave = useCallback(async () => {
 		setIsSubmitting(true);
@@ -208,6 +226,7 @@ export const SensitiveContentTabContent: React.FC = observer(() => {
 					sensitiveContentFriendDmFilter: friendDmFilter,
 					sensitiveContentNonFriendDmFilter: nonFriendDmFilter,
 					sensitiveContentGuildFilter: guildFilter,
+					allowMatureContentOnIos,
 				});
 			} else {
 				await UserSettingsCommands.update({
@@ -218,7 +237,7 @@ export const SensitiveContentTabContent: React.FC = observer(() => {
 		} finally {
 			setIsSubmitting(false);
 		}
-	}, [isMatureContentAllowed, friendDmFilter, nonFriendDmFilter, guildFilter]);
+	}, [isMatureContentAllowed, friendDmFilter, nonFriendDmFilter, guildFilter, allowMatureContentOnIos]);
 	useEffect(() => {
 		UnsavedChangesCommands.setUnsavedChanges(SENSITIVE_CONTENT_TAB_ID, hasUnsavedChanges);
 	}, [hasUnsavedChanges]);
@@ -272,24 +291,28 @@ export const SensitiveContentTabContent: React.FC = observer(() => {
 				className={styles.rows}
 				data-flx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.rows"
 			>
-				<SensitiveContentChoiceRow
-					label={i18n._(DIRECT_MESSAGES_FROM_FRIENDS_DESCRIPTOR)}
-					description={i18n._(FRIENDS_DESCRIPTION_DESCRIPTOR)}
-					value={friendDmFilter}
-					options={isMatureContentAllowed ? filterOptions : teenDmOptions}
-					onChange={setFriendDmFilter}
-					dataFlx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.select.set-friend-dm-filter"
-					data-flx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.sensitive-content-choice-row.set-friend-dm-filter"
-				/>
-				<SensitiveContentChoiceRow
-					label={i18n._(DIRECT_MESSAGES_FROM_OTHERS_DESCRIPTOR)}
-					description={i18n._(OTHERS_DESCRIPTION_DESCRIPTOR)}
-					value={nonFriendDmFilter}
-					options={isMatureContentAllowed ? filterOptions : teenDmOptions}
-					onChange={setNonFriendDmFilter}
-					dataFlx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.select.set-non-friend-dm-filter"
-					data-flx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.sensitive-content-choice-row.set-non-friend-dm-filter"
-				/>
+				{shouldShowDirectMessageSettings() && (
+					<>
+						<SensitiveContentChoiceRow
+							label={i18n._(DIRECT_MESSAGES_FROM_FRIENDS_DESCRIPTOR)}
+							description={i18n._(FRIENDS_DESCRIPTION_DESCRIPTOR)}
+							value={friendDmFilter}
+							options={isMatureContentAllowed ? filterOptions : teenDmOptions}
+							onChange={setFriendDmFilter}
+							dataFlx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.select.set-friend-dm-filter"
+							data-flx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.sensitive-content-choice-row.set-friend-dm-filter"
+						/>
+						<SensitiveContentChoiceRow
+							label={i18n._(DIRECT_MESSAGES_FROM_OTHERS_DESCRIPTOR)}
+							description={i18n._(OTHERS_DESCRIPTION_DESCRIPTOR)}
+							value={nonFriendDmFilter}
+							options={isMatureContentAllowed ? filterOptions : teenDmOptions}
+							onChange={setNonFriendDmFilter}
+							dataFlx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.select.set-non-friend-dm-filter"
+							data-flx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.sensitive-content-choice-row.set-non-friend-dm-filter"
+						/>
+					</>
+				)}
 				<SensitiveContentChoiceRow
 					label={i18n._(MESSAGES_IN_COMMUNITY_CHANNELS_DESCRIPTOR)}
 					description={i18n._(COMMUNITY_DESCRIPTION_DESCRIPTOR)}
@@ -301,6 +324,18 @@ export const SensitiveContentTabContent: React.FC = observer(() => {
 					data-flx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.sensitive-content-choice-row.set-guild-filter"
 				/>
 			</div>
+			{isMatureContentAllowed && (
+				<Switch
+					label={i18n._(ALLOW_MATURE_CONTENT_ON_IOS_DESCRIPTOR)}
+					description={i18n._(ALLOW_MATURE_CONTENT_ON_IOS_DESCRIPTION_DESCRIPTOR)}
+					value={allowMatureContentOnIos}
+					onChange={setAllowMatureContentOnIos}
+					data-flx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.switch.allow-mature-content-on-ios"
+				/>
+			)}
+			{currentUser?.hasAgeRange && (
+				<AgeRangeSection data-flx="user.privacy-safety-tab.sensitive-content-tab.sensitive-content-tab-content.age-range-section" />
+			)}
 		</div>
 	);
 });

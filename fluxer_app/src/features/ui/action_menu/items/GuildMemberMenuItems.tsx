@@ -14,7 +14,6 @@ import {ChangeNicknameIcon} from '@app/features/ui/action_menu/ContextMenuIcons'
 import itemStyles from '@app/features/ui/action_menu/items/MenuItems.module.css';
 import {MenuGroup} from '@app/features/ui/action_menu/MenuGroup';
 import {MenuItem} from '@app/features/ui/action_menu/MenuItem';
-
 import {openRoleContextMenu} from '@app/features/ui/action_menu/RoleContextMenu';
 import * as ModalCommands from '@app/features/ui/commands/ModalCommands';
 import {modal} from '@app/features/ui/commands/ModalCommands';

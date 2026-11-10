@@ -6,6 +6,7 @@ import {
 	VOICE_P2P_MAX_PARTICIPANTS,
 } from '@fluxer/constants/src/LimitConstants';
 import {FORUM_UNREAD_COUNT_CAP, FORUM_UNREADS_MAX_THREADS} from '@fluxer/constants/src/ThreadConstants';
+import {AccountTierSchema} from '@fluxer/schema/src/domains/account/AccountTierSchemas';
 import {ChannelThreadsConfigResponse} from '@fluxer/schema/src/domains/admin/ChannelThreadsSchemas';
 import {GatewayRolloutConfigResponse} from '@fluxer/schema/src/domains/admin/GatewayRolloutSchemas';
 import {LegacyPushServiceDeliveryWire} from '@fluxer/schema/src/domains/admin/PushRelaySchemas';
@@ -77,6 +78,7 @@ export const RpcRequest = z.discriminatedUnion('type', [
 		latitude: createStringType(1, 32).optional().describe('Client latitude for region selection'),
 		longitude: createStringType(1, 32).optional().describe('Client longitude for region selection'),
 		thread_channels_capable: z.boolean().optional().describe('Whether the session can handle thread channels'),
+		guild_visits_capable: z.boolean().optional().describe('Whether the session can visit guilds without joining'),
 	}),
 	z.object({
 		type: z.literal('guild_collection').describe('Request type for fetching a single guild collection chunk'),
@@ -122,6 +124,12 @@ export const RpcRequest = z.discriminatedUnion('type', [
 	z.object({
 		type: z.literal('get_user_blocked_ids').describe('Request type for fetching blocked user IDs'),
 		user_ids: z.array(SnowflakeType).max(RPC_USER_BATCH_MAX).describe('IDs of users to fetch blocked lists for'),
+	}),
+	z.object({
+		type: z
+			.literal('get_users_adult_content_allowed')
+			.describe('Request type for checking which users may see 18+ content'),
+		user_ids: z.array(SnowflakeType).max(RPC_USER_BATCH_MAX).describe('IDs of users to check'),
 	}),
 	z.object({
 		type: z.literal('voice_get_token').describe('Request type for getting voice connection token'),
@@ -183,7 +191,7 @@ export const RpcRequest = z.discriminatedUnion('type', [
 	z.object({
 		type: z
 			.literal('voice_update_participant_permissions')
-			.describe('Request type for updating voice participant permissions'),
+			.describe('Request type for updating the voice permissions of one connection'),
 		guild_id: SnowflakeType.optional().describe('ID of the guild'),
 		channel_id: SnowflakeType.describe('ID of the voice channel'),
 		user_id: SnowflakeType.describe('ID of the user to update'),
@@ -191,7 +199,7 @@ export const RpcRequest = z.discriminatedUnion('type', [
 		can_speak: z.boolean().describe('Whether the user can speak'),
 		can_stream: z.boolean().describe('Whether the user can stream'),
 		can_video: z.boolean().describe('Whether the user can use video'),
-		deaf: z.boolean().optional().describe('Whether the user is deafened'),
+		deaf: z.boolean().describe('Whether the user is deafened'),
 	}),
 	z.object({
 		type: z.literal('call_ended').describe('Request type for notifying that a call has ended'),
@@ -355,6 +363,17 @@ export const RpcResponseSessionData = z.object({
 		.array(WebAuthnCredentialResponse)
 		.describe('Registered WebAuthn credentials (passkeys) for the authenticated user'),
 	version: z.number().int().describe('Session data version for cache invalidation'),
+	visit_guild_ids: z
+		.array(SnowflakeStringType)
+		.optional()
+		.describe('Guilds the user is visiting, only for sessions that can visit guilds'),
+	operator_visit_guild_ids: z
+		.array(SnowflakeStringType)
+		.optional()
+		.describe('Subset of visit_guild_ids opened by the instance operator entry, which ignore the guild visit setting'),
+	adult_content_allowed: z.boolean().optional().describe('Whether the user may see adult channels while visiting'),
+	account_tier: AccountTierSchema.optional().describe('Account tier of the user'),
+	ip_key: z.string().nullish().describe('Address key of the identifying connection, used to evict visitors on IP bans'),
 });
 
 export type RpcResponseSessionData = z.infer<typeof RpcResponseSessionData>;
@@ -441,6 +460,12 @@ export const RpcResponse = z.discriminatedUnion('type', [
 	z.object({
 		type: z.literal('get_user_blocked_ids').describe('Response type for blocked user IDs'),
 		data: z.record(SnowflakeStringType, z.array(SnowflakeStringType)).describe('Blocked user IDs keyed by user ID'),
+	}),
+	z.object({
+		type: z.literal('get_users_adult_content_allowed').describe('Response type for the 18+ content check'),
+		data: z
+			.object({user_ids: z.array(SnowflakeStringType).describe('IDs of the requested users who may see 18+ content')})
+			.describe('Users who may see 18+ content'),
 	}),
 	z.object({
 		type: z.literal('voice_get_token').describe('Response type for voice connection token'),
