@@ -896,7 +896,9 @@ export class MessageSendService {
 						guild,
 						member,
 						hasPermission: guild ? hasPermission : undefined,
-						mentionData,
+						mentionData: mentionData
+							? {...mentionData, flags: mentionData.flags | (preparedPoll ? MessageFlags.HAS_POLL : 0)}
+							: undefined,
 						allowEmbeds: canEmbedLinks,
 						dmNsfwContext,
 						threadInsert: authChannel.thread !== undefined,
