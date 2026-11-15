@@ -68,7 +68,7 @@ interface EmbedImageWarmInput {
 	mediaAttachments: ReadonlyArray<MessageAttachment>;
 }
 
-export function resolveEmbedImageWarmItem(input: EmbedImageWarmInput): MediaViewerItem | null {
+function resolveEmbedImageWarmItem(input: EmbedImageWarmInput): MediaViewerItem | null {
 	if (input.mediaAttachments.length > 0) {
 		const items = attachmentsToViewerItems(input.mediaAttachments);
 		return items[findViewerItemIndex(items, input.attachmentId)] ?? null;
@@ -233,7 +233,6 @@ const ImagePreviewHandler: FC<ImagePreviewHandlerProps> = observer(
 					className={styles.imagePreviewHandler}
 					aria-label={i18n._(OPEN_IMAGE_IN_FULL_VIEW_DESCRIPTOR)}
 					onClick={openImagePreview}
-					onMouseDown={openInBrowser.onMouseDown}
 					onAuxClick={openInBrowser.onAuxClick}
 					onKeyDown={openImagePreview}
 					onMouseEnter={onViewerWarmEnter}
@@ -275,7 +274,13 @@ export const EmbedImage: FC<EmbedImageProps> = observer(
 	}) => {
 		const {i18n} = useLingui();
 		const messageViewContext = useMaybeMessageViewContext();
-		const {shouldBlur, gateReason, canReveal, reveal: revealSensitiveMedia} = useMatureMedia(nsfw, channelId);
+		const {
+			shouldBlur,
+			shouldBlock,
+			gateReason,
+			canReveal,
+			reveal: revealSensitiveMedia,
+		} = useMatureMedia(nsfw, channelId);
 		const shouldAnimateImage = useShouldAnimate({kind: 'gif', isAnimated: animated});
 		const {style: containerStyle, dimensions} = imageCalculator.calculate(
 			{width, height},
@@ -441,6 +446,9 @@ export const EmbedImage: FC<EmbedImageProps> = observer(
 		const handleCloseMediaSheet = useCallback(() => {
 			setMediaSheetOpen(false);
 		}, []);
+		if (shouldBlock) {
+			return null;
+		}
 		if (shouldBlur) {
 			return (
 				<div

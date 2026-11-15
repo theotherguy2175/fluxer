@@ -11,7 +11,7 @@ import {InputValidationError} from '@fluxer/errors/src/domains/core/InputValidat
 import {RateLimitError} from '@fluxer/errors/src/domains/core/RateLimitError';
 import type {IRateLimitService} from '@pkgs/rate_limit/src/IRateLimitService';
 import {type ChannelID, createUserID, type SoundboardSoundID, type UserID} from '../../BrandedTypes';
-import type {IChannelRepository} from '../../channel/IChannelRepository';
+import type {ChannelRepository} from '../../channel/ChannelRepository';
 import type {IGatewayService} from '../../infrastructure/IGatewayService';
 import {Logger} from '../../Logger';
 import type {LimitConfigService} from '../../limits/LimitConfigService';
@@ -30,7 +30,7 @@ export class GuildSoundboardPlayService {
 	constructor(
 		private readonly soundboardService: GuildSoundboardService,
 		private readonly gatewayService: IGatewayService,
-		private readonly channelRepository: IChannelRepository,
+		private readonly channelRepository: ChannelRepository,
 		private readonly limitConfigService: LimitConfigService,
 		private readonly rateLimitService: IRateLimitService,
 	) {}
@@ -70,7 +70,7 @@ export class GuildSoundboardPlayService {
 		const {userId, channelId, soundId} = params;
 		this.soundboardService.assertEnabled();
 		await this.assertWithinPlayRate(userId, channelId);
-		const channel = await this.channelRepository.findUnique(channelId);
+		const channel = await this.channelRepository.channelData.findUnique(channelId);
 		if (!channel?.guildId) {
 			throw new UnknownChannelError();
 		}

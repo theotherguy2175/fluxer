@@ -10,7 +10,7 @@ export interface PrecacheEntry {
 }
 
 export interface AppShellRuntime {
-	readonly caches: CacheStorage | undefined;
+	readonly caches: {open(name: string): Promise<Pick<Cache, 'match' | 'put'>>} | undefined;
 	readonly fetch: (request: Request) => Promise<Response>;
 	readonly origin: string;
 	readonly precacheName: string;
@@ -23,30 +23,19 @@ export function isCacheableResponse(response: Response): boolean {
 	return response.ok || response.type === 'opaque';
 }
 
-export function isAppShellResponse(response: Response): boolean {
-	return response.ok && response.headers.get(APP_SHELL_MARKER_HEADER) === '1';
-}
-
-export function isPrecacheableAssetUrl(url: string): boolean {
-	const pathname = url.split(/[?#]/, 1)[0].toLowerCase();
-	return pathname !== '/' && !pathname.endsWith('.html');
-}
-
 export async function precacheAssets(runtime: AppShellRuntime, manifest: ReadonlyArray<PrecacheEntry>): Promise<void> {
 	if (!runtime.caches) {
 		return;
 	}
 	const cache = await runtime.caches.open(runtime.precacheName);
 	await Promise.allSettled(
-		manifest
-			.filter((entry) => isPrecacheableAssetUrl(entry.url))
-			.map(async (entry) => {
-				const request = new Request(new URL(entry.url, runtime.origin).toString(), {cache: 'reload'});
-				const response = await runtime.fetch(request);
-				if (isCacheableResponse(response)) {
-					await cache.put(entry.url, response);
-				}
-			}),
+		manifest.map(async (entry) => {
+			const request = new Request(new URL(entry.url, runtime.origin).toString(), {cache: 'reload'});
+			const response = await runtime.fetch(request);
+			if (isCacheableResponse(response)) {
+				await cache.put(entry.url, response);
+			}
+		}),
 	);
 }
 
@@ -59,7 +48,7 @@ async function readAppShell(runtime: AppShellRuntime): Promise<Response | undefi
 }
 
 async function storeAppShell(runtime: AppShellRuntime, response: Response): Promise<void> {
-	if (!runtime.caches || !isAppShellResponse(response)) {
+	if (!runtime.caches || !response.ok || response.headers.get(APP_SHELL_MARKER_HEADER) !== '1') {
 		return;
 	}
 	try {
@@ -80,27 +69,32 @@ export async function seedAppShell(runtime: AppShellRuntime): Promise<void> {
 }
 
 export async function fetchAppShellNavigation(runtime: AppShellRuntime, request: Request): Promise<Response> {
+	let timeoutId: ReturnType<typeof setTimeout> | undefined;
 	const timeout = new Promise<Response | undefined>((resolve) => {
-		setTimeout(() => resolve(undefined), runtime.networkTimeoutMs);
+		timeoutId = setTimeout(() => resolve(undefined), runtime.networkTimeoutMs);
 	});
-	const network = runtime.fetch(request).then(async (response) => {
-		await storeAppShell(runtime, response);
-		return response;
-	});
-	let networkResponse: Response | undefined;
 	try {
-		networkResponse = await Promise.race([network, timeout]);
-		if (networkResponse && isCacheableResponse(networkResponse)) {
+		const network = runtime.fetch(request).then(async (response) => {
+			await storeAppShell(runtime, response);
+			return response;
+		});
+		let networkResponse: Response | undefined;
+		try {
+			networkResponse = await Promise.race([network, timeout]);
+			if (networkResponse && isCacheableResponse(networkResponse)) {
+				return networkResponse;
+			}
+		} catch {}
+		const cached = await readAppShell(runtime);
+		if (cached) {
+			network.catch(() => undefined);
+			return cached;
+		}
+		if (networkResponse) {
 			return networkResponse;
 		}
-	} catch {}
-	const cached = await readAppShell(runtime);
-	if (cached) {
-		network.catch(() => undefined);
-		return cached;
+		return network;
+	} finally {
+		clearTimeout(timeoutId);
 	}
-	if (networkResponse) {
-		return networkResponse;
-	}
-	return network;
 }

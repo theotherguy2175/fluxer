@@ -8,27 +8,31 @@ import {AdminGuildUpdatePropagator} from '@app/api/admin/services/guild/AdminGui
 import {AdminGuildUpdateService} from '@app/api/admin/services/guild/AdminGuildUpdateService';
 import {AdminGuildVanityService} from '@app/api/admin/services/guild/AdminGuildVanityService';
 import {createGuildID, createUserID} from '@app/api/BrandedTypes';
-import type {IChannelRepository} from '@app/api/channel/IChannelRepository';
-import type {IGuildDiscoveryRepository} from '@app/api/guild/repositories/GuildDiscoveryRepository';
-import type {IGuildRepositoryAggregate} from '@app/api/guild/repositories/IGuildRepositoryAggregate';
+import type {ChannelRepository} from '@app/api/channel/ChannelRepository';
+import type {EnforcementDecisionService} from '@app/api/enforcement/EnforcementDecisionService';
+import type {GuildDiscoveryRepository} from '@app/api/guild/repositories/GuildDiscoveryRepository';
+import type {GuildRepository} from '@app/api/guild/repositories/GuildRepository';
 import type {GuildService} from '@app/api/guild/services/GuildService';
 import type {EntityAssetService} from '@app/api/infrastructure/EntityAssetService';
 import type {IGatewayService} from '@app/api/infrastructure/IGatewayService';
+import type {CustomBadgeCatalog} from '@app/api/instance/custom_badges/CustomBadgeCatalog';
 import type {InviteRepository} from '@app/api/invite/InviteRepository';
 import {createRequestCache} from '@app/api/middleware/RequestCacheMiddleware';
-import type {IUserRepository} from '@app/api/user/IUserRepository';
+import type {UserRepository} from '@app/api/user/repositories/UserRepository';
 import type {ListGuildAuditLogsRequest} from '@fluxer/schema/src/domains/admin/AdminGuildSchemas';
 
 interface AdminGuildServiceDeps {
-	guildRepository: IGuildRepositoryAggregate;
-	userRepository: IUserRepository;
-	channelRepository: IChannelRepository;
+	guildRepository: GuildRepository;
+	userRepository: UserRepository;
+	channelRepository: ChannelRepository;
 	inviteRepository: InviteRepository;
 	guildService: GuildService;
 	gatewayService: IGatewayService;
 	entityAssetService: EntityAssetService;
 	auditService: AdminAuditService;
-	discoveryRepository: IGuildDiscoveryRepository;
+	discoveryRepository: GuildDiscoveryRepository;
+	enforcement: EnforcementDecisionService;
+	customBadgeCatalog: Pick<CustomBadgeCatalog, 'getByIds' | 'state'>;
 }
 
 export class AdminGuildService {
@@ -54,9 +58,12 @@ export class AdminGuildService {
 		});
 		this.updateService = new AdminGuildUpdateService({
 			guildRepository: deps.guildRepository,
+			discoveryRepository: deps.discoveryRepository,
 			entityAssetService: deps.entityAssetService,
 			auditService: deps.auditService,
 			updatePropagator: this.updatePropagator,
+			guildService: deps.guildService,
+			customBadgeCatalog: deps.customBadgeCatalog,
 		});
 		this.vanityService = new AdminGuildVanityService({
 			guildRepository: deps.guildRepository,
@@ -74,6 +81,7 @@ export class AdminGuildService {
 			gatewayService: deps.gatewayService,
 			guildService: deps.guildService,
 			auditService: deps.auditService,
+			enforcement: deps.enforcement,
 		});
 	}
 

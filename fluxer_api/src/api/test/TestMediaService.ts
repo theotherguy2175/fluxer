@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import {Config} from '@app/api/Config';
 import {
 	IMediaService,
-	type MediaProxyFrameRequest,
-	type MediaProxyFrameResponse,
 	type MediaProxyMetadataRequest,
 	type MediaProxyMetadataResponse,
 	type MediaProxySniffResponse,
+	type MediaProxyStorageObject,
+	type MediaProxyStrippedObject,
 } from '@app/api/infrastructure/IMediaService';
 import type {IStorageService} from '@app/api/infrastructure/IStorageService';
 
@@ -84,24 +85,30 @@ export class TestMediaService extends IMediaService {
 		return 'https://media-proxy.test';
 	}
 
-	async getThumbnail(): Promise<Buffer | null> {
-		return Buffer.alloc(1024);
-	}
-
 	async sniffUpload(_uploadFilename: string): Promise<MediaProxySniffResponse | null> {
 		return {content_type: null};
 	}
 
-	async extractFrames(_request: MediaProxyFrameRequest): Promise<MediaProxyFrameResponse> {
-		return {
-			frames: [
-				{
-					timestamp: 0,
-					mime_type: 'image/png',
-					base64: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
-				},
-			],
-		};
+	async stripObjectMetadata(
+		source: MediaProxyStorageObject,
+		contentType: string,
+		outputPath: string,
+	): Promise<MediaProxyStrippedObject | null> {
+		await fs.promises.writeFile(outputPath, await this.storageService.readObject(source.bucket, source.key));
+		return {contentType, width: 100, height: 100};
+	}
+
+	async stripImageMetadata(image: Uint8Array): Promise<Uint8Array | null> {
+		return image;
+	}
+
+	async getAudioDurationSeconds(base64: string): Promise<number | null> {
+		const buffer = Buffer.from(base64, 'base64');
+		if (!this.isWav(buffer) || buffer.length < 44) {
+			return null;
+		}
+		const byteRate = buffer.readUInt32LE(28);
+		return byteRate > 0 ? buffer.readUInt32LE(40) / byteRate : null;
 	}
 
 	private analyzeBase64Image(base64: string): MediaProxyMetadataResponse | null {
@@ -121,18 +128,19 @@ export class TestMediaService extends IMediaService {
 					nsfw: false,
 				};
 			}
-			const format = this.detectImageFormat(buffer);
+			const format = this.detectImageFormat(buffer) ?? (this.isWav(buffer) ? 'wav' : null);
 			if (!format) {
 				return null;
 			}
+			const dimensions = this.readPngDimensions(buffer, format);
 			return {
 				format,
 				content_type: this.contentTypeForFormat(format),
 				content_hash: crypto.createHash('md5').update(buffer).digest('hex'),
 				size: buffer.length,
-				width: 128,
-				height: 128,
-				animated: format === 'gif',
+				width: dimensions?.width ?? 128,
+				height: dimensions?.height ?? 128,
+				animated: this.isAnimatedImage(buffer, format),
 				nsfw: false,
 			};
 		} catch (_error) {
@@ -154,6 +162,15 @@ export class TestMediaService extends IMediaService {
 			return 'mp3';
 		}
 		return null;
+	}
+
+	private readPngDimensions(buffer: Buffer, format: string): {width: number; height: number} | null {
+		if (format !== 'png' || buffer.length < 24 || buffer.toString('latin1', 12, 16) !== 'IHDR') {
+			return null;
+		}
+		const width = buffer.readUInt32BE(16);
+		const height = buffer.readUInt32BE(20);
+		return width > 0 && height > 0 ? {width, height} : null;
 	}
 
 	private detectImageFormat(buffer: Buffer): string | null {
@@ -215,6 +232,10 @@ export class TestMediaService extends IMediaService {
 			bytes[10] === 0x42 &&
 			bytes[11] === 0x50
 		);
+	}
+
+	private isWav(bytes: Buffer): boolean {
+		return bytes.toString('latin1', 0, 4) === 'RIFF' && bytes.toString('latin1', 8, 12) === 'WAVE';
 	}
 
 	private isJpeg(bytes: Buffer): boolean {

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Keybind, {type KeyCombo} from '@app/features/input/state/InputKeybind';
+import {resolveKeybindCommand} from '@app/features/input/state/input_keybind/KeybindCommands';
 import {combosMatch} from '@app/features/voice/state/SoundboardHotkeys';
 
 const hasTrigger = (combo: KeyCombo): boolean =>
@@ -17,7 +18,8 @@ export function findFluxerKeybindConflict(combo: KeyCombo): string | null {
 	for (const custom of customs) {
 		if (!custom.enabled || !hasTrigger(custom.combo)) continue;
 		if (!combosMatch(custom.combo, combo)) continue;
-		return custom.action ? (Keybind.getDefaultByAction(custom.action)?.label ?? custom.action) : '';
+		const command = resolveKeybindCommand(custom.action);
+		return command ? (Keybind.getDefaultByAction(command)?.label ?? custom.action) : (custom.action ?? '');
 	}
 	if (Keybind.getDisableBuiltinKeybinds()) return null;
 	const overridden = new Set(customs.map((entry) => entry.action).filter((action) => action != null));

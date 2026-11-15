@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Authentication from '@app/features/auth/state/Authentication';
+import {onLocaleChange} from '@app/features/i18n/utils/LocaleChangeListener';
+import {AccountScopedWork} from '@app/features/platform/state/AccountScopedWork';
 import {Logger} from '@app/features/platform/utils/AppLogger';
 import type {Profile} from '@app/features/user/models/Profile';
 import {ME} from '@fluxer/constants/src/AppConstants';
@@ -17,6 +19,7 @@ class UserProfile {
 
 	constructor() {
 		makeAutoObservable(this, {}, {autoBind: true});
+		onLocaleChange(() => this.clearAllProfiles());
 	}
 
 	getProfile(userId: string, guildId?: string): Profile | null {
@@ -148,4 +151,8 @@ class UserProfile {
 	}
 }
 
-export default new UserProfile();
+const userProfile = new UserProfile();
+
+AccountScopedWork.registerCancellation(() => userProfile.handleGatewayReady());
+
+export default userProfile;

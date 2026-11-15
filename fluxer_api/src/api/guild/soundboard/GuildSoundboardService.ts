@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import crypto from 'node:crypto';
-import {resolveEntranceSoundDurationMs} from '@app/api/user/entrance_sound/EntranceSoundDurationProbe';
 import {AuditLogActionType} from '@fluxer/constants/src/AuditLogActionType';
 import {Permissions} from '@fluxer/constants/src/ChannelConstants';
 import {
@@ -43,7 +42,6 @@ import {resolveLimitSafe} from '../../limits/LimitConfigUtils';
 import {createLimitMatchContext} from '../../limits/LimitMatchContextBuilder';
 import type {RequestCache} from '../../middleware/RequestCacheMiddleware';
 import {GuildSoundboardSound} from '../../models/GuildSoundboardSound';
-import {getCachedUserPartialResponses} from '../../user/UserCacheHelpers';
 import {serializeSoundboardSoundForAudit} from '../../utils/AuditSerializationUtils';
 import {requirePermission} from '../../utils/PermissionUtils';
 import type {GuildAuditLogService} from '../GuildAuditLogService';
@@ -191,11 +189,7 @@ export class GuildSoundboardService {
 		await this.gatewayService.getGuildData({guildId, userId});
 		const [sounds, limits] = await Promise.all([this.repository.listSounds(guildId), this.getEffectiveLimits(guildId)]);
 		const userIds = [...new Set(sounds.map((sound) => sound.creatorId))];
-		const users = await getCachedUserPartialResponses({
-			userIds,
-			userCacheService: this.userCacheService,
-			requestCache,
-		});
+		const users = await this.userCacheService.getUserPartialResponses(userIds, requestCache);
 		return {
 			sounds: sounds.map((sound) => ({
 				sound,
@@ -259,11 +253,7 @@ export class GuildSoundboardService {
 		sound: GuildSoundboardSound,
 		requestCache: RequestCache,
 	): Promise<UserPartialResponse | null> {
-		const users = await getCachedUserPartialResponses({
-			userIds: [sound.creatorId],
-			userCacheService: this.userCacheService,
-			requestCache,
-		});
+		const users = await this.userCacheService.getUserPartialResponses([sound.creatorId], requestCache);
 		return users.get(sound.creatorId) ?? null;
 	}
 
@@ -313,15 +303,15 @@ export class GuildSoundboardService {
 				format: metadata.format ?? metadata.content_type ?? 'unknown',
 			});
 		}
-		const metadataDurationSeconds = typeof metadata.duration === 'number' ? metadata.duration : null;
-		const durationMs = await resolveEntranceSoundDurationMs({
-			bytes,
-			extension,
-			metadataDurationSeconds,
-		});
-		if (durationMs == null) {
+		const metadataDurationSeconds =
+			typeof metadata.duration === 'number' && Number.isFinite(metadata.duration) && metadata.duration > 0
+				? metadata.duration
+				: null;
+		const durationSeconds = (await this.mediaService.getAudioDurationSeconds(trimmed)) ?? metadataDurationSeconds;
+		if (durationSeconds == null) {
 			throw InputValidationError.fromCode('audio', ValidationErrorCodes.SOUNDBOARD_SOUND_INVALID_FORMAT);
 		}
+		const durationMs = Math.round(durationSeconds * 1000);
 		if (durationMs > limits.maxDurationMs) {
 			throw InputValidationError.fromCode('audio', ValidationErrorCodes.SOUNDBOARD_SOUND_DURATION_EXCEEDS_LIMIT, {
 				max_ms: limits.maxDurationMs,

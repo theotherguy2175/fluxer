@@ -8,18 +8,22 @@ import {
 	type MessageID,
 	type UserID,
 } from '@app/api/BrandedTypes';
-import type {IChannelRepository} from '@app/api/channel/IChannelRepository';
+import type {ChannelRepository} from '@app/api/channel/ChannelRepository';
 import type {AuthenticatedChannel} from '@app/api/channel/services/AuthenticatedChannel';
 import {dispatchChannelEvent} from '@app/api/channel/services/ChannelGatewayDispatch';
-import {MessageInteractionBase} from '@app/api/channel/services/interaction/MessageInteractionBase';
-import type {MessageDispatchService} from '@app/api/channel/services/message/MessageDispatchService';
+import {
+	dispatchMessageCreateBroadcast,
+	dispatchMessageUpdateBroadcast,
+} from '@app/api/channel/services/message/MessageGatewayDispatch';
+import {ensureTextChannel} from '@app/api/channel/services/message/MessageHelpers';
 import type {MessagePersistenceService} from '@app/api/channel/services/message/MessagePersistenceService';
 import {MessagePollAuthService} from '@app/api/channel/services/poll/MessagePollAuthService';
 import {MessagePollRepository} from '@app/api/channel/services/poll/MessagePollRepository';
 import {buildPollResponse} from '@app/api/channel/services/poll/MessagePollResponseBuilder';
 import type {GuildPollSettingsRow, MessagePollAnswerItem} from '@app/api/database/types/PollTypes';
+import type {ThreadViewer} from '@app/api/experiment/ChannelThreadsGate';
 import type {GuildAuditLogService} from '@app/api/guild/GuildAuditLogService';
-import type {IGuildRepositoryAggregate} from '@app/api/guild/repositories/IGuildRepositoryAggregate';
+import type {GuildRepository} from '@app/api/guild/repositories/GuildRepository';
 import type {IGatewayService} from '@app/api/infrastructure/IGatewayService';
 import type {ISnowflakeService} from '@app/api/infrastructure/ISnowflakeService';
 import type {UserCacheService} from '@app/api/infrastructure/UserCacheService';
@@ -31,7 +35,7 @@ import type {RequestCache} from '@app/api/middleware/RequestCacheMiddleware';
 import {createRequestCache} from '@app/api/middleware/RequestCacheMiddleware';
 import type {Channel} from '@app/api/models/Channel';
 import {MessagePoll} from '@app/api/models/MessagePoll';
-import type {IUserRepository} from '@app/api/user/IUserRepository';
+import type {UserRepository} from '@app/api/user/repositories/UserRepository';
 import {requirePermission} from '@app/api/utils/PermissionUtils';
 import {AuditLogActionType} from '@fluxer/constants/src/AuditLogActionType';
 import {MessageReferenceTypes, MessageTypes, Permissions} from '@fluxer/constants/src/ChannelConstants';
@@ -90,23 +94,21 @@ export interface PreparedPoll {
 	expiresAt: Date;
 }
 
-export class MessagePollService extends MessageInteractionBase {
+export class MessagePollService {
 	readonly authService: MessagePollAuthService;
 	private readonly repository = new MessagePollRepository();
 
 	constructor(
-		gatewayService: IGatewayService,
-		private readonly channelRepository: IChannelRepository,
-		userRepository: IUserRepository,
-		private readonly guildRepository: IGuildRepositoryAggregate,
+		private readonly gatewayService: IGatewayService,
+		private readonly channelRepository: ChannelRepository,
+		userRepository: UserRepository,
+		private readonly guildRepository: GuildRepository,
 		private readonly userCacheService: UserCacheService,
 		private readonly snowflakeService: ISnowflakeService,
 		private readonly limitConfigService: LimitConfigService,
 		private readonly auditLogService: GuildAuditLogService,
 		private readonly persistenceService: MessagePersistenceService,
-		private readonly dispatchService: MessageDispatchService,
 	) {
-		super(gatewayService);
 		this.authService = new MessagePollAuthService(channelRepository, userRepository, guildRepository, gatewayService);
 	}
 
@@ -242,7 +244,7 @@ export class MessagePollService extends MessageInteractionBase {
 		const {authChannel, poll} = params;
 		const now = params.now ?? new Date();
 		const {channel, guild} = authChannel;
-		this.ensureTextChannel(channel);
+		ensureTextChannel(channel);
 		const guildId = channel.guildId ?? null;
 		const limits = await this.getEffectiveLimits(guildId);
 		if (!limits.enabled) {
@@ -358,7 +360,7 @@ export class MessagePollService extends MessageInteractionBase {
 	}): Promise<{poll: MessagePoll; channel: Channel}> {
 		const {authChannel, messageId} = params;
 		const channel = authChannel.channel;
-		this.ensureTextChannel(channel);
+		ensureTextChannel(channel);
 		await this.assertMessageHistoryAccess(authChannel, messageId);
 		const message = await this.channelRepository.messages.getMessage(channel.id, messageId);
 		if (!message) throw new UnknownMessageError();
@@ -386,6 +388,7 @@ export class MessagePollService extends MessageInteractionBase {
 
 	async vote(params: {
 		userId: UserID;
+		viewer: ThreadViewer;
 		channelId: ChannelID;
 		messageId: MessageID;
 		answerId: number;
@@ -395,6 +398,7 @@ export class MessagePollService extends MessageInteractionBase {
 		const authChannel = await this.authService.getChannelAuthenticated({
 			userId: params.userId,
 			channelId: params.channelId,
+			viewer: params.viewer,
 		});
 		const {poll, channel} = await this.loadOpenPoll({
 			authChannel,
@@ -428,6 +432,7 @@ export class MessagePollService extends MessageInteractionBase {
 
 	async unvote(params: {
 		userId: UserID;
+		viewer: ThreadViewer;
 		channelId: ChannelID;
 		messageId: MessageID;
 		answerId: number;
@@ -437,6 +442,7 @@ export class MessagePollService extends MessageInteractionBase {
 		const authChannel = await this.authService.getChannelAuthenticated({
 			userId: params.userId,
 			channelId: params.channelId,
+			viewer: params.viewer,
 		});
 		const {poll, channel} = await this.loadOpenPoll({
 			authChannel,
@@ -464,6 +470,7 @@ export class MessagePollService extends MessageInteractionBase {
 
 	async listVoters(params: {
 		userId: UserID;
+		viewer: ThreadViewer;
 		channelId: ChannelID;
 		messageId: MessageID;
 		answerId: number;
@@ -474,8 +481,9 @@ export class MessagePollService extends MessageInteractionBase {
 		const authChannel = await this.authService.getChannelAuthenticated({
 			userId: params.userId,
 			channelId: params.channelId,
+			viewer: params.viewer,
 		});
-		this.ensureTextChannel(authChannel.channel);
+		ensureTextChannel(authChannel.channel);
 		await this.assertMessageHistoryAccess(authChannel, params.messageId);
 		const poll = await this.repository.getPoll(params.messageId);
 		if (!poll) throw InputValidationError.fromCode('message_id', ValidationErrorCodes.POLL_NOT_FOUND);
@@ -523,6 +531,7 @@ export class MessagePollService extends MessageInteractionBase {
 	/** End a poll early. Author, or MANAGE_MESSAGES in guild channels. */
 	async expire(params: {
 		userId: UserID;
+		viewer: ThreadViewer;
 		channelId: ChannelID;
 		messageId: MessageID;
 		requestCache: RequestCache;
@@ -531,6 +540,7 @@ export class MessagePollService extends MessageInteractionBase {
 		const authChannel = await this.authService.getChannelAuthenticated({
 			userId: params.userId,
 			channelId: params.channelId,
+			viewer: params.viewer,
 		});
 		const {poll, channel} = await this.loadOpenPoll({
 			authChannel,
@@ -579,10 +589,10 @@ export class MessagePollService extends MessageInteractionBase {
 		await this.repository.deleteExpiryIndex(poll);
 		const message = await this.channelRepository.messages.getMessage(channel.id, poll.messageId);
 		if (message) {
-			await this.dispatchService.dispatchMessageUpdate({
+			await dispatchMessageUpdateBroadcast({
+				gatewayService: this.gatewayService,
 				channel,
 				message,
-				requestCache: params.requestCache,
 				currentUserId: params.actorUserId,
 			});
 		}
@@ -605,10 +615,10 @@ export class MessagePollService extends MessageInteractionBase {
 				},
 				referencedMessage: message,
 			});
-			await this.dispatchService.dispatchMessageCreate({
+			await dispatchMessageCreateBroadcast({
+				gatewayService: this.gatewayService,
 				channel,
 				message: resultMessage,
-				requestCache: params.requestCache,
 			});
 		} catch (error) {
 			Logger.error({error, messageId: poll.messageId.toString()}, 'Failed to post poll result message');

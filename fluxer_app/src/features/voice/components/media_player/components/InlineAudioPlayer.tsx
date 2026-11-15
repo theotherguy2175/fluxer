@@ -8,11 +8,12 @@ import {
 	PLAY_DESCRIPTOR,
 	REMOVE_FROM_FAVORITES_DESCRIPTOR,
 } from '@app/features/i18n/utils/CommonMessageDescriptors';
-import {useAttachmentRefreshOnError} from '@app/features/messaging/hooks/useAttachmentRefreshOnError';
+import {resolveDesktopCrossOriginMediaURL} from '@app/features/messaging/utils/DesktopResourceUrl';
 import {formatFileSize} from '@app/features/messaging/utils/FileUtils';
 import {remFromPx} from '@app/features/theme/layout/RemFromPx';
 import FocusRing from '@app/features/ui/focus_ring/FocusRing';
 import {Tooltip} from '@app/features/ui/tooltip/Tooltip';
+import {getFormattingLocale} from '@app/features/user/utils/LocaleUtils';
 import {MediaPlaybackRate} from '@app/features/voice/components/media_player/components/MediaPlaybackRate';
 import {MediaProgressBar} from '@app/features/voice/components/media_player/components/MediaProgressBar';
 import {MediaVolumeControl} from '@app/features/voice/components/media_player/components/MediaVolumeControl';
@@ -54,13 +55,6 @@ interface InlineAudioPlayerProps {
 	onDownloadClick?: (e: React.MouseEvent) => void;
 	onContextMenu?: (e: React.MouseEvent) => void;
 	className?: string;
-}
-
-function formatTime(time: number): string {
-	if (!Number.isFinite(time)) return '0:00';
-	const minutes = Math.floor(time / 60);
-	const seconds = Math.floor(time % 60);
-	return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
 function splitFilename(filename: string): {name: string; extension: string} {
@@ -112,7 +106,6 @@ export function InlineAudioPlayer({
 		mediaRef,
 	});
 	const {escalateToMetadata, sourceAttribute, preloadAttribute} = useMetadataPreload(src, hasStarted);
-	const handleMediaError = useAttachmentRefreshOnError(src);
 	const displayDuration = duration > 0 ? duration : (initialDuration ?? 0);
 	useLayoutEffect(() => {
 		const media = mediaRef.current;
@@ -125,7 +118,7 @@ export function InlineAudioPlayer({
 	const {name: fileName, extension: fileExtension} = extension
 		? {name: title, extension: `.${extension}`}
 		: splitFilename(title);
-	const fileSizeString = fileSize ? formatFileSize(i18n.locale, fileSize) : '';
+	const fileSizeString = fileSize ? formatFileSize(getFormattingLocale(), fileSize) : '';
 	useEffect(() => {
 		if (hasStarted && pendingPlayRef.current) {
 			const timer = setTimeout(() => {
@@ -205,9 +198,8 @@ export function InlineAudioPlayer({
 			>
 				<audio
 					ref={mediaRef as React.RefObject<HTMLAudioElement>}
-					src={sourceAttribute}
+					src={resolveDesktopCrossOriginMediaURL(sourceAttribute)}
 					preload={preloadAttribute}
-					onError={handleMediaError}
 					data-flx="voice.media-player.inline-audio-player.audio"
 				>
 					<track kind="captions" data-flx="voice.media-player.inline-audio-player.track" />
@@ -317,7 +309,7 @@ export function InlineAudioPlayer({
 					transition={{duration: Accessibility.useReducedMotion ? 0 : 0.2, ease: 'easeOut'}}
 					data-flx="voice.media-player.inline-audio-player.mobile-timestamp"
 				>
-					{state.isPlaying ? formatTime(currentTime) : formatTime(displayDuration)}
+					{state.isPlaying ? formatDuration(currentTime) : formatDuration(displayDuration)}
 				</motion.span>
 			</motion.div>
 		);
@@ -333,9 +325,8 @@ export function InlineAudioPlayer({
 		>
 			<audio
 				ref={mediaRef as React.RefObject<HTMLAudioElement>}
-				src={sourceAttribute}
+				src={resolveDesktopCrossOriginMediaURL(sourceAttribute)}
 				preload={preloadAttribute}
-				onError={handleMediaError}
 				data-flx="voice.media-player.inline-audio-player.audio--2"
 			>
 				<track kind="captions" data-flx="voice.media-player.inline-audio-player.track--2" />

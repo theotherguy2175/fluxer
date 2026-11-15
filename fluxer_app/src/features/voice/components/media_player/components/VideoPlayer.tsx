@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-or-later
 
 import Accessibility from '@app/features/accessibility/state/Accessibility';
+import {resolveDesktopCrossOriginMediaURL} from '@app/features/messaging/utils/DesktopResourceUrl';
 import * as ImageCacheUtils from '@app/features/messaging/utils/ImageCacheUtils';
 import {decodeThumbHashDataURL} from '@app/features/messaging/utils/ThumbHashUtils';
 import {observeResize} from '@app/features/platform/utils/SharedResizeObserver';
@@ -155,7 +156,7 @@ function VideoSeekPreviewThumbnail({src, poster, time}: VideoSeekPreviewThumbnai
 		<video
 			ref={videoRef}
 			className={styles.seekPreviewVideo}
-			src={src}
+			src={resolveDesktopCrossOriginMediaURL(src)}
 			poster={poster}
 			preload="metadata"
 			muted
@@ -573,14 +574,10 @@ export const VideoPlayer = observer(function VideoPlayer({
 		),
 	);
 	const progressPreviewPortalRoot = fullscreenPortalRoot;
-	const containerStyle: React.CSSProperties = {
-		...style,
-		...(width && height && !fillContainer
-			? {aspectRatio: `${width} / ${height}`}
-			: !fillContainer
-				? {aspectRatio: '16 / 9'}
-				: {}),
-	};
+	const containerStyle: React.CSSProperties = {...style};
+	if (!fillContainer) {
+		containerStyle.aspectRatio = width && height ? `${width} / ${height}` : '16 / 9';
+	}
 	return (
 		<PortalHostContext.Provider value={fullscreenPortalRoot ?? inheritedPortalHost}>
 			<FocusRing offset={-2} data-flx="voice.media-player.video-player.focus-ring">
@@ -606,7 +603,7 @@ export const VideoPlayer = observer(function VideoPlayer({
 					<video
 						ref={mediaRef as React.RefObject<HTMLVideoElement>}
 						className={clsx(styles.video, renderModel.shouldHideVideo && styles.videoHidden)}
-						src={renderModel.shouldAttachSource ? src : undefined}
+						src={renderModel.shouldAttachSource ? resolveDesktopCrossOriginMediaURL(src) : undefined}
 						preload={renderModel.preloadAttribute}
 						crossOrigin="anonymous"
 						playsInline
